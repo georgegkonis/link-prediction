@@ -1,0 +1,14 @@
+{
+  "name": "Link Prediction",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "extensions": [
+    "ms-python.python",
+    "ms-python.vscode-pylance"
+  ],
+  "settings": {
+    "python.pythonPath": "/opt/conda/envs/myenv/bin/python"
+  },
+  "postCreateCommand": "pip install -r requirements.txt",
+  "remoteUser": "root"
+}

@@ -1,14 +1,21 @@
 {
-  "name": "Link Prediction",
+  "name": "Link Prediction Container",
   "dockerFile": "Dockerfile",
-  "context": "..",
+  "context": ".",
+  "appPort": [
+    8888
+  ],
   "extensions": [
     "ms-python.python",
-    "ms-python.vscode-pylance"
+    "ms-toolsai.jupyter",
+    "ms-vscode-remote.remote-containers"
   ],
   "settings": {
-    "python.pythonPath": "/opt/conda/envs/myenv/bin/python"
+    "terminal.integrated.shell.linux": "/bin/bash"
   },
-  "postCreateCommand": "pip install -r requirements.txt",
+  "runArgs": [
+    "--init"
+  ],
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt",
   "remoteUser": "root"
 }

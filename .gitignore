@@ -240,5 +240,20 @@ cython_debug/
 #.idea/
 
 
-data/*
+# Data — raw inputs and derived artifacts are not committed
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Model outputs
+outputs/predictions/*
+!outputs/predictions/.gitkeep
+outputs/checkpoints/*
+!outputs/checkpoints/.gitkeep
+outputs/figures/*
+!outputs/figures/.gitkeep
+
 .idea/*

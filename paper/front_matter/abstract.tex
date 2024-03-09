@@ -1,0 +1,38 @@
+% Greek abstract (required by the department)
+\begin{abstract}
+TODO: Greek abstract (περίληψη στα ελληνικά).
+
+    \begin{keywords}
+    TODO: Λέξεις κλειδιά
+    \end{keywords}
+\end{abstract}
+
+
+% English abstract
+\begin{abstracteng}
+\en{
+Link prediction in text-attributed graphs (TAGs) is the problem of inferring whether an
+edge exists between two nodes given both the graph topology and the textual content of
+the nodes. While recent work on the DSAA 2023 Wikipedia benchmark demonstrated that
+pure semantic approaches based on pre-trained language models can achieve near-perfect
+accuracy, their quadratic inference cost makes them impractical at scale, and their
+generalisation to out-of-distribution edges remains unstudied.
+
+This thesis presents \textbf{CascadeLP}, a tiered link prediction framework that routes
+node pairs through progressively expensive models based on confidence thresholds.
+Tier~1 applies structural heuristics (Common Neighbours, Adamic-Adar, Node2Vec) for
+fast, topology-aware scoring. Tier~2 applies a lightweight semantic classifier
+(TF-IDF + SVM or POS-tag features + Random Forest) to handle cold-start nodes with no
+structural neighbours. Tier~3 applies a fine-tuned Sentence-RoBERTa model only to pairs
+where the earlier tiers are uncertain. We evaluate CascadeLP on the DSAA 2023 dataset
+under both standard and temporal splits, and report accuracy, throughput, and per-tier
+call rates. Our results show that CascadeLP matches full-transformer accuracy while
+invoking the transformer on only a small fraction of pairs, providing a concrete
+efficiency-accuracy trade-off analysis that prior work has not attempted.
+}
+
+    \begin{keywordseng}
+    \en{Link prediction, text-attributed graphs, graph neural networks, language models,
+    cascaded inference, cold-start, Wikipedia, DSAA 2023}
+    \end{keywordseng}
+\end{abstracteng}

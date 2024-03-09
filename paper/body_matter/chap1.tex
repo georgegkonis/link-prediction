@@ -1,0 +1,34 @@
+\selectlanguage{english}
+\chapter{Introduction}
+
+\section{Motivation}
+
+\section{Problem Statement}
+
+\section{Contributions}
+
+The main contributions of this thesis are:
+
+\begin{enumerate}
+    \item A systematic comparison of structural, semantic, and hybrid link prediction
+          methods on the DSAA 2023 Wikipedia benchmark.
+    \item \textbf{CascadeLP}, a confidence-based tiered inference framework that
+          routes node pairs to progressively expensive models only when cheaper
+          tiers are uncertain.
+    \item A cold-start analysis that isolates performance on node pairs with no
+          structural neighbours (zero common neighbours).
+    \item An efficiency benchmark quantifying throughput and transformer call rate
+          at each cascade tier.
+    \item A temporal generalisation evaluation using chronological train/test splits.
+\end{enumerate}
+
+\section{Thesis Structure}
+
+The remainder of this thesis is organised as follows.
+Chapter~\ref{chap:background} reviews the relevant literature across the three
+prediction paradigms.
+Chapter~\ref{chap:methodology} describes the CascadeLP framework.
+Chapter~\ref{chap:experiments} presents the experimental setup and results.
+Chapter~\ref{chap:analysis} provides ablation studies, cold-start analysis, and
+efficiency benchmarks.
+Chapter~\ref{chap:conclusion} summarises the findings and outlines future directions.

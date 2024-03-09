@@ -1,15 +1,86 @@
-%! Author = Gergios Gkonis
-%! Date = 11/07/2024
+\documentclass[11pt,a4paper,english,greek,twoside]{ceid-thesis}
 
-% Preamble
-\documentclass[11pt]{article.cls}
-
-% Packages
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{indentfirst}
 \usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{makeidx}
 
-% Document
+\bibliographystyle{static/hellas}
+\makeindex
+
+\renewcommand{\baselinestretch}{1.2}
+
+% Convenience commands
+\newcommand{\en}[1]{\foreignlanguage{english}{#1}}
+\newcommand{\src}[1]{{\tt\en{#1}}}
+
+% Theorem environments (English)
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\renewcommand{\thedefinition}{\arabic{chapter}.\arabic{definition}}
+\renewcommand{\thetheorem}{\arabic{chapter}.\arabic{theorem}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% THESIS INFO — fill in before submission
+%%
+    \title{TODO: Thesis Title in Greek}
+    \edef\toutis{του}
+    \edef\authorNameCapital{TODO: SURNAME NAME IN CAPS}
+    \author{TODO: Name Surname}
+    \supervisor{TODO: Supervisor Name}
+    \edef\supervisorTitle{TODO: Professor Title}
+    \supervisorSecond{}
+    \edef\supervisorSecondTitle{}
+    \edef\supervisorMaleFemale{Επιβλέπων}
+    \edef\thesisPlaceDate{Πάτρα, TODO: Month Year}
+    \edef\examinationDate{TODO: Examination Date}
+    \edef\copyrightYear{TODO: Year}
+    \epitropiF{TODO: Examiner 1}
+    \edef\epitropiFTitle{TODO: Title}
+    \epitropiS{TODO: Examiner 2}
+    \edef\epitropiSTitle{TODO: Title}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\selectlanguage{greek}
+
 \begin{document}
+\selectlanguage{greek}
+\maketitle
 
+\frontmatter
+    \include{front_matter/abstract}
+    \thesisDedication{TODO: Dedication}
+    \include{front_matter/acknowledgements}
+    \tableofcontents
+    \listoffigures
+    \listoftables
 
+\mainmatter
+    \include{body_matter/chap1}
+    \include{body_matter/chap2}
+    \include{body_matter/chap3}
+    \include{body_matter/chap4}
+    \include{body_matter/chap5}
+    \include{body_matter/chap6}
+
+    \appendix
+    \include{back_matter/appA}
+    \cleardoublepage
+
+    \bibliography{back_matter/references}
+    \include{back_matter/abbreviations}
+    \include{back_matter/glossary}
+
+\backmatter
+    \printindex
+    \cleardoublepage
 
 \end{document}

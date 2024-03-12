@@ -1,0 +1,39 @@
+name: link-prediction
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+
+  # Core scientific stack
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - tqdm
+
+  # Jupyter
+  - jupyterlab
+  - ipykernel
+
+  # PyTorch (CPU) — if you add a GPU, replace cpuonly with pytorch-cuda=<version>
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cpuonly
+
+  # Graph
+  - networkx
+
+  # NLP
+  - nltk
+
+  - pip
+  - pip:
+      - transformers>=4.40
+      - sentence-transformers>=3.0
+      - datasets
+      - torch-geometric
+      - node2vec

@@ -37,3 +37,5 @@ dependencies:
       - datasets
       - torch-geometric
       - node2vec
+      - kagglehub
+      - python-dotenv

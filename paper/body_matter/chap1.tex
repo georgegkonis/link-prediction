@@ -3,32 +3,167 @@
 
 \section{Motivation}
 
+The web of human knowledge is inherently a graph. Wikipedia alone encodes hundreds of
+thousands of entities---people, places, organisations, concepts---and the hyperlinks
+between their articles encode a rich relational structure that mirrors how ideas are
+connected. Predicting which edges are missing from such a graph, a task known as
+\textit{link prediction}, has applications ranging from knowledge-base completion and
+recommender systems to citation network analysis and drug interaction discovery. The
+challenge is compounded when nodes carry rich textual attributes: the graph topology
+alone may be sparse or ambiguous, while the text alone may be too high-dimensional for
+simple similarity measures. Jointly exploiting both sources of signal is therefore both
+necessary and non-trivial.
+
+Traditional link prediction methods fall into two broad families. Structural
+heuristics---such as Common Neighbours, Adamic-Adar, and Preferential
+Attachment---are computationally cheap and interpretable, but they are blind to textual
+content and fail completely when two nodes share no common neighbours. Graph embedding
+methods such as Node2Vec \cite{grover2016node2vec} learn low-dimensional representations
+that capture neighbourhood topology, yet they still ignore node text and require
+retraining whenever the graph changes. On the other side of the spectrum, large
+pre-trained language models (PLMs) such as BERT \cite{devlin2019bert} and its
+descendants can encode rich semantic relationships directly from text, and recent work
+has demonstrated that fine-tuned sentence encoders can achieve near-perfect accuracy on
+the DSAA 2023 Wikipedia link prediction benchmark \cite{phan2023link,tran2023text}.
+However, running a transformer over every candidate pair is expensive at scale, and the
+reported near-perfect scores raise questions about dataset characteristics---in
+particular, whether trivially identifiable pairs such as self-loops or structurally
+obvious links are inflating the aggregate metric.
+
+This thesis is motivated by three observations that are underexplored in the existing
+literature. First, the cost of full-transformer inference is prohibitive at the scale of
+real-world graphs: the DSAA 2023 test set contains 238,000 node pairs, and encoding
+every pair independently with a sentence transformer is orders of magnitude more
+expensive than a heuristic lookup. Second, different subpopulations of node pairs
+respond very differently to different feature families: structurally rich pairs are
+trivially classified by topology, cold-start pairs with zero common neighbours require
+semantic features, and genuinely ambiguous pairs may need deep language understanding.
+Third, Kim et al.\ \cite{kim2024llms} showed that more than 78\% of new co-authorship
+links involve at least one node with zero common neighbours with the other, highlighting
+that cold-start handling is not an edge case but the dominant regime in dynamic graphs.
+
+These observations motivate a \textit{tiered} approach: apply the cheapest classifier
+first, escalate to more expensive classifiers only when the cheaper tier is uncertain,
+and measure both accuracy and inference cost at each tier. Such a cascade aligns well
+with the practical deployment scenario where a large fraction of pairs can be resolved
+cheaply, and only a small residual requires heavy computation.
+
 \section{Problem Statement}
+
+Let $G = (V, E)$ be an undirected graph where each node $v \in V$ is associated with a
+text document $d_v$ (in our setting, the Wikipedia article text). Given a set of node
+pairs $\mathcal{Q} = \{(u, v)\}$, the \textit{link prediction} task is to assign a
+binary label $y_{uv} \in \{0, 1\}$ to each pair, where $y_{uv} = 1$ indicates that an
+edge $(u, v) \in E$ exists (or should exist) and $y_{uv} = 0$ indicates no edge. The
+task is evaluated on held-out pairs whose true labels are withheld at inference time.
+
+In the DSAA 2023 Wikipedia benchmark \cite{phan2023link}, the graph $G$ has 838,000
+nodes corresponding to Wikipedia articles, of which 668,000 appear in the structural
+(adjacency) component. Training labels are provided for 948,232 node pairs (46\%
+positive, 54\% negative), and the evaluation metric is the Macro F1-score computed over
+the binary positive and negative classes. The test set contains 238,000 pairs. Node text
+is available as a \texttt{nodes.tsv} file containing Wikipedia titles, descriptions, and
+optionally infobox content.
+
+The specific problem addressed by this thesis is to build a link prediction system for
+this benchmark that (a) achieves competitive Macro F1-score, (b) explicitly manages
+inference cost by routing easy pairs away from expensive models, (c) is transparent about
+which feature family is responsible for each prediction, and (d) handles cold-start pairs
+where one or both nodes have no structural neighbours in $G$. The framework must operate
+at inference time without access to the true labels of the test pairs, using only the
+training graph, the node text, and the training pair labels.
+
+A secondary objective is to characterise the dataset itself: to identify which
+subpopulations of pairs are trivially predictable (e.g., self-loops, pairs with many
+common neighbours) and to quantify what fraction of the test set genuinely requires
+semantic reasoning. This characterisation informs the threshold tuning for the cascade
+and contextualises the near-perfect scores reported by prior work.
 
 \section{Contributions}
 
 The main contributions of this thesis are:
 
 \begin{enumerate}
-    \item A systematic comparison of structural, semantic, and hybrid link prediction
-          methods on the DSAA 2023 Wikipedia benchmark.
-    \item \textbf{CascadeLP}, a confidence-based tiered inference framework that
-          routes node pairs to progressively expensive models only when cheaper
-          tiers are uncertain.
-    \item A cold-start analysis that isolates performance on node pairs with no
-          structural neighbours (zero common neighbours).
-    \item An efficiency benchmark quantifying throughput and transformer call rate
-          at each cascade tier.
-    \item A temporal generalisation evaluation using chronological train/test splits.
+
+    \item \textbf{CascadeLP, a three-tier confidence-based link prediction framework.}
+          We design and implement a cascade in which Tier~0 resolves self-loops
+          deterministically, Tier~1 applies a Logistic Regression classifier over four
+          structural heuristic features (Common Neighbours, Jaccard Coefficient,
+          Adamic-Adar Index, and Preferential Attachment), Tier~2 applies a Random
+          Forest classifier over a 72-dimensional part-of-speech frequency feature
+          vector derived from the node text, and Tier~3 applies a Logistic Regression
+          classifier over the cosine similarity computed by a Sentence-Transformer
+          encoder. Pairs escalate to the next tier only when the current tier's maximum
+          predicted probability falls below a tuned confidence threshold.
+
+    \item \textbf{A systematic feature engineering study across structural, lexical,
+          and semantic feature families.} We evaluate each feature family in isolation
+          and in the cascade setting, providing quantitative evidence for which feature
+          family dominates which subpopulation of pairs. In particular, we demonstrate
+          that structural features suffice for the majority of training pairs that have
+          at least one common neighbour, while POS-tag features provide meaningful
+          signal for cold-start pairs whose structural features collapse to a single
+          degenerate value.
+
+    \item \textbf{A dataset characterisation of the DSAA 2023 Wikipedia benchmark.}
+          We identify 10,221 self-loop pairs (all positive) that are trivially
+          predictable before any model is invoked, analyse the distribution of Common
+          Neighbour counts across positive and negative training pairs, and quantify
+          the fraction of pairs that fall into the cold-start regime. This
+          characterisation explains why near-perfect aggregate scores are achievable on
+          this benchmark and provides context for interpreting published results.
+
+    \item \textbf{A confidence-threshold routing mechanism with per-tier calibration.}
+          We design a routing algorithm that consults each tier's calibrated
+          \texttt{predict\_proba} output and escalates to the next tier when confidence
+          is below a threshold. We describe the threshold selection procedure and
+          analyse the sensitivity of the overall F1-score and transformer call rate to
+          threshold choice.
+
+    \item \textbf{An end-to-end implementation on the DSAA 2023 benchmark with
+          reproducible experiments.} The full pipeline---preprocessing, feature
+          extraction, model training, cascade routing, and evaluation---is implemented
+          in Python and made publicly available. We report Macro F1-score, per-class
+          precision and recall, inference throughput, and the fraction of pairs
+          resolved at each tier, providing a concrete efficiency-accuracy trade-off
+          analysis that prior work has not attempted.
+
 \end{enumerate}
 
 \section{Thesis Structure}
 
 The remainder of this thesis is organised as follows.
-Chapter~\ref{chap:background} reviews the relevant literature across the three
-prediction paradigms.
-Chapter~\ref{chap:methodology} describes the CascadeLP framework.
-Chapter~\ref{chap:experiments} presents the experimental setup and results.
-Chapter~\ref{chap:analysis} provides ablation studies, cold-start analysis, and
-efficiency benchmarks.
-Chapter~\ref{chap:conclusion} summarises the findings and outlines future directions.
+
+Chapter~\ref{chap:background} surveys the relevant literature across the three main
+paradigms for link prediction in text-attributed graphs: structural heuristics and graph
+embeddings, pre-trained language models and sentence encoders, and hybrid architectures
+that combine graph topology with text. It also describes the DSAA 2023 Wikipedia
+benchmark in detail and identifies the gaps in existing work that motivate CascadeLP.
+The chapter draws on foundational work including the Adamic-Adar index
+\cite{adamic2003friends}, the Barab{\'a}si-Albert preferential attachment model
+\cite{barabasi1999emergence}, Node2Vec \cite{grover2016node2vec}, BERT
+\cite{devlin2019bert}, RoBERTa \cite{liu2019roberta}, Sentence-BERT
+\cite{reimers2019sentence}, LinkBERT \cite{yasunaga2022linkbert}, GraphFormers
+\cite{yang2021graphformers}, and Patton \cite{jin2023patton}.
+
+Chapter~\ref{chap:methodology} presents the CascadeLP framework in full technical
+detail. It covers the data preprocessing pipeline (text cleaning, infobox and
+description extraction), the feature engineering for each tier (heuristic indices,
+POS-tag frequency vectors, Sentence-Transformer cosine similarity), the training of
+each tier's classifier, the confidence-based routing algorithm, and the cold-start
+handling strategy.
+
+Chapter~4 describes the experimental setup: the train/validation split strategy,
+hyperparameter tuning, evaluation protocol, and baseline models used for comparison.
+It reports the main quantitative results on the DSAA 2023 test set, including per-tier
+accuracy, aggregate Macro F1-score, and inference cost.
+
+Chapter~5 presents ablation studies that isolate the contribution of each tier and
+each feature family, a cold-start analysis that evaluates performance on the subset of
+pairs with zero common neighbours, and an efficiency benchmark that measures
+throughput and the fraction of pairs escalated to Tier~3.
+
+Chapter~6 summarises the findings, discusses limitations of the current framework,
+and outlines directions for future work including dynamic threshold adaptation, graph
+neural network integration, and evaluation on additional text-attributed graph
+benchmarks.

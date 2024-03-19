@@ -4,30 +4,270 @@
 
 \section{Framework Overview}
 
+CascadeLP is a four-level confidence-based inference framework for link prediction on
+text-attributed graphs. The core design principle is \textit{progressive escalation}:
+a node pair is first evaluated by the cheapest available classifier, and is passed to
+the next classifier only if the first classifier's confidence---measured as the maximum
+of its two predicted class probabilities---falls below a tuned threshold. This design
+minimises the number of expensive operations (Sentence-Transformer encoding) while
+maintaining competitive predictive accuracy over the full test set.
+
+The four levels of CascadeLP are as follows. \textbf{Tier~0} is a deterministic rule
+that resolves self-loops: any pair $(u, u)$ where both endpoints are the same node is
+immediately assigned the positive label, since a self-link trivially exists. This rule
+requires no feature computation and no model inference. \textbf{Tier~1} is the
+\textit{StructuralClassifier}: a Logistic Regression model trained on four structural
+heuristic features (Common Neighbours, Jaccard Coefficient, Adamic-Adar Index, and
+Preferential Attachment). It is fast, interpretable, and effective for pairs that have
+rich neighbourhood overlap. \textbf{Tier~2} is the \textit{PosClassifier}: a Random
+Forest model trained on a 72-dimensional part-of-speech frequency feature vector
+concatenated from the POS histograms of both endpoint nodes. It is designed for
+cold-start pairs where the structural features provide little or no discriminative
+signal. \textbf{Tier~3} is the \textit{EmbeddingClassifier}: a Logistic Regression
+model trained on the cosine similarity between the Sentence-Transformer embeddings of
+the two endpoint nodes' text documents. It is the most expensive tier and is invoked
+only for pairs that remain uncertain after Tiers~1 and~2.
+
+At each tier, if the maximum predicted probability meets or exceeds the tier's
+threshold $\tau_k$, the pair is assigned the label with the higher probability and
+escalation stops. If it does not, the pair is passed to the next tier. Pairs that
+reach Tier~3 are always assigned that tier's prediction; there is no further
+escalation. A schematic of the cascade is shown in Figure~\ref{fig:cascade}.
+
 \section{Data Preprocessing}
 
 \subsection{Text Cleaning}
 
+The raw text provided in the \texttt{nodes.tsv} file is Wikipedia content that
+contains a variety of noise: HTML entity codes (e.g., \texttt{\&amp;},
+\texttt{\&lt;}), Unicode escape sequences, parenthetical pronunciation guides,
+citation markers such as \texttt{[1]}, redundant whitespace, and in some cases
+infobox markup that was not successfully parsed into the structured infobox field.
+These artefacts must be removed before text is fed to either the POS tagger or the
+Sentence-Transformer encoder.
+
+The preprocessing pipeline applies the following steps in order. First, HTML entities
+are decoded using a standard library decoder so that \texttt{\&amp;} becomes
+\texttt{\&}, \texttt{\&lt;} becomes \texttt{<}, and so on. Second, citation markers of
+the form \texttt{[n]} (where $n$ is a digit string) are removed with a regular
+expression. Third, content inside parentheses that appears immediately after a
+capitalised word---a common pattern for pronunciation guides in Wikipedia lead
+paragraphs---is stripped. Fourth, all sequences of whitespace characters (spaces, tabs,
+newlines) are collapsed to a single space, and leading and trailing whitespace is
+removed. The cleaned text is cached to disk to avoid recomputation across runs.
+
+For nodes that have an empty or missing text field after cleaning, a fallback string
+is constructed from the node's title alone. This ensures that every node has at least
+a minimal text representation, which is important for the POS feature computation and
+Sentence-Transformer encoding in Tiers~2 and~3.
+
 \subsection{Infobox and Description Extraction}
 
-\section{Tier 1 — Structural Heuristics}
+The \texttt{nodes.tsv} file provides two text fields per node: a short description
+(typically one sentence extracted from the Wikipedia lead section) and an optional
+infobox field containing structured key-value pairs from the article's infobox template.
+Both fields are used to construct the node's text document.
+
+The infobox field, when present, is parsed to extract value strings from the
+key-value pairs. Keys are discarded because they are often template-specific and add
+noise without contributing to the semantic meaning of the document. The extracted
+infobox values are concatenated to the description with a separator, forming a richer
+text representation that includes factual attributes (dates, locations, categories)
+that may not appear in the description. For nodes without an infobox, only the
+description is used.
+
+The combined text is then passed through the cleaning pipeline described above. The
+final text document $d_v$ for each node $v$ is stored as a UTF-8 string. For
+Sentence-Transformer encoding, documents are truncated to the model's maximum input
+length (typically 128 or 256 wordpiece tokens) if necessary.
+
+\section{Tier 1 --- Structural Heuristics}
 
 \subsection{Heuristic Indices}
 
+Tier~1 represents each node pair $(u, v)$ as a four-dimensional feature vector
+$\mathbf{f}_{\text{struct}}(u, v) = [\mathrm{CN}, \mathrm{Jaccard}, \mathrm{AA},
+\mathrm{PA}]$ where the four components are the Common Neighbours count (Equation
+\ref{eq:cn}), the Jaccard Coefficient (Equation \ref{eq:jaccard}), the Adamic-Adar
+Index (Equation \ref{eq:aa}), and the Preferential Attachment score (Equation
+\ref{eq:pa}).
+
+Computing these features requires access to the adjacency structure of the graph. The
+training graph is loaded from the positive training pairs: every pair $(u, v)$ with
+label 1 in \texttt{train.csv} contributes an edge to the graph. The adjacency list is
+stored as a dictionary mapping each node identifier to its set of neighbours, enabling
+$O(|\Gamma(u)|)$ computation of the neighbourhood intersection for a query pair
+$(u, v)$. The graph has 668,000 nodes with at least one structural neighbour.
+
+For nodes that do not appear in the structural graph (i.e., nodes with no positive
+training pairs), the CN, Jaccard, and AA features are defined as zero, and the PA
+feature is also zero since the node's degree is zero. This degenerate feature vector
+signals to Tier~1 that it has no structural information and will typically produce a
+low-confidence prediction, causing the pair to escalate to Tier~2.
+
 \subsection{Node2Vec Embeddings}
+
+In addition to the four scalar heuristic features, Tier~1 optionally incorporates
+Node2Vec \cite{grover2016node2vec} embeddings as additional features. Node2Vec is
+trained on the structural graph with a walk length of 80 steps, 10 walks per node,
+and window size of 10. The return parameter $p$ and in-out parameter $q$ are treated
+as hyperparameters and tuned on the validation set. The resulting node embeddings are
+$d$-dimensional vectors (with $d = 128$ in our experiments), and the pair embedding
+is formed as the Hadamard (element-wise) product of the two endpoint embeddings.
+These 128 features are appended to the four heuristic features, giving a
+132-dimensional feature vector when Node2Vec is enabled.
+
+In practice, the four heuristic features alone provide a strong signal for pairs with
+non-zero Common Neighbours, and Node2Vec embeddings offer only marginal improvement in
+this regime while adding significant computational cost during training. For the final
+CascadeLP configuration we therefore use only the four heuristic features in Tier~1,
+reserving the Node2Vec option for ablation experiments reported in Chapter~5.
 
 \subsection{Confidence Scoring}
 
-\section{Tier 2 — Lightweight Semantic Classifier}
+The StructuralClassifier is a Logistic Regression model with an $L_2$ regularisation
+penalty, trained on the structural feature vectors of all training pairs. The model
+outputs a probability vector $[p_0, p_1]$ for each pair, where $p_0$ is the predicted
+probability of no edge and $p_1$ is the predicted probability of edge existence.
+Calibration is checked on the validation set using reliability diagrams; the
+Logistic Regression model is well-calibrated by construction.
+
+The confidence of Tier~1's prediction for a pair is defined as:
+\begin{equation}
+    c_1(u, v) = \max(p_0, p_1).
+\end{equation}
+If $c_1(u, v) \geq \tau_1$, the pair is assigned label $\arg\max(p_0, p_1)$ and
+escalation stops. Otherwise, the pair is forwarded to Tier~2. The threshold $\tau_1$
+is selected on the validation set by sweeping over $[0.5, 1.0]$ in steps of 0.01 and
+choosing the value that maximises Macro F1-score subject to the constraint that the
+fraction of pairs escalated to Tier~2 is below a target budget.
+
+\section{Tier 2 --- Lightweight Semantic Classifier}
 
 \subsection{TF-IDF + SVM}
 
+During the design of Tier~2, a TF-IDF with Support Vector Machine (SVM) baseline was
+evaluated as an alternative to the POS feature approach. In this configuration, each
+node's text document is represented as a TF-IDF vector and the pair representation is
+formed by computing the cosine similarity and the element-wise absolute difference of
+the two TF-IDF vectors. An SVM with a radial basis function kernel is then trained on
+these pair-level features. This approach showed reasonable performance on pairs where
+both nodes have substantive text documents, but its high-dimensional sparse
+representation made it slow to fit and its performance on cold-start pairs did not
+exceed that of the POS Random Forest classifier. The TF-IDF SVM configuration is
+therefore included only as an ablation baseline and is not part of the default
+CascadeLP pipeline.
+
 \subsection{POS-tag Features + Random Forest}
 
-\section{Tier 3 — Transformer Refinement}
+The default Tier~2 classifier is the \textit{PosClassifier}, a Random Forest trained
+on 72-dimensional POS-tag frequency feature vectors. For each node $v$, the cleaned
+text document $d_v$ is tokenised and POS-tagged using the spaCy \texttt{en\_core\_web\_sm}
+model, which assigns a Universal Dependencies POS tag (NOUN, VERB, ADJ, ADV, PROPN,
+etc.) to each token. The POS frequency vector $\mathbf{p}_v \in \mathbb{R}^{36}$ is
+formed by counting the number of tokens assigned to each of the 36 Universal
+Dependencies tags and normalising by the total number of tokens, giving relative
+frequencies. The pair feature vector is the concatenation of the two endpoint vectors:
+$\mathbf{f}_{\text{POS}}(u, v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in
+\mathbb{R}^{72}$.
+
+The PosClassifier is a Random Forest with 100 trees, trained with default
+hyperparameters on all 948,232 training pairs. Random Forests are well-suited to this
+feature space because the 72-dimensional POS vector contains many near-zero features
+for uncommon POS categories, and tree-based feature selection naturally handles this
+sparsity. The model is also robust to the scale differences between the frequency
+features of long articles (which have well-estimated POS distributions) and short
+articles (which may have noisy distributions due to small sample size).
+
+The confidence scoring for Tier~2 follows the same convention as Tier~1: the
+confidence $c_2(u, v) = \max(p_0, p_1)$ is compared to threshold $\tau_2$, and pairs
+below the threshold are escalated to Tier~3.
+
+\section{Tier 3 --- Transformer Refinement}
 
 \subsection{Sentence-RoBERTa Fine-tuning}
 
+Tier~3 is the \textit{EmbeddingClassifier}, which uses a Sentence-Transformer encoder
+to produce dense semantic embeddings of node text documents and then trains a Logistic
+Regression classifier on the cosine similarity between the two endpoint embeddings.
+
+The Sentence-Transformer model used is \texttt{all-MiniLM-L6-v2}, a lightweight
+model fine-tuned from a MiniLM backbone on a large collection of sentence similarity
+tasks using contrastive learning. It produces 384-dimensional sentence embeddings and
+runs significantly faster than full BERT or RoBERTa encoders while retaining strong
+semantic similarity performance. For each node $v$, the embedding $\mathbf{e}_v =
+\mathrm{ST}(d_v) \in \mathbb{R}^{384}$ is computed once and cached. At pair
+evaluation time, the feature used is the scalar cosine similarity:
+\begin{equation}
+    \mathrm{sim}(u, v) = \frac{\mathbf{e}_u \cdot \mathbf{e}_v}
+                              {\|\mathbf{e}_u\| \cdot \|\mathbf{e}_v\|}.
+\end{equation}
+The EmbeddingClassifier is a Logistic Regression model trained on this single
+feature. Despite its simplicity---a one-dimensional feature fed to a linear
+model---this classifier captures the semantic alignment between node text pairs
+effectively, because the Sentence-Transformer's embedding space is specifically
+trained to place semantically similar texts close together. The choice of Logistic
+Regression over a more complex model (e.g., an MLP or SVM) is deliberate: with a
+single feature, a more complex model would overfit, and the calibrated probability
+outputs of Logistic Regression are important for the confidence-based routing
+mechanism.
+
+Tier~3 has no further escalation; all pairs that reach it receive the EmbeddingClassifier's
+prediction regardless of confidence.
+
 \section{Confidence-based Routing}
 
+Algorithm~\ref{alg:cascade} formalises the CascadeLP routing procedure. For each pair
+$(u, v)$ in the test set, the algorithm proceeds as follows. First, if $u = v$, return
+label 1 immediately (Tier~0). Second, compute the structural feature vector
+$\mathbf{f}_{\text{struct}}(u, v)$ and obtain the StructuralClassifier's predicted
+probability vector. If $\max(p_0, p_1) \geq \tau_1$, return the corresponding label
+(Tier~1 resolution). Third, compute the POS feature vector $\mathbf{f}_{\text{POS}}(u,
+v)$ and obtain the PosClassifier's predicted probability vector. If $\max(p_0, p_1)
+\geq \tau_2$, return the corresponding label (Tier~2 resolution). Finally, look up the
+precomputed Sentence-Transformer embeddings for $u$ and $v$, compute their cosine
+similarity, and return the EmbeddingClassifier's predicted label (Tier~3 resolution).
+
+The thresholds $\tau_1$ and $\tau_2$ are tuned on a held-out validation split of the
+training data (20\% of training pairs held out stratified by label). For each pair of
+threshold values $(\tau_1, \tau_2) \in [0.5, 1.0]^2$, the cascade is run on the
+validation set and the Macro F1-score and Tier~3 call rate are recorded. The selected
+thresholds are those that maximise the F1-score while keeping the Tier~3 call rate
+below a target value. This jointly optimises accuracy and inference cost.
+
+An important implementation detail is that the structural, POS, and embedding features
+are all precomputed in a single offline pass over the training pairs before any routing
+decisions are made. At inference time over the test set, the structural features are
+computed on the fly (the neighbour intersection is fast), the POS features are looked
+up from a precomputed cache, and the embeddings are looked up from a precomputed cache.
+This design ensures that the cascade adds no latency overhead beyond the cost of the
+features themselves.
+
 \section{Cold-start Handling}
+
+A \textit{cold-start} pair is a pair $(u, v)$ where at least one of $u$ or $v$ has
+no structural neighbours in the training graph---that is, where $|\Gamma(u)| = 0$ or
+$|\Gamma(v)| = 0$. For such pairs, the Common Neighbours, Jaccard, and Adamic-Adar
+features are identically zero, and the Preferential Attachment score is also zero.
+The StructuralClassifier trained on the full training set will still produce a
+probability output for these degenerate feature vectors, but the output will be the
+prior class probability (approximately 0.46 positive / 0.54 negative given the class
+balance), which is close to 0.5 and therefore below any reasonable confidence
+threshold $\tau_1$. Cold-start pairs thus naturally escalate past Tier~1 without any
+explicit detection logic.
+
+Tier~2's POS features are computed from the node text and are therefore available for
+cold-start nodes regardless of their structural status. This is the key advantage of
+the tiered design: Tier~2 can resolve cold-start pairs that Tier~1 cannot, using a
+feature family that is completely independent of the graph topology. If the POS
+features also fail to produce a confident prediction---which occurs when both nodes
+have very short or identical text documents---the pair escalates to Tier~3, where the
+Sentence-Transformer provides the deepest semantic comparison.
+
+In the DSAA 2023 dataset, cold-start nodes (those absent from the structural graph)
+number approximately 170,000 out of 838,000 total nodes. Pairs involving at least one
+cold-start node constitute a non-trivial fraction of the test set. CascadeLP handles
+all such pairs gracefully by design, without requiring any special case detection or
+separate cold-start model. The ablation study in Chapter~5 evaluates the cascade's
+performance specifically on the cold-start subset and demonstrates the contribution of
+each tier to cold-start accuracy.

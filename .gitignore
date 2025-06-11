@@ -257,3 +257,16 @@ outputs/figures/*
 !outputs/figures/.gitkeep
 
 .idea/*
+
+# Claude Code agent worktrees (ephemeral, not project state)
+.claude/worktrees/
+
+# LaTeX auxiliary/build files
+*.aux
+*.fdb_latexmk
+*.fls
+*.toc
+*.synctex.gz
+*.pdf
+*.blg
+*.bbl

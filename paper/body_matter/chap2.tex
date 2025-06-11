@@ -1,276 +1,310 @@
-\selectlanguage{english}
-\chapter{Background and Related Work}
+\selectlanguage{greek}
+\chapter{Θεωρητικό Υπόβαθρο και Σχετικές Εργασίες}
 \label{chap:background}
 
-\section{Text-Attributed Graphs}
+\section{Γράφοι με Κειμενικά Χαρακτηριστικά Κόμβων}
 
-A \textit{text-attributed graph} (TAG) is a graph $G = (V, E)$ in which each node
-$v \in V$ is associated with a text document $d_v$. TAGs are ubiquitous in practice:
-academic citation networks attach paper abstracts to nodes, e-commerce product graphs
-attach item descriptions, social networks attach user profiles, and encyclopaedic
-knowledge graphs such as Wikipedia attach the full article text. The richness of the
-node attributes distinguishes TAGs from ordinary relational graphs and opens the door
-to combining graph-structural reasoning with natural language understanding.
+Ένας \textit{γράφος με κειμενικά χαρακτηριστικά κόμβων} (\en{text-attributed graph},
+TAG) είναι ένας γράφος $G = (V, E)$ στον οποίο κάθε κόμβος $v \in V$ συνδέεται με
+ένα κειμενικό έγγραφο $d_v$. Τέτοιοι γράφοι απαντώνται ευρέως στην πράξη: τα
+ακαδημαϊκά δίκτυα παραπομπών επισυνάπτουν περιλήψεις άρθρων στους κόμβους, τα
+γράφοι ηλεκτρονικού εμπορίου επισυνάπτουν περιγραφές προϊόντων, τα κοινωνικά δίκτυα
+επισυνάπτουν προφίλ χρηστών, και εγκυκλοπαιδικοί γράφοι γνώσης όπως η \en{Wikipedia}
+επισυνάπτουν το πλήρες κείμενο άρθρων. Η πλούσια φύση των χαρακτηριστικών κόμβων
+διαφοροποιεί τους \en{TAGs} από τους κοινούς σχεσιακούς γράφους και ανοίγει τον
+δρόμο για τον συνδυασμό δομικής συλλογιστικής γράφων με κατανόηση φυσικής γλώσσας.
 
-Link prediction on TAGs therefore requires methods that can exploit both the topology
-of $G$ and the semantics of $\{d_v\}$. Pure structural methods ignore the text
-entirely and rely on the assumption that the neighbourhood structure alone provides
-sufficient signal for deciding edge existence. This assumption is often violated in
-sparse or evolving graphs, where a large fraction of node pairs share no common
-neighbours even when a link genuinely exists or should exist. Conversely, pure text
-methods ignore the graph entirely and may conflate conceptually related nodes (e.g.,
-two articles on different battles in the same war) with linked ones. Hybrid methods
-that combine both modalities have become the dominant paradigm, but they carry the
-inference cost of both a graph encoder and a text encoder, making them challenging to
-deploy at the scale of Wikipedia.
+Η πρόβλεψη ακμών σε \en{TAGs} απαιτεί μεθόδους που μπορούν να αξιοποιούν τόσο την
+τοπολογία του $G$ όσο και τη σημασιολογία των $\{d_v\}$. Οι καθαρά δομικές μέθοδοι
+αγνοούν το κείμενο εξ ολοκλήρου και βασίζονται στην υπόθεση ότι η δομή της γειτονιάς
+από μόνη της παρέχει επαρκές σήμα για την απόφαση ύπαρξης ακμής. Η υπόθεση αυτή
+παραβιάζεται συχνά σε αραιούς ή εξελισσόμενους γράφους, όπου ένα μεγάλο κλάσμα
+ζευγών κόμβων δεν μοιράζεται κοινούς γείτονες ακόμη και όταν ένας σύνδεσμος υπάρχει
+ή θα έπρεπε να υπάρχει. Αντίθετα, οι καθαρά κειμενικές μέθοδοι αγνοούν εντελώς τον
+γράφο και ενδέχεται να συγχέουν εννοιολογικά συγγενείς κόμβους (π.χ., δύο άρθρα για
+διαφορετικές μάχες του ίδιου πολέμου) με συνδεδεμένους. Οι υβριδικές μέθοδοι που
+συνδυάζουν αμφότερες τις τροπικότητες έχουν γίνει το κυρίαρχο παράδειγμα, αλλά
+φέρουν το κόστος συμπερασμού τόσο ενός κωδικοποιητή γράφου όσο και ενός κωδικοποιητή
+κειμένου, καθιστώντας δύσκολη την ανάπτυξή τους σε κλίμακα \en{Wikipedia}.
 
-The DSAA 2023 Wikipedia benchmark \cite{phan2023link} is a canonical TAG link
-prediction dataset: the graph has 838,000 nodes corresponding to Wikipedia articles,
-and each node's text document is its Wikipedia description and optionally its infobox
-content. This thesis treats the DSAA 2023 dataset as its primary evaluation arena and
-considers the full spectrum from structural heuristics to Sentence-Transformer
-encoding.
+Το σύνολο αξιολόγησης \en{Wikipedia DSAA 2023} \cite{phan2023link} αποτελεί ένα
+κανονικό σύνολο δεδομένων πρόβλεψης ακμών σε \en{TAG}: ο γράφος έχει 838.000 κόμβους
+που αντιστοιχούν σε άρθρα της \en{Wikipedia}, και το κειμενικό έγγραφο κάθε κόμβου
+είναι η περιγραφή της \en{Wikipedia} και προαιρετικά το περιεχόμενο του \en{infobox}.
+Η παρούσα εργασία χρησιμοποιεί το σύνολο δεδομένων \en{DSAA 2023} ως κύρια αρένα
+αξιολόγησης και εξετάζει το πλήρες φάσμα από δομικές ευρεσιτεχνίες έως κωδικοποίηση
+\en{Sentence-Transformer}.
 
-\section{Structural Methods}
+\section{Δομικές Μέθοδοι}
 
-\subsection{Heuristic Indices}
+\subsection{Δείκτες Ευρεσιτεχνίας}
 
-Structural heuristics quantify the topological proximity between two nodes using only
-the adjacency structure of the graph. They are the oldest class of link prediction
-methods and remain competitive baselines because they require no training data and are
-computable in constant time per pair once neighbour lists are cached.
+Οι δομικές ευρεσιτεχνίες ποσοτικοποιούν την τοπολογική εγγύτητα μεταξύ δύο κόμβων
+χρησιμοποιώντας αποκλειστικά τη γειτνιακή δομή του γράφου. Αποτελούν την αρχαιότερη
+κατηγορία μεθόδων πρόβλεψης ακμών και παραμένουν ανταγωνιστικά μοντέλα αναφοράς
+επειδή δεν απαιτούν δεδομένα εκπαίδευσης και υπολογίζονται σε σταθερό χρόνο ανά
+ζεύγος αφού αποθηκευτούν οι λίστες γειτόνων.
 
-Let $\Gamma(u)$ denote the set of neighbours of node $u$ in $G$. The four heuristics
-used in this thesis are defined as follows.
+Έστω $\Gamma(u)$ το σύνολο γειτόνων του κόμβου $u$ στο $G$. Οι τέσσερις
+ευρεσιτεχνίες που χρησιμοποιούνται στην παρούσα εργασία ορίζονται ως εξής.
 
-\textbf{Common Neighbours (CN)} counts the number of nodes that are adjacent to both
-$u$ and $v$:
+\textbf{Κοινοί Γείτονες (\en{Common Neighbours}, CN)} μετράει τον αριθμό των κόμβων
+που είναι γειτονικοί τόσο με τον $u$ όσο και με τον $v$:
 \begin{equation}
     \mathrm{CN}(u, v) = |\Gamma(u) \cap \Gamma(v)|.
     \label{eq:cn}
 \end{equation}
-The intuition is that two nodes are more likely to be linked if they already share many
-mutual connections, analogous to the social principle that a friend of a friend is
-likely a friend.
+Η διαίσθηση είναι ότι δύο κόμβοι είναι πιθανότερο να συνδέονται εάν μοιράζονται ήδη
+πολλές αμοιβαίες συνδέσεις, κατ' αναλογία με την κοινωνική αρχή ότι ένας φίλος
+φίλου είναι πιθανότατα φίλος.
 
-\textbf{Jaccard Coefficient} normalises the Common Neighbours count by the size of the
-union of the two neighbourhoods, controlling for high-degree nodes:
+\textbf{Συντελεστής Jaccard (\en{Jaccard Coefficient})} κανονικοποιεί τον αριθμό
+κοινών γειτόνων με το μέγεθος της ένωσης των δύο γειτονιών, ελέγχοντας κόμβους
+υψηλού βαθμού:
 \begin{equation}
     \mathrm{Jaccard}(u, v) = \frac{|\Gamma(u) \cap \Gamma(v)|}{|\Gamma(u) \cup \Gamma(v)|}.
     \label{eq:jaccard}
 \end{equation}
-A pair $(u, v)$ where $u$ is a hub with thousands of neighbours and $v$ has only two
-neighbours will receive a lower Jaccard score than a pair of low-degree nodes sharing
-the same number of common neighbours.
+Ένα ζεύγος $(u, v)$ όπου $u$ είναι κόμβος-κόμβος με χιλιάδες γείτονες και $v$ έχει
+μόνο δύο γείτονες θα λάβει χαμηλότερη βαθμολογία Jaccard από ένα ζεύγος κόμβων
+χαμηλού βαθμού που μοιράζονται τον ίδιο αριθμό κοινών γειτόνων.
 
-\textbf{Adamic-Adar Index} \cite{adamic2003friends} weights each common neighbour $w$
-inversely by the logarithm of its degree, down-weighting hub nodes that are common to
-almost every pair:
+\textbf{Δείκτης Adamic-Adar} \cite{adamic2003friends} σταθμίζει κάθε κοινό γείτονα
+$w$ αντιστρόφως με τον λογάριθμο του βαθμού του, μειώνοντας τη βαρύτητα των κόμβων
+-κόμβων που είναι κοινοί σχεδόν σε κάθε ζεύγος:
 \begin{equation}
     \mathrm{AA}(u, v) = \sum_{w \in \Gamma(u) \cap \Gamma(v)} \frac{1}{\log |\Gamma(w)|}.
     \label{eq:aa}
 \end{equation}
-This index was originally proposed to measure the closeness of two people on the Web
-by counting how many pages they both link to, discounting pages that are linked to by
-nearly everyone.
+Ο δείκτης αυτός προτάθηκε αρχικά για τη μέτρηση της εγγύτητας δύο ατόμων στον
+Παγκόσμιο Ιστό μετρώντας πόσες σελίδες συνδέονται και οι δύο, με έκπτωση για
+σελίδες που συνδέονται από σχεδόν όλους.
 
-\textbf{Preferential Attachment (PA)} \cite{barabasi1999emergence} is motivated by the
-observation that in many real-world networks new edges preferentially attach to
-high-degree nodes. The score is simply the product of the two node degrees:
+\textbf{Προτιμησιακή Σύνδεση (\en{Preferential Attachment}, PA)} \cite{barabasi1999emergence}
+παρακινείται από την παρατήρηση ότι σε πολλά πραγματικά δίκτυα νέες ακμές
+συνδέονται κατά προτίμηση με κόμβους υψηλού βαθμού. Η βαθμολογία είναι απλώς το
+γινόμενο των βαθμών των δύο κόμβων:
 \begin{equation}
     \mathrm{PA}(u, v) = |\Gamma(u)| \cdot |\Gamma(v)|.
     \label{eq:pa}
 \end{equation}
-Unlike the other three indices, PA does not require computing the intersection of
-neighbour sets and is therefore computable in $O(1)$ once degrees are precomputed.
+Σε αντίθεση με τους άλλους τρεις δείκτες, το PA δεν απαιτεί υπολογισμό της τομής
+συνόλων γειτόνων και είναι επομένως υπολογίσιμο σε $O(1)$ αφού προ-υπολογιστούν οι
+βαθμοί.
 
-All four indices collapse to zero (for CN, Jaccard, and AA) or to a degree product
-(for PA) when one or both nodes have no neighbours in the graph, which motivates the
-cold-start handling described in Chapter~\ref{chap:methodology}.
+Και οι τέσσερις δείκτες καταρρέουν σε μηδέν (για CN, Jaccard και AA) ή σε γινόμενο
+βαθμών (για PA) όταν ένας ή και οι δύο κόμβοι δεν έχουν γείτονες στο γράφο, γεγονός
+που παρακινεί τον χειρισμό εκκίνησης εκ του μηδενός που περιγράφεται στο
+Κεφάλαιο~\ref{chap:methodology}.
 
-\subsection{Graph Embeddings}
+\subsection{Ενσωματώσεις Γράφων}
 
-Graph embedding methods learn a low-dimensional continuous vector $\mathbf{z}_v \in
-\mathbb{R}^d$ for each node $v$ such that pairs of nodes that are structurally
-similar in $G$ have similar embeddings. Link prediction is then performed by combining
-the embeddings of the two endpoint nodes, typically using the dot product, $L_1$
-distance, or Hadamard product as the edge feature.
+Οι μέθοδοι ενσωμάτωσης γράφων μαθαίνουν ένα χαμηλοδιάστατο συνεχές διάνυσμα
+$\mathbf{z}_v \in \mathbb{R}^d$ για κάθε κόμβο $v$ έτσι ώστε ζεύγη κόμβων που είναι
+δομικά ομοιόμορφοι στο $G$ να έχουν παρόμοιες ενσωματώσεις. Η πρόβλεψη ακμών
+εκτελείται στη συνέχεια συνδυάζοντας τις ενσωματώσεις των δύο τελικών κόμβων,
+τυπικά χρησιμοποιώντας το εσωτερικό γινόμενο, την απόσταση $L_1$ ή το γινόμενο
+\en{Hadamard} ως χαρακτηριστικό ακμής.
 
-\textbf{Node2Vec} \cite{grover2016node2vec} is a random-walk-based embedding method
-that generalises DeepWalk by introducing two hyperparameters $p$ and $q$ that control
-the breadth-first search (BFS) versus depth-first search (DFS) bias of the random walk.
-The \textit{return parameter} $p$ governs the probability of immediately returning to
-the previously visited node: a low $p$ encourages the walk to stay local. The
-\textit{in-out parameter} $q$ governs the probability of visiting nodes farther from
-the walk's origin: a low $q$ encourages a DFS-like outward exploration, while a high
-$q$ encourages a BFS-like sampling of the local neighbourhood. The transition
-probability from node $v$ to node $x$, having just come from node $t$, is:
+\textbf{Node2Vec} \cite{grover2016node2vec} είναι μια μέθοδος ενσωμάτωσης βασισμένη
+σε τυχαίους περιπάτους που γενικεύει το \en{DeepWalk} εισάγοντας δύο υπερπαραμέτρους
+$p$ και $q$ που ελέγχουν την τάση του τυχαίου περιπάτου μεταξύ αναζήτησης κατά
+πλάτος (BFS) και αναζήτησης κατά βάθος (DFS). Η \textit{παράμετρος επιστροφής} $p$
+διέπει την πιθανότητα άμεσης επιστροφής στον προηγουμένως επισκεφθέντα κόμβο: χαμηλό
+$p$ ενθαρρύνει τον περίπατο να παραμένει τοπικός. Η \textit{παράμετρος εισόδου-εξόδου}
+$q$ διέπει την πιθανότητα επίσκεψης κόμβων πιο μακριά από την αφετηρία του περιπάτου:
+χαμηλό $q$ ενθαρρύνει εξερεύνηση τύπου DFS προς τα έξω, ενώ υψηλό $q$ ενθαρρύνει
+δειγματοληψία τύπου BFS της τοπικής γειτονιάς. Η πιθανότητα μετάβασης από τον κόμβο
+$v$ στον κόμβο $x$, έχοντας μόλις έρθει από τον κόμβο $t$, είναι:
 \begin{equation}
     \pi_{tx} = \alpha_{pq}(t, x) \cdot w_{vx},
 \end{equation}
-where $w_{vx}$ is the edge weight and $\alpha_{pq}(t, x)$ is $1/p$ if $x = t$, $1$
-if $x$ is a common neighbour of $t$ and $v$, and $1/q$ otherwise. The generated
-random walks are treated as sentences and fed to the Word2Vec skip-gram model to
-produce node embeddings. Node2Vec thus provides a flexible framework for capturing
-both local community structure and global network topology, depending on the choice of
-$p$ and $q$.
+όπου $w_{vx}$ είναι το βάρος ακμής και $\alpha_{pq}(t, x)$ είναι $1/p$ αν $x = t$,
+$1$ αν $x$ είναι κοινός γείτονας των $t$ και $v$, και $1/q$ σε κάθε άλλη περίπτωση.
+Οι παραγόμενοι τυχαίοι περίπατοι αντιμετωπίζονται ως προτάσεις και τροφοδοτούνται
+στο μοντέλο \en{skip-gram} του \en{Word2Vec} για την παραγωγή ενσωματώσεων κόμβων.
+Το \en{Node2Vec} παρέχει έτσι ένα ευέλικτο πλαίσιο για την καταγραφή τόσο τοπικής
+κοινοτικής δομής όσο και καθολικής τοπολογίας δικτύου, ανάλογα με την επιλογή $p$
+και $q$.
 
-While graph embeddings improve over raw heuristics by encoding multi-hop neighbourhood
-information, they share the fundamental limitation of ignoring node text. They also
-require recomputing embeddings when the graph changes, which is costly for Wikipedia,
-whose link structure evolves continuously.
+Ενώ οι ενσωματώσεις γράφων βελτιώνονται σε σχέση με τις ακατέργαστες ευρεσιτεχνίες
+κωδικοποιώντας πληροφορία πολλαπλών βημάτων γειτονιάς, μοιράζονται τον θεμελιώδη
+περιορισμό της αγνόησης του κειμένου κόμβων. Απαιτούν επίσης επαναϋπολογισμό των
+ενσωματώσεων όταν αλλάζει ο γράφος, κάτι που είναι δαπανηρό για τη \en{Wikipedia},
+της οποίας η δομή υπερσυνδέσμων εξελίσσεται συνεχώς.
 
-\section{Semantic Methods}
+\section{Σημασιολογικές Μέθοδοι}
 
-\subsection{Text Representations}
+\subsection{Κειμενικές Αναπαραστάσεις}
 
-Before the advent of pre-trained language models, text-based link prediction relied on
-classical natural language processing representations. \textbf{TF-IDF} (term
-frequency-inverse document frequency) represents each document as a sparse vector
-where the weight of term $t$ in document $d$ is proportional to how often it appears
-in $d$ and inversely proportional to how many documents in the corpus contain it. A
-pair $(u, v)$ can be represented by the cosine similarity of their TF-IDF vectors, by
-their concatenation, or by the element-wise product. TF-IDF is computationally
-efficient but treats text as a bag of words, ignoring word order and morphological
-relationships.
+Πριν από την εμφάνιση των προ-εκπαιδευμένων γλωσσικών μοντέλων, η πρόβλεψη ακμών
+βασισμένη σε κείμενο βασιζόταν σε κλασικές αναπαραστάσεις επεξεργασίας φυσικής
+γλώσσας. Το \textbf{TF-IDF} (συχνότητα όρου-αντίστροφη συχνότητα εγγράφου)
+αναπαριστά κάθε έγγραφο ως αραιό διάνυσμα όπου το βάρος του όρου $t$ στο έγγραφο
+$d$ είναι ανάλογο της συχνότητάς του στο $d$ και αντιστρόφως ανάλογο του αριθμού
+εγγράφων του σώματος που τον περιέχουν. Ένα ζεύγος $(u, v)$ μπορεί να αναπαρασταθεί
+από την ομοιότητα συνημίτονου των αντίστοιχων διανυσμάτων TF-IDF, από τη
+συνένωσή τους ή από το στοιχειακό γινόμενό τους. Το TF-IDF είναι υπολογιστικά
+αποτελεσματικό αλλά αντιμετωπίζει το κείμενο ως σακί λέξεων, αγνοώντας τη σειρά
+λέξεων και τις μορφολογικές σχέσεις.
 
-\textbf{Part-of-speech (POS) tag frequency features} represent a document by
-counting the frequency of each grammatical category (noun, verb, adjective, adverb,
-etc.) in the text. The intuition is that different types of Wikipedia articles have
-characteristic POS distributions: articles about events are verb-heavy, articles about
-places are noun-heavy with many proper nouns, and articles about abstract concepts may
-have more adjectives and prepositions. A 72-dimensional POS feature vector formed by
-concatenating the POS frequency histograms of the two endpoint nodes provides a
-lightweight but surprisingly informative signal for link prediction on this benchmark,
-as demonstrated by Tran et al.\ \cite{tran2023text}.
+\textbf{Τα χαρακτηριστικά συχνότητας μερών του λόγου} αναπαριστούν ένα έγγραφο
+μετρώντας τη συχνότητα κάθε γραμματικής κατηγορίας (ουσιαστικό, ρήμα, επίθετο,
+επίρρημα κ.λπ.) στο κείμενο. Η διαίσθηση είναι ότι διαφορετικοί τύποι άρθρων
+\en{Wikipedia} έχουν χαρακτηριστικές κατανομές μερών του λόγου: άρθρα για γεγονότα
+είναι πλούσια σε ρήματα, άρθρα για τόπους είναι πλούσια σε ουσιαστικά με πολλά
+κύρια ονόματα, και άρθρα για αφηρημένες έννοιες ενδέχεται να έχουν περισσότερα
+επίθετα και προθέσεις. Ένα 72-διάστατο διάνυσμα χαρακτηριστικών μερών του λόγου
+που σχηματίζεται συνενώνοντας τα ιστογράμματα συχνότητας μερών του λόγου των δύο
+τελικών κόμβων παρέχει ένα ελαφρύ αλλά εκπληκτικά πληροφοριακό σήμα για πρόβλεψη
+ακμών σε αυτό το σύνολο αξιολόγησης, όπως κατέδειξαν οι Tran et al.\
+\cite{tran2023text}.
 
-\subsection{Pre-trained Language Models}
+\subsection{Προ-εκπαιδευμένα Γλωσσικά Μοντέλα}
 
-\textbf{BERT} \cite{devlin2019bert} (Bidirectional Encoder Representations from
-Transformers) introduced the paradigm of pre-training a deep Transformer on large
-text corpora using masked language modelling (MLM) and next-sentence prediction (NSP).
-In MLM, a random 15\% of tokens in the input are replaced with a \texttt{[MASK]}
-token, and the model is trained to predict the original token from the bidirectional
-context. In NSP, the model is trained to predict whether two sentences are consecutive
-in the original corpus. This pre-training instills rich syntactic and semantic
-knowledge that can be transferred to downstream tasks by fine-tuning on labelled data.
-BERT's bidirectional attention mechanism, which allows every token to attend to all
-other tokens in both directions, contrasts with unidirectional models such as GPT and
-gives BERT an advantage on tasks that require understanding of the full context.
+\textbf{BERT} \cite{devlin2019bert} (\en{Bidirectional Encoder Representations from
+Transformers}) εισήγαγε το παράδειγμα της προ-εκπαίδευσης ενός βαθύ Μετασχηματιστή
+σε μεγάλα κειμενικά σώματα χρησιμοποιώντας μοντελοποίηση γλώσσας με κάλυψη (MLM)
+και πρόβλεψη επόμενης πρότασης (NSP). Στο MLM, ένα τυχαίο 15\% των διακριτικών
+στην είσοδο αντικαθίσταται με ένα διακριτικό \texttt{[MASK]}, και το μοντέλο
+εκπαιδεύεται να προβλέπει το αρχικό διακριτικό από το διπλής κατεύθυνσης πλαίσιο.
+Στο NSP, το μοντέλο εκπαιδεύεται να προβλέπει εάν δύο προτάσεις είναι συνεχόμενες
+στο αρχικό σώμα. Αυτή η προ-εκπαίδευση εμπεδώνει πλούσια συντακτική και σημασιολογική
+γνώση που μπορεί να μεταφερθεί σε παρακατιακές εργασίες με προσαρμογή σε επισημαντικά
+δεδομένα. Ο αμφίδρομος μηχανισμός προσοχής του BERT, που επιτρέπει σε κάθε διακριτικό
+να προσέχει όλα τα άλλα διακριτικά και στις δύο κατευθύνσεις, αντιτίθεται στα
+μονόδρομα μοντέλα όπως το GPT και δίνει πλεονέκτημα στο BERT σε εργασίες που
+απαιτούν κατανόηση του πλήρους πλαισίου.
 
-\textbf{RoBERTa} \cite{liu2019roberta} (Robustly Optimised BERT Pre-training Approach)
-removed the NSP objective, used dynamic masking (so that different tokens are masked on
-each training pass), trained on more data with larger batch sizes, and found that these
-changes consistently improved downstream task performance. RoBERTa became the
-standard strong baseline for sentence-level NLP tasks.
+\textbf{RoBERTa} \cite{liu2019roberta} (\en{Robustly Optimised BERT Pre-training
+Approach}) κατάργησε τον στόχο NSP, χρησιμοποίησε δυναμική κάλυψη (ώστε διαφορετικά
+διακριτικά να καλύπτονται σε κάθε διέλευση εκπαίδευσης), εκπαιδεύτηκε σε περισσότερα
+δεδομένα με μεγαλύτερα μεγέθη δέσμης, και διαπίστωσε ότι αυτές οι αλλαγές βελτίωναν
+συστηματικά την απόδοση σε παρακατιακές εργασίες. Το RoBERTa έγινε το τυπικό ισχυρό
+μοντέλο αναφοράς για εργασίες NLP επιπέδου πρότασης.
 
-\textbf{Sentence-BERT} \cite{reimers2019sentence} addressed the limitation that
-vanilla BERT is slow for semantic similarity tasks because it requires a cross-encoder
-that processes both sentences jointly. Sentence-BERT introduces a siamese network
-architecture in which the same BERT model encodes each sentence independently into a
-fixed-size sentence embedding, and similarity is computed as the cosine distance
-between the two embeddings. This bi-encoder design reduces inference time from
-$O(n^2)$ (cross-encoder over all pairs) to $O(n)$ (encode each node once) plus
-$O(n^2)$ cosine similarity computations, which is much cheaper when the embeddings can
-be precomputed. Sentence-BERT is fine-tuned on natural language inference datasets
-using a softmax loss over entailment, neutral, and contradiction classes, or using a
-contrastive loss that brings semantically similar sentence pairs closer together in
-embedding space.
+\textbf{Sentence-BERT} \cite{reimers2019sentence} αντιμετώπισε τον περιορισμό ότι το
+κανονικό BERT είναι αργό για εργασίες σημασιολογικής ομοιότητας επειδή απαιτεί έναν
+διασταυρωτικό κωδικοποιητή που επεξεργάζεται αμφότερες τις προτάσεις από κοινού. Το
+\en{Sentence-BERT} εισάγει μια σιαμαία αρχιτεκτονική δικτύου στην οποία το ίδιο
+μοντέλο BERT κωδικοποιεί κάθε πρόταση ανεξάρτητα σε ενσωμάτωση σταθερού μεγέθους,
+και η ομοιότητα υπολογίζεται ως η απόσταση συνημίτονου μεταξύ των δύο ενσωματώσεων.
+Αυτός ο διπλός κωδικοποιητής μειώνει τον χρόνο συμπερασμού από $O(n^2)$
+(διασταυρωτικός κωδικοποιητής σε όλα τα ζεύγη) σε $O(n)$ (κωδικοποίηση κάθε κόμβου
+μία φορά) συν $O(n^2)$ υπολογισμούς ομοιότητας συνημίτονου, κάτι που είναι πολύ
+φθηνότερο όταν οι ενσωματώσεις μπορούν να προ-υπολογιστούν. Το \en{Sentence-BERT}
+προσαρμόζεται σε σύνολα δεδομένων φυσικής γλωσσικής συναγωγής χρησιμοποιώντας
+απώλεια \en{softmax} επί κλάσεων συνεπαγωγής, ουδετερότητας και αντίφασης, ή
+χρησιμοποιώντας αντιθετική απώλεια που φέρνει σημασιολογικά παρόμοια ζεύγη
+προτάσεων πλησιέστερα στον χώρο ενσωμάτωσης.
 
-\section{Hybrid Architectures}
+\section{Υβριδικές Αρχιτεκτονικές}
 
-Hybrid methods combine graph topology with textual content, aiming to exploit both
-sources of signal simultaneously. Several architectures have been proposed for
-text-attributed graphs specifically.
+Οι υβριδικές μέθοδοι συνδυάζουν τοπολογία γράφου με κειμενικό περιεχόμενο, στοχεύοντας
+στην ταυτόχρονη αξιοποίηση αμφότερων των πηγών σήματος. Αρκετές αρχιτεκτονικές έχουν
+προταθεί ειδικά για γράφους με κειμενικά χαρακτηριστικά κόμβων.
 
-\textbf{LinkBERT} \cite{yasunaga2022linkbert} augments BERT's pre-training by
-replacing NSP with a \textit{document relation prediction} (DRP) task: instead of
-predicting whether two randomly sampled sentences are consecutive, the model is trained
-to predict whether two documents are hyperlinked. The pre-training corpus is
-constructed by sampling document pairs from Wikipedia's hyperlink graph. This allows
-the model to learn cross-document relationships that are invisible to standard BERT
-training. LinkBERT was shown to improve performance on knowledge-intensive question
-answering and multi-hop reasoning tasks.
+\textbf{LinkBERT} \cite{yasunaga2022linkbert} επαυξάνει την προ-εκπαίδευση του BERT
+αντικαθιστώντας το NSP με εργασία \textit{πρόβλεψης σχέσης εγγράφων} (DRP): αντί να
+προβλέπει εάν δύο τυχαία επιλεγμένες προτάσεις είναι συνεχόμενες, το μοντέλο
+εκπαιδεύεται να προβλέπει εάν δύο έγγραφα συνδέονται με υπερσύνδεσμο. Το σώμα
+προ-εκπαίδευσης κατασκευάζεται δειγματοληπτώντας ζεύγη εγγράφων από τον γράφο
+υπερσυνδέσμων της \en{Wikipedia}. Αυτό επιτρέπει στο μοντέλο να μαθαίνει
+διαεγγραφικές σχέσεις που είναι αόρατες στην τυπική εκπαίδευση BERT. Το \en{LinkBERT}
+ανέδειξε βελτίωση της απόδοσης σε εργασίες απάντησης ερωτήσεων έντασης γνώσης και
+πολυβηματικής συλλογιστικής.
 
-\textbf{GraphFormers} \cite{yang2021graphformers} nest a Transformer text encoder
-inside a GNN message-passing loop. At each GNN layer, each node's text encoding is
-updated not only by its own text but also by the text encodings of its neighbours,
-allowing structural and semantic information to be fused at multiple levels of
-abstraction. This architecture achieves strong performance on node classification and
-link prediction tasks on academic citation graphs but requires access to the full
-graph at inference time and is expensive to train.
+\textbf{GraphFormers} \cite{yang2021graphformers} ενσωματώνουν έναν κωδικοποιητή
+κειμένου Μετασχηματιστή εντός βρόχου μεταβίβασης μηνυμάτων ΝΔΓ. Σε κάθε επίπεδο
+ΝΔΓ, η κωδικοποίηση κειμένου κάθε κόμβου ενημερώνεται όχι μόνο από το δικό του
+κείμενο αλλά και από τις κωδικοποιήσεις κειμένου των γειτόνων του, επιτρέποντας τη
+συγχώνευση δομικής και σημασιολογικής πληροφορίας σε πολλαπλά επίπεδα αφαίρεσης.
+Αυτή η αρχιτεκτονική επιτυγχάνει ισχυρή απόδοση σε εργασίες ταξινόμησης κόμβων
+και πρόβλεψης ακμών σε ακαδημαϊκά δίκτυα παραπομπών, αλλά απαιτεί πρόσβαση στον
+πλήρη γράφο κατά τον χρόνο συμπερασμού και είναι δαπανηρή στην εκπαίδευση.
 
-\textbf{Patton} \cite{jin2023patton} proposes two pre-training strategies for
-text-attributed graphs: network-contextualized masked language modelling, which
-conditions the masked token prediction on neighbour text, and masked node prediction,
-which predicts whether a node belongs to the neighbourhood of a given anchor node from
-its text alone. Patton provides both a structural and a semantic pre-training signal,
-and was evaluated on paper classification and link prediction on the OGB citation
-network.
+\textbf{Patton} \cite{jin2023patton} προτείνει δύο στρατηγικές προ-εκπαίδευσης για
+γράφους με κειμενικά χαρακτηριστικά κόμβων: μοντελοποίηση γλώσσας με κάλυψη
+πλαισιοποιημένη από δίκτυο, η οποία εξαρτά την πρόβλεψη καλυμμένου διακριτικού από
+το κείμενο γειτόνων, και πρόβλεψη καλυμμένου κόμβου, η οποία προβλέπει εάν ένας
+κόμβος ανήκει στη γειτονιά ενός δεδομένου κόμβου-αγκύρωσης αποκλειστικά από το
+κείμενό του. Το \en{Patton} παρέχει τόσο δομικό όσο και σημασιολογικό σήμα
+προ-εκπαίδευσης, και αξιολογήθηκε σε ταξινόμηση άρθρων και πρόβλεψη ακμών στο
+δίκτυο παραπομπών \en{OGB}.
 
-\section{The DSAA 2023 Wikipedia Benchmark}
+\section{Το Σύνολο Αξιολόγησης Wikipedia DSAA 2023}
 
-The DSAA 2023 Wikipedia link prediction benchmark \cite{phan2023link} was introduced
-as a shared task at the 10th IEEE International Conference on Data Science and Advanced
-Analytics. The dataset is constructed from a snapshot of the English Wikipedia
-hyperlink graph and is designed to test link prediction methods on a large-scale,
-text-rich graph.
+Το σύνολο αξιολόγησης \en{Wikipedia DSAA 2023} \cite{phan2023link} εισήχθη ως κοινή
+εργασία στο 10ο Διεθνές Συνέδριο \en{IEEE} για Επιστήμη Δεδομένων και Προηγμένα
+Αναλυτικά. Το σύνολο δεδομένων κατασκευάζεται από ένα στιγμιότυπο του γράφου
+υπερσυνδέσμων της αγγλικής \en{Wikipedia} και σχεδιάζεται για τον έλεγχο μεθόδων
+πρόβλεψης ακμών σε έναν γράφο μεγάλης κλίμακας πλούσιο σε κείμενο.
 
-The dataset consists of three files. The \textbf{training file} (\texttt{train.csv})
-contains 948,232 node pairs with binary labels: 46\% positive (edge exists) and 54\%
-negative (no edge). The class imbalance is mild and does not require aggressive
-resampling, though it motivates the use of Macro F1-score as the evaluation metric
-rather than accuracy. The \textbf{node file} (\texttt{nodes.tsv}) contains one row per
-Wikipedia node with columns for the node identifier, the article title, a short
-description, and an optional infobox field. Of the 838,000 nodes in the dataset, 668,000
-appear in the structural (adjacency) component of the graph; the remaining nodes have
-no structural neighbours and constitute the cold-start population. The \textbf{test
-file} (\texttt{test.csv}) contains 238,000 node pairs without labels; the evaluation
-metric is Macro F1-score submitted to the competition leaderboard.
+Το σύνολο δεδομένων αποτελείται από τρία αρχεία. Το \textbf{αρχείο εκπαίδευσης}
+(\texttt{\en{train.csv}}) περιέχει 948.232 ζεύγη κόμβων με δυαδικές ετικέτες: 46\%
+θετικά (ακμή υπάρχει) και 54\% αρνητικά (δεν υπάρχει ακμή). Η ήπια ανισορροπία
+κλάσεων δεν απαιτεί επιθετική επαναδειγματοληψία, αν και παρακινεί τη χρήση της
+βαθμολογίας \en{Macro F1} ως μετρική αξιολόγησης αντί της ακρίβειας. Το \textbf{αρχείο
+κόμβων} (\texttt{\en{nodes.tsv}}) περιέχει μία γραμμή ανά κόμβο \en{Wikipedia} με
+στήλες για το αναγνωριστικό κόμβου, τον τίτλο άρθρου, μια σύντομη περιγραφή και ένα
+προαιρετικό πεδίο infobox. Από τους 838.000 κόμβους του συνόλου δεδομένων, 668.000
+εμφανίζονται στη δομική (γειτνιακή) συνιστώσα του γράφου· οι υπόλοιποι δεν έχουν
+δομικούς γείτονες και αποτελούν τον πληθυσμό εκκίνησης εκ του μηδενός. Το
+\textbf{αρχείο ελέγχου} (\texttt{\en{test.csv}}) περιέχει 238.000 ζεύγη κόμβων χωρίς
+ετικέτες· η μετρική αξιολόγησης είναι η βαθμολογία \en{Macro F1} που υποβάλλεται
+στη λίστα κατάταξης του διαγωνισμού.
 
-The two top-performing submissions at DSAA 2023 are the primary baselines for this
-thesis. Phan et al.\ \cite{phan2023link} formulate link prediction as natural language
-inference (NLI): they concatenate the title and description of both nodes into a
-hypothesis-premise pair and fine-tune an XLM-RoBERTa model to predict entailment
-(positive link) or neutral/contradiction (no link). This approach achieves a Macro
-F1-score of 1.0 on the leaderboard, suggesting that self-loops and
-structurally obvious pairs are sufficient to achieve perfect score when the evaluation
-set contains a large fraction of trivially classifiable pairs. Tran et al.\
-\cite{tran2023text} demonstrate that a simpler POS-tag frequency feature combined with
-a Random Forest classifier achieves a Macro F1-score of 0.99999, providing an
-important data point that deep semantic understanding is not strictly necessary for
-this benchmark.
+Οι δύο κορυφαίες συμμετοχές στο \en{DSAA 2023} αποτελούν τα κύρια μοντέλα αναφοράς
+της παρούσας εργασίας. Οι Phan et al.\ \cite{phan2023link} διατυπώνουν την πρόβλεψη
+ακμών ως φυσική γλωσσική συναγωγή (NLI): συνενώνουν τον τίτλο και την περιγραφή
+αμφότερων των κόμβων σε ένα ζεύγος υπόθεσης-προκειμένου και προσαρμόζουν ένα μοντέλο
+\en{XLM-RoBERTa} για να προβλέψει συνεπαγωγή (θετική ακμή) ή ουδετερότητα-αντίφαση
+(δεν υπάρχει ακμή). Αυτή η προσέγγιση επιτυγχάνει βαθμολογία \en{Macro F1} 1.0 στη
+λίστα κατάταξης, υποδηλώνοντας ότι οι αυτοβρόχοι και οι δομικά προφανείς ζεύγη
+επαρκούν για τέλεια βαθμολογία όταν το σύνολο αξιολόγησης περιέχει μεγάλο κλάσμα
+τετριμμένα ταξινομήσιμων ζευγών. Οι Tran et al.\ \cite{tran2023text} καταδεικνύουν
+ότι ένα απλούστερο χαρακτηριστικό συχνότητας μερών του λόγου σε συνδυασμό με
+ταξινομητή Τυχαίου Δάσους επιτυγχάνει βαθμολογία \en{Macro F1} 0.99999, παρέχοντας
+ένα σημαντικό στοιχείο ότι η βαθιά σημασιολογική κατανόηση δεν είναι αυστηρά
+αναγκαία για αυτό το σύνολο αξιολόγησης.
 
-\section{Gaps in Existing Work}
+\section{Κενά στην Υπάρχουσα Εργασία}
 
-The existing literature on this benchmark and on link prediction in text-attributed
-graphs more broadly leaves several important gaps that this thesis addresses.
+Η υπάρχουσα βιβλιογραφία για αυτό το σύνολο αξιολόγησης και για την πρόβλεψη ακμών
+σε γράφους με κειμενικά χαρακτηριστικά κόμβων γενικότερα αφήνει αρκετά σημαντικά
+κενά που αντιμετωπίζει η παρούσα εργασία.
 
-\textbf{Cost transparency.} Prior top-performing systems report accuracy but not
-inference cost. A method that calls a Sentence-Transformer on every test pair is orders
-of magnitude more expensive than one that uses heuristics for the majority of pairs,
-yet the two may achieve the same aggregate F1-score. CascadeLP is designed to make
-this trade-off explicit by measuring the fraction of pairs resolved at each tier and
-the throughput of the full cascade.
+\textbf{Διαφάνεια κόστους.} Τα προηγούμενα κορυφαία συστήματα αναφέρουν ακρίβεια
+αλλά όχι κόστος συμπερασμού. Μια μέθοδος που καλεί ένα \en{Sentence-Transformer}
+για κάθε ζεύγος ελέγχου είναι κατά τάξεις μεγέθους πιο ακριβή από μια που
+χρησιμοποιεί ευρεσιτεχνίες για την πλειονότητα των ζευγών, ωστόσο οι δύο μπορεί να
+επιτυγχάνουν την ίδια συνολική βαθμολογία F1. Το \en{CascadeLP} σχεδιάζεται ώστε να
+καθιστά αυτόν τον συμβιβασμό ρητό, μετρώντας το κλάσμα ζευγών που επιλύεται σε κάθε
+επίπεδο και τον ρυθμό επεξεργασίας της πλήρους αλυσίδας.
 
-\textbf{Cold-start analysis.} Both Phan et al.\ and Tran et al.\ report aggregate
-scores without disaggregating performance on cold-start pairs (nodes with no structural
-neighbours). As Kim et al.\ \cite{kim2024llms} observe, cold-start is the dominant
-regime in dynamic graphs, and a system that handles the cold-start case poorly will
-degrade significantly as the graph evolves. CascadeLP's Tier~2 is specifically
-designed for the cold-start case and is evaluated separately on this subpopulation.
+\textbf{Ανάλυση εκκίνησης εκ του μηδενός.} Τόσο οι Phan et al.\ όσο και οι Tran
+et al.\ αναφέρουν συνολικές βαθμολογίες χωρίς αποδιαχωρισμό της απόδοσης σε ζεύγη
+εκκίνησης εκ του μηδενός (κόμβοι χωρίς δομικούς γείτονες). Όπως παρατηρούν οι Kim
+et al.\ \cite{kim2024llms}, η εκκίνηση εκ του μηδενός είναι το κυρίαρχο καθεστώς
+σε δυναμικούς γράφους, και ένα σύστημα που αντιμετωπίζει ανεπαρκώς αυτή την
+περίπτωση θα υποβαθμιστεί σημαντικά καθώς εξελίσσεται ο γράφος. Το Επίπεδο~2 του
+\en{CascadeLP} σχεδιάζεται ειδικά για την περίπτωση εκκίνησης εκ του μηδενός και
+αξιολογείται χωριστά σε αυτόν τον υπο-πληθυσμό.
 
-\textbf{Dataset characterisation.} The near-perfect scores reported for this benchmark
-invite the question of whether the benchmark is saturated or whether it contains a
-large fraction of trivially classifiable pairs. This thesis provides a systematic
-characterisation, identifying 10,221 self-loops (all positive and predictable without
-any model), analysing the distribution of Common Neighbour counts, and quantifying
-the cold-start fraction. This characterisation contextualises the reported scores and
-is essential for understanding where future progress on this benchmark can come from.
+\textbf{Χαρακτηρολόγηση συνόλου δεδομένων.} Οι σχεδόν τέλειες βαθμολογίες που
+αναφέρονται για αυτό το σύνολο αξιολόγησης εγείρουν το ερώτημα εάν το σύνολο
+αξιολόγησης είναι κορεσμένο ή εάν περιέχει μεγάλο κλάσμα τετριμμένα ταξινομήσιμων
+ζευγών. Η παρούσα εργασία παρέχει συστηματική χαρακτηρολόγηση, εντοπίζοντας 10.221
+αυτοβρόχους (όλοι θετικοί και προβλέψιμοι χωρίς οποιοδήποτε μοντέλο), αναλύοντας
+την κατανομή πλήθους κοινών γειτόνων, και ποσοτικοποιώντας το κλάσμα εκκίνησης εκ
+του μηδενός. Αυτή η χαρακτηρολόγηση πλαισιώνει τις αναφερόμενες βαθμολογίες και
+είναι απαραίτητη για την κατανόηση της αφετηρίας της μελλοντικής προόδου σε αυτό το
+σύνολο αξιολόγησης.
 
-\textbf{Hybrid efficiency.} Existing hybrid architectures such as GraphFormers and
-Patton are expensive to train and deploy. CascadeLP takes a different approach: rather
-than building a monolithic model that combines all signals at training time, it
-sequences simple models and escalates to more expensive ones only when necessary. This
-design is interpretable, modular, and easy to update when new feature families become
-available.
+\textbf{Αποτελεσματικότητα υβριδικών μεθόδων.} Υφιστάμενες υβριδικές αρχιτεκτονικές
+όπως τα \en{GraphFormers} και το \en{Patton} είναι δαπανηρές στην εκπαίδευση και
+ανάπτυξη. Το \en{CascadeLP} υιοθετεί διαφορετική προσέγγιση: αντί να κατασκευάζει ένα
+μονολιθικό μοντέλο που συνδυάζει όλα τα σήματα κατά την εκπαίδευση, διατάσσει απλά
+μοντέλα σε σειρά και κλιμακώνει σε ακριβότερα μόνο όταν είναι αναγκαίο. Αυτός ο
+σχεδιασμός είναι ερμηνεύσιμος, αρθρωτός και εύκολα επεκτάσιμος όταν νέες οικογένειες
+χαρακτηριστικών καθίστανται διαθέσιμες.

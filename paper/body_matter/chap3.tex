@@ -1,273 +1,313 @@
-\selectlanguage{english}
-\chapter{Methodology}
+\selectlanguage{greek}
+\chapter{Μεθοδολογία}
 \label{chap:methodology}
 
-\section{Framework Overview}
+\section{Επισκόπηση Πλαισίου}
 
-CascadeLP is a four-level confidence-based inference framework for link prediction on
-text-attributed graphs. The core design principle is \textit{progressive escalation}:
-a node pair is first evaluated by the cheapest available classifier, and is passed to
-the next classifier only if the first classifier's confidence---measured as the maximum
-of its two predicted class probabilities---falls below a tuned threshold. This design
-minimises the number of expensive operations (Sentence-Transformer encoding) while
-maintaining competitive predictive accuracy over the full test set.
+Το \en{CascadeLP} είναι ένα τετραεπίπεδο πλαίσιο συμπερασμού βασισμένο σε αξιοπιστία
+για πρόβλεψη ακμών σε γράφους με κειμενικά χαρακτηριστικά κόμβων. Η κεντρική αρχή
+σχεδιασμού είναι η \textit{προοδευτική κλιμάκωση}: ένα ζεύγος κόμβων αξιολογείται
+πρώτα από τον υπολογιστικά φθηνότερο διαθέσιμο ταξινομητή, και μεταβιβάζεται στον
+επόμενο ταξινομητή μόνο εάν η αξιοπιστία του πρώτου---μετρούμενη ως το μέγιστο των
+δύο προβλεπόμενων πιθανοτήτων κλάσης---πέσει κάτω από ένα ρυθμισμένο όριο. Αυτός ο
+σχεδιασμός ελαχιστοποιεί τον αριθμό ακριβών πράξεων (κωδικοποίηση
+\en{Sentence-Transformer}) διατηρώντας παράλληλα ανταγωνιστική προβλεπτική ακρίβεια
+στο πλήρες σύνολο ελέγχου.
 
-The four levels of CascadeLP are as follows. \textbf{Tier~0} is a deterministic rule
-that resolves self-loops: any pair $(u, u)$ where both endpoints are the same node is
-immediately assigned the positive label, since a self-link trivially exists. This rule
-requires no feature computation and no model inference. \textbf{Tier~1} is the
-\textit{StructuralClassifier}: a Logistic Regression model trained on four structural
-heuristic features (Common Neighbours, Jaccard Coefficient, Adamic-Adar Index, and
-Preferential Attachment). It is fast, interpretable, and effective for pairs that have
-rich neighbourhood overlap. \textbf{Tier~2} is the \textit{PosClassifier}: a Random
-Forest model trained on a 72-dimensional part-of-speech frequency feature vector
-concatenated from the POS histograms of both endpoint nodes. It is designed for
-cold-start pairs where the structural features provide little or no discriminative
-signal. \textbf{Tier~3} is the \textit{EmbeddingClassifier}: a Logistic Regression
-model trained on the cosine similarity between the Sentence-Transformer embeddings of
-the two endpoint nodes' text documents. It is the most expensive tier and is invoked
-only for pairs that remain uncertain after Tiers~1 and~2.
+Τα τέσσερα επίπεδα του \en{CascadeLP} είναι τα εξής. Το \textbf{Επίπεδο~0} είναι ένας
+ντετερμινιστικός κανόνας που επιλύει αυτοβρόχους: οποιοδήποτε ζεύγος $(u, u)$ όπου
+αμφότεροι οι τελικοί κόμβοι είναι ο ίδιος κόμβος αντιστοιχίζεται αμέσως στη θετική
+ετικέτα, αφού ένας αυτοσύνδεσμος υπάρχει τετριμμένα. Αυτός ο κανόνας δεν απαιτεί
+υπολογισμό χαρακτηριστικών ούτε συμπερασμό μοντέλου. Το \textbf{Επίπεδο~1} είναι ο
+\textit{StructuralClassifier}: ένα μοντέλο Λογιστικής Παλινδρόμησης εκπαιδευμένο σε
+τέσσερα δομικά ευρεσιτεχνικά χαρακτηριστικά (\en{Common Neighbours}, \en{Jaccard
+Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Είναι ταχύ,
+ερμηνεύσιμο και αποτελεσματικό για ζεύγη με πλούσια επικάλυψη γειτονιάς.
+Το \textbf{Επίπεδο~2} είναι ο \textit{PosClassifier}: ένα μοντέλο Τυχαίου Δάσους
+εκπαιδευμένο σε ένα 72-διάστατο διάνυσμα χαρακτηριστικών συχνότητας μερών του λόγου
+που σχηματίζεται συνενώνοντας τα ιστογράμματα μερών του λόγου αμφότερων των τελικών
+κόμβων. Σχεδιάζεται για ζεύγη εκκίνησης εκ του μηδενός όπου τα δομικά χαρακτηριστικά
+παρέχουν ελάχιστο ή καθόλου διακριτικό σήμα. Το \textbf{Επίπεδο~3} είναι ο
+\textit{EmbeddingClassifier}: ένα μοντέλο Λογιστικής Παλινδρόμησης εκπαιδευμένο
+στην ομοιότητα συνημίτονου μεταξύ των ενσωματώσεων \en{Sentence-Transformer} των
+κειμενικών εγγράφων των δύο τελικών κόμβων. Είναι το πιο ακριβό επίπεδο και καλείται
+μόνο για ζεύγη που παραμένουν αβέβαια μετά τα Επίπεδα~1 και~2.
 
-At each tier, if the maximum predicted probability meets or exceeds the tier's
-threshold $\tau_k$, the pair is assigned the label with the higher probability and
-escalation stops. If it does not, the pair is passed to the next tier. Pairs that
-reach Tier~3 are always assigned that tier's prediction; there is no further
-escalation. A schematic of the cascade is shown in Figure~\ref{fig:cascade}.
+Σε κάθε επίπεδο, εάν η μέγιστη προβλεπόμενη πιθανότητα ισούται ή υπερβαίνει το
+όριο $\tau_k$ του επιπέδου, το ζεύγος αντιστοιχίζεται στην ετικέτα με την υψηλότερη
+πιθανότητα και η κλιμάκωση σταματά. Εάν δεν ισχύει αυτό, το ζεύγος μεταβιβάζεται
+στο επόμενο επίπεδο. Τα ζεύγη που φτάνουν στο Επίπεδο~3 αντιστοιχίζονται πάντοτε
+στην πρόβλεψη αυτού του επιπέδου· δεν υπάρχει περαιτέρω κλιμάκωση. Σχηματικό
+διάγραμμα της αλυσίδας φαίνεται στο Σχήμα~\ref{fig:cascade}.
 
-\section{Data Preprocessing}
+\section{Προεπεξεργασία Δεδομένων}
 
-\subsection{Text Cleaning}
+\subsection{Καθαρισμός Κειμένου}
 
-The raw text provided in the \texttt{nodes.tsv} file is Wikipedia content that
-contains a variety of noise: HTML entity codes (e.g., \texttt{\&amp;},
-\texttt{\&lt;}), Unicode escape sequences, parenthetical pronunciation guides,
-citation markers such as \texttt{[1]}, redundant whitespace, and in some cases
-infobox markup that was not successfully parsed into the structured infobox field.
-These artefacts must be removed before text is fed to either the POS tagger or the
-Sentence-Transformer encoder.
+Το ακατέργαστο κείμενο που παρέχεται στο αρχείο \texttt{\en{nodes.tsv}} είναι
+περιεχόμενο \en{Wikipedia} που περιέχει ποικίλο θόρυβο: κωδικοί οντοτήτων HTML
+(π.χ., \texttt{\en{\&amp;}}, \texttt{\en{\&lt;}}), ακολουθίες διαφυγής Unicode,
+οδηγοί προφοράς σε παρενθέσεις, δείκτες παραπομπών όπως το \texttt{\en{[1]}},
+πλεονάζοντα κενά, και σε ορισμένες περιπτώσεις σήμανση \en{infobox} που δεν
+αναλύθηκε επιτυχώς στο δομημένο πεδίο \en{infobox}. Αυτά τα κατάλοιπα πρέπει να
+αφαιρεθούν πριν το κείμενο τροφοδοτηθεί είτε στον αναλυτή μερών του λόγου είτε στον
+κωδικοποιητή \en{Sentence-Transformer}.
 
-The preprocessing pipeline applies the following steps in order. First, HTML entities
-are decoded using a standard library decoder so that \texttt{\&amp;} becomes
-\texttt{\&}, \texttt{\&lt;} becomes \texttt{<}, and so on. Second, citation markers of
-the form \texttt{[n]} (where $n$ is a digit string) are removed with a regular
-expression. Third, content inside parentheses that appears immediately after a
-capitalised word---a common pattern for pronunciation guides in Wikipedia lead
-paragraphs---is stripped. Fourth, all sequences of whitespace characters (spaces, tabs,
-newlines) are collapsed to a single space, and leading and trailing whitespace is
-removed. The cleaned text is cached to disk to avoid recomputation across runs.
+Η αλυσίδα προεπεξεργασίας εφαρμόζει τα ακόλουθα βήματα με τη σειρά. Πρώτον, οι
+οντότητες HTML αποκωδικοποιούνται χρησιμοποιώντας τυπικό αποκωδικοποιητή
+βιβλιοθήκης. Δεύτερον, δείκτες παραπομπών της μορφής \texttt{\en{[n]}} (όπου $n$
+είναι αριθμητική συμβολοσειρά) αφαιρούνται με κανονική έκφραση. Τρίτον, το
+περιεχόμενο εντός παρενθέσεων που εμφανίζεται αμέσως μετά από λέξη με κεφαλαία
+γράμματα---ένα κοινό μοτίβο για οδηγούς προφοράς στις εισαγωγικές παραγράφους της
+\en{Wikipedia}---αφαιρείται. Τέταρτον, όλες οι ακολουθίες κενού χώρου (κενά, στηλοθέτες,
+αλλαγές γραμμής) συμπτύσσονται σε ένα μονό κενό, και τα αρχικά και τελικά κενά
+αφαιρούνται. Το καθαρισμένο κείμενο αποθηκεύεται σε δίσκο για αποφυγή επαναϋπολογισμού
+μεταξύ εκτελέσεων.
 
-For nodes that have an empty or missing text field after cleaning, a fallback string
-is constructed from the node's title alone. This ensures that every node has at least
-a minimal text representation, which is important for the POS feature computation and
-Sentence-Transformer encoding in Tiers~2 and~3.
+Για κόμβους με κενό ή ελλιπές πεδίο κειμένου μετά τον καθαρισμό, κατασκευάζεται μια
+εναλλακτική συμβολοσειρά αποκλειστικά από τον τίτλο του κόμβου. Αυτό διασφαλίζει
+ότι κάθε κόμβος έχει τουλάχιστον μια ελάχιστη κειμενική αναπαράσταση, κάτι που
+είναι σημαντικό για τον υπολογισμό χαρακτηριστικών μερών του λόγου και την κωδικοποίηση
+\en{Sentence-Transformer} στα Επίπεδα~2 και~3.
 
-\subsection{Infobox and Description Extraction}
+\subsection{Εξαγωγή Infobox και Περιγραφής}
 
-The \texttt{nodes.tsv} file provides two text fields per node: a short description
-(typically one sentence extracted from the Wikipedia lead section) and an optional
-infobox field containing structured key-value pairs from the article's infobox template.
-Both fields are used to construct the node's text document.
+Το αρχείο \texttt{\en{nodes.tsv}} παρέχει δύο πεδία κειμένου ανά κόμβο: μια σύντομη
+περιγραφή (τυπικά μία πρόταση εξαγμένη από την εισαγωγική ενότητα της \en{Wikipedia})
+και ένα προαιρετικό πεδίο \en{infobox} που περιέχει δομημένα ζεύγη κλειδιού-τιμής
+από το πρότυπο \en{infobox} του άρθρου. Και τα δύο πεδία χρησιμοποιούνται για την
+κατασκευή του κειμενικού εγγράφου του κόμβου.
 
-The infobox field, when present, is parsed to extract value strings from the
-key-value pairs. Keys are discarded because they are often template-specific and add
-noise without contributing to the semantic meaning of the document. The extracted
-infobox values are concatenated to the description with a separator, forming a richer
-text representation that includes factual attributes (dates, locations, categories)
-that may not appear in the description. For nodes without an infobox, only the
-description is used.
+Το πεδίο \en{infobox}, όταν υπάρχει, αναλύεται για την εξαγωγή συμβολοσειρών τιμών
+από τα ζεύγη κλειδιού-τιμής. Τα κλειδιά απορρίπτονται επειδή συχνά είναι ειδικά για
+πρότυπα και προσθέτουν θόρυβο χωρίς να συμβάλλουν στη σημασιολογική έννοια του
+εγγράφου. Οι εξαγόμενες τιμές \en{infobox} συνενώνονται στην περιγραφή με ένα
+διαχωριστικό, σχηματίζοντας μια πλουσιότερη κειμενική αναπαράσταση που περιλαμβάνει
+πραγματολογικά χαρακτηριστικά (ημερομηνίες, τοποθεσίες, κατηγορίες) που ενδέχεται
+να μην εμφανίζονται στην περιγραφή. Για κόμβους χωρίς \en{infobox} χρησιμοποιείται
+μόνο η περιγραφή.
 
-The combined text is then passed through the cleaning pipeline described above. The
-final text document $d_v$ for each node $v$ is stored as a UTF-8 string. For
-Sentence-Transformer encoding, documents are truncated to the model's maximum input
-length (typically 128 or 256 wordpiece tokens) if necessary.
+Το συνδυασμένο κείμενο περνά στη συνέχεια από την αλυσίδα καθαρισμού που
+περιγράφηκε ανωτέρω. Το τελικό κειμενικό έγγραφο $d_v$ για κάθε κόμβο $v$
+αποθηκεύεται ως συμβολοσειρά UTF-8. Για κωδικοποίηση \en{Sentence-Transformer}, τα
+έγγραφα περικόπτονται στη μέγιστη μήκος εισόδου του μοντέλου (τυπικά 128 ή 256
+διακριτικά \en{wordpiece}) εάν είναι αναγκαίο.
 
-\section{Tier 1 --- Structural Heuristics}
+\section{Επίπεδο 1 --- Δομικές Ευρεσιτεχνίες}
 
-\subsection{Heuristic Indices}
+\subsection{Δείκτες Ευρεσιτεχνίας}
 
-Tier~1 represents each node pair $(u, v)$ as a four-dimensional feature vector
-$\mathbf{f}_{\text{struct}}(u, v) = [\mathrm{CN}, \mathrm{Jaccard}, \mathrm{AA},
-\mathrm{PA}]$ where the four components are the Common Neighbours count (Equation
-\ref{eq:cn}), the Jaccard Coefficient (Equation \ref{eq:jaccard}), the Adamic-Adar
-Index (Equation \ref{eq:aa}), and the Preferential Attachment score (Equation
-\ref{eq:pa}).
+Το Επίπεδο~1 αναπαριστά κάθε ζεύγος κόμβων $(u, v)$ ως τετραδιάστατο διάνυσμα
+χαρακτηριστικών $\mathbf{f}_{\text{struct}}(u, v) = [\mathrm{CN}, \mathrm{Jaccard},
+\mathrm{AA}, \mathrm{PA}]$ όπου οι τέσσερις συνιστώσες είναι ο αριθμός κοινών
+γειτόνων (Εξίσωση \ref{eq:cn}), ο συντελεστής \en{Jaccard} (Εξίσωση \ref{eq:jaccard}),
+ο δείκτης \en{Adamic-Adar} (Εξίσωση \ref{eq:aa}), και η βαθμολογία \en{Preferential
+Attachment} (Εξίσωση \ref{eq:pa}).
 
-Computing these features requires access to the adjacency structure of the graph. The
-training graph is loaded from the positive training pairs: every pair $(u, v)$ with
-label 1 in \texttt{train.csv} contributes an edge to the graph. The adjacency list is
-stored as a dictionary mapping each node identifier to its set of neighbours, enabling
-$O(|\Gamma(u)|)$ computation of the neighbourhood intersection for a query pair
-$(u, v)$. The graph has 668,000 nodes with at least one structural neighbour.
+Ο υπολογισμός αυτών των χαρακτηριστικών απαιτεί πρόσβαση στη γειτνιακή δομή του
+γράφου. Ο γράφος εκπαίδευσης φορτώνεται από τα θετικά ζεύγη εκπαίδευσης: κάθε
+ζεύγος $(u, v)$ με ετικέτα 1 στο \texttt{\en{train.csv}} συνεισφέρει μια ακμή στον
+γράφο. Η λίστα γειτνίασης αποθηκεύεται ως λεξικό που αντιστοιχίζει κάθε αναγνωριστικό
+κόμβου στο σύνολο γειτόνων του, επιτρέποντας $O(|\Gamma(u)|)$ υπολογισμό της τομής
+γειτονιάς για ένα ζεύγος ερωτήματος $(u, v)$. Ο γράφος έχει 668.000 κόμβους με
+τουλάχιστον έναν δομικό γείτονα.
 
-For nodes that do not appear in the structural graph (i.e., nodes with no positive
-training pairs), the CN, Jaccard, and AA features are defined as zero, and the PA
-feature is also zero since the node's degree is zero. This degenerate feature vector
-signals to Tier~1 that it has no structural information and will typically produce a
-low-confidence prediction, causing the pair to escalate to Tier~2.
+Για κόμβους που δεν εμφανίζονται στον δομικό γράφο (δηλαδή κόμβους χωρίς θετικά
+ζεύγη εκπαίδευσης), τα χαρακτηριστικά CN, Jaccard και AA ορίζονται ως μηδέν, και το
+χαρακτηριστικό PA είναι επίσης μηδέν αφού ο βαθμός του κόμβου είναι μηδέν. Αυτό το
+εκφυλισμένο διάνυσμα χαρακτηριστικών σηματοδοτεί στο Επίπεδο~1 ότι δεν διαθέτει
+δομική πληροφορία και τυπικά θα παράγει πρόβλεψη χαμηλής αξιοπιστίας, προκαλώντας
+κλιμάκωση του ζεύγους στο Επίπεδο~2.
 
-\subsection{Node2Vec Embeddings}
+\subsection{Ενσωματώσεις Node2Vec}
 
-In addition to the four scalar heuristic features, Tier~1 optionally incorporates
-Node2Vec \cite{grover2016node2vec} embeddings as additional features. Node2Vec is
-trained on the structural graph with a walk length of 80 steps, 10 walks per node,
-and window size of 10. The return parameter $p$ and in-out parameter $q$ are treated
-as hyperparameters and tuned on the validation set. The resulting node embeddings are
-$d$-dimensional vectors (with $d = 128$ in our experiments), and the pair embedding
-is formed as the Hadamard (element-wise) product of the two endpoint embeddings.
-These 128 features are appended to the four heuristic features, giving a
-132-dimensional feature vector when Node2Vec is enabled.
+Επιπλέον των τεσσάρων βαθμωτών ευρεσιτεχνικών χαρακτηριστικών, το Επίπεδο~1
+ενσωματώνει προαιρετικά ενσωματώσεις \en{Node2Vec} \cite{grover2016node2vec} ως
+πρόσθετα χαρακτηριστικά. Το \en{Node2Vec} εκπαιδεύεται στον δομικό γράφο με μήκος
+περιπάτου 80 βημάτων, 10 περιπάτους ανά κόμβο και μέγεθος παραθύρου 10. Η
+παράμετρος επιστροφής $p$ και η παράμετρος εισόδου-εξόδου $q$ αντιμετωπίζονται ως
+υπερπαράμετροι και ρυθμίζονται στο σύνολο επαλήθευσης. Οι προκύπτουσες ενσωματώσεις
+κόμβων είναι $d$-διάστατα διανύσματα (με $d = 128$ στα πειράματά μας), και η
+ενσωμάτωση ζεύγους σχηματίζεται ως το γινόμενο \en{Hadamard} (στοιχειακό) των δύο
+ενσωματώσεων τελικών κόμβων. Αυτά τα 128 χαρακτηριστικά προσαρτώνται στα τέσσερα
+ευρεσιτεχνικά χαρακτηριστικά, δίνοντας ένα 132-διάστατο διάνυσμα χαρακτηριστικών
+όταν το \en{Node2Vec} είναι ενεργοποιημένο.
 
-In practice, the four heuristic features alone provide a strong signal for pairs with
-non-zero Common Neighbours, and Node2Vec embeddings offer only marginal improvement in
-this regime while adding significant computational cost during training. For the final
-CascadeLP configuration we therefore use only the four heuristic features in Tier~1,
-reserving the Node2Vec option for ablation experiments reported in Chapter~5.
+Στην πράξη, τα τέσσερα ευρεσιτεχνικά χαρακτηριστικά μόνα τους παρέχουν ισχυρό σήμα
+για ζεύγη με μη μηδενικούς κοινούς γείτονες, και οι ενσωματώσεις \en{Node2Vec}
+προσφέρουν μόνο οριακή βελτίωση σε αυτό το καθεστώς ενώ προσθέτουν σημαντικό
+υπολογιστικό κόστος κατά την εκπαίδευση. Για την τελική διαμόρφωση του \en{CascadeLP}
+χρησιμοποιούμε επομένως μόνο τα τέσσερα ευρεσιτεχνικά χαρακτηριστικά στο Επίπεδο~1,
+επιφυλάσσοντας την επιλογή \en{Node2Vec} για τα πειράματα εκτομής που αναφέρονται
+στο Κεφάλαιο~5.
 
-\subsection{Confidence Scoring}
+\subsection{Βαθμολόγηση Αξιοπιστίας}
 
-The StructuralClassifier is a Logistic Regression model with an $L_2$ regularisation
-penalty, trained on the structural feature vectors of all training pairs. The model
-outputs a probability vector $[p_0, p_1]$ for each pair, where $p_0$ is the predicted
-probability of no edge and $p_1$ is the predicted probability of edge existence.
-Calibration is checked on the validation set using reliability diagrams; the
-Logistic Regression model is well-calibrated by construction.
+Ο \en{StructuralClassifier} είναι ένα μοντέλο Λογιστικής Παλινδρόμησης με ποινή
+κανονικοποίησης $L_2$, εκπαιδευμένο στα δομικά διανύσματα χαρακτηριστικών όλων των
+ζευγών εκπαίδευσης. Το μοντέλο παράγει ένα διάνυσμα πιθανότητας $[p_0, p_1]$ για
+κάθε ζεύγος, όπου $p_0$ είναι η προβλεπόμενη πιθανότητα απουσίας ακμής και $p_1$
+είναι η προβλεπόμενη πιθανότητα ύπαρξης ακμής. Η βαθμονόμηση ελέγχεται στο σύνολο
+επαλήθευσης χρησιμοποιώντας διαγράμματα αξιοπιστίας· το μοντέλο Λογιστικής
+Παλινδρόμησης είναι εκ κατασκευής καλά βαθμονομημένο.
 
-The confidence of Tier~1's prediction for a pair is defined as:
+Η αξιοπιστία της πρόβλεψης του Επιπέδου~1 για ένα ζεύγος ορίζεται ως:
 \begin{equation}
     c_1(u, v) = \max(p_0, p_1).
 \end{equation}
-If $c_1(u, v) \geq \tau_1$, the pair is assigned label $\arg\max(p_0, p_1)$ and
-escalation stops. Otherwise, the pair is forwarded to Tier~2. The threshold $\tau_1$
-is selected on the validation set by sweeping over $[0.5, 1.0]$ in steps of 0.01 and
-choosing the value that maximises Macro F1-score subject to the constraint that the
-fraction of pairs escalated to Tier~2 is below a target budget.
+Εάν $c_1(u, v) \geq \tau_1$, το ζεύγος αντιστοιχίζεται στην ετικέτα $\arg\max(p_0,
+p_1)$ και η κλιμάκωση σταματά. Διαφορετικά, το ζεύγος προωθείται στο Επίπεδο~2.
+Το όριο $\tau_1$ επιλέγεται στο σύνολο επαλήθευσης σαρώνοντας το $[0.5, 1.0]$ με
+βήμα 0.01 και επιλέγοντας την τιμή που μεγιστοποιεί τη βαθμολογία \en{Macro F1}
+υπό τον περιορισμό ότι το κλάσμα ζευγών που κλιμακώνεται στο Επίπεδο~2 είναι κάτω
+από έναν στόχο-προϋπολογισμό.
 
-\section{Tier 2 --- Lightweight Semantic Classifier}
+\section{Επίπεδο 2 --- Ελαφρύς Σημασιολογικός Ταξινομητής}
 
 \subsection{TF-IDF + SVM}
 
-During the design of Tier~2, a TF-IDF with Support Vector Machine (SVM) baseline was
-evaluated as an alternative to the POS feature approach. In this configuration, each
-node's text document is represented as a TF-IDF vector and the pair representation is
-formed by computing the cosine similarity and the element-wise absolute difference of
-the two TF-IDF vectors. An SVM with a radial basis function kernel is then trained on
-these pair-level features. This approach showed reasonable performance on pairs where
-both nodes have substantive text documents, but its high-dimensional sparse
-representation made it slow to fit and its performance on cold-start pairs did not
-exceed that of the POS Random Forest classifier. The TF-IDF SVM configuration is
-therefore included only as an ablation baseline and is not part of the default
-CascadeLP pipeline.
+Κατά τη σχεδίαση του Επιπέδου~2, αξιολογήθηκε ως εναλλακτική το \en{TF-IDF} με
+μηχανή διανυσμάτων υποστήριξης (\en{SVM}). Σε αυτή τη διαμόρφωση, το κειμενικό
+έγγραφο κάθε κόμβου αναπαρίσταται ως διάνυσμα \en{TF-IDF} και η αναπαράσταση
+ζεύγους σχηματίζεται υπολογίζοντας την ομοιότητα συνημίτονου και την απόλυτη
+στοιχειακή διαφορά των δύο διανυσμάτων \en{TF-IDF}. Ένα \en{SVM} με πυρήνα ακτινικής
+βάσης εκπαιδεύεται στη συνέχεια στα χαρακτηριστικά επιπέδου ζεύγους. Αυτή η
+προσέγγιση ανέδειξε εύλογη απόδοση σε ζεύγη όπου αμφότεροι οι κόμβοι διαθέτουν
+ουσιαστικά κειμενικά έγγραφα, αλλά η αραιή αναπαράσταση υψηλής διαστατικότητας την
+καθιστούσε αργή στη βαθμονόμηση και η απόδοσή της σε ζεύγη εκκίνησης εκ του μηδενός
+δεν υπερέβαινε εκείνη του \en{POS} Τυχαίου Δάσους. Η διαμόρφωση \en{TF-IDF SVM}
+περιλαμβάνεται επομένως μόνο ως μοντέλο αναφοράς εκτομής και δεν αποτελεί μέρος της
+προεπιλεγμένης αλυσίδας \en{CascadeLP}.
 
-\subsection{POS-tag Features + Random Forest}
+\subsection{Χαρακτηριστικά Μερών του Λόγου + Τυχαίο Δάσος}
 
-The default Tier~2 classifier is the \textit{PosClassifier}, a Random Forest trained
-on 72-dimensional POS-tag frequency feature vectors. For each node $v$, the cleaned
-text document $d_v$ is tokenised and POS-tagged using the spaCy \texttt{en\_core\_web\_sm}
-model, which assigns a Universal Dependencies POS tag (NOUN, VERB, ADJ, ADV, PROPN,
-etc.) to each token. The POS frequency vector $\mathbf{p}_v \in \mathbb{R}^{36}$ is
-formed by counting the number of tokens assigned to each of the 36 Universal
-Dependencies tags and normalising by the total number of tokens, giving relative
-frequencies. The pair feature vector is the concatenation of the two endpoint vectors:
-$\mathbf{f}_{\text{POS}}(u, v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in
-\mathbb{R}^{72}$.
+Ο προεπιλεγμένος ταξινομητής Επιπέδου~2 είναι ο \textit{PosClassifier}, ένα Τυχαίο
+Δάσος εκπαιδευμένο σε 72-διάστατα διανύσματα χαρακτηριστικών συχνότητας μερών του
+λόγου. Για κάθε κόμβο $v$, το καθαρισμένο κειμενικό έγγραφο $d_v$ αποδίδεται σε
+διακριτικά και επισημαίνεται με μέρη του λόγου χρησιμοποιώντας το μοντέλο
+\texttt{\en{en\_core\_web\_sm}} του \en{spaCy}, που αντιστοιχίζει ετικέτα μέρους του
+λόγου \en{Universal Dependencies} (NOUN, VERB, ADJ, ADV, PROPN κ.λπ.) σε κάθε
+διακριτικό. Το διάνυσμα συχνότητας μερών του λόγου $\mathbf{p}_v \in \mathbb{R}^{36}$
+σχηματίζεται μετρώντας τον αριθμό διακριτικών που αντιστοιχίζονται σε καθεμία από
+τις 36 ετικέτες \en{Universal Dependencies} και κανονικοποιώντας με τον συνολικό
+αριθμό διακριτικών, δίνοντας σχετικές συχνότητες. Το διάνυσμα χαρακτηριστικών
+ζεύγους είναι η συνένωση των δύο διανυσμάτων τελικών κόμβων: $\mathbf{f}_{\text{POS}}(u,
+v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in \mathbb{R}^{72}$.
 
-The PosClassifier is a Random Forest with 100 trees, trained with default
-hyperparameters on all 948,232 training pairs. Random Forests are well-suited to this
-feature space because the 72-dimensional POS vector contains many near-zero features
-for uncommon POS categories, and tree-based feature selection naturally handles this
-sparsity. The model is also robust to the scale differences between the frequency
-features of long articles (which have well-estimated POS distributions) and short
-articles (which may have noisy distributions due to small sample size).
+Ο \en{PosClassifier} είναι Τυχαίο Δάσος με 100 δέντρα, εκπαιδευμένο με προεπιλεγμένες
+υπερπαραμέτρους σε όλα τα 948.232 ζεύγη εκπαίδευσης. Τα Τυχαία Δάση είναι κατάλληλα
+για αυτόν τον χώρο χαρακτηριστικών επειδή το 72-διάστατο διάνυσμα \en{POS} περιέχει
+πολλά σχεδόν μηδενικά χαρακτηριστικά για ασυνήθεις κατηγορίες μερών του λόγου, και
+η δενδροειδής επιλογή χαρακτηριστικών χειρίζεται φυσικά αυτή την αραιότητα. Το
+μοντέλο είναι επίσης ανθεκτικό στις διαφορές κλίμακας μεταξύ χαρακτηριστικών
+συχνότητας μεγάλων άρθρων (που διαθέτουν καλά εκτιμημένες κατανομές \en{POS}) και
+μικρών άρθρων (που ενδέχεται να έχουν θορυβώδεις κατανομές λόγω μικρού δείγματος).
 
-The confidence scoring for Tier~2 follows the same convention as Tier~1: the
-confidence $c_2(u, v) = \max(p_0, p_1)$ is compared to threshold $\tau_2$, and pairs
-below the threshold are escalated to Tier~3.
+Η βαθμολόγηση αξιοπιστίας για το Επίπεδο~2 ακολουθεί την ίδια σύμβαση με το
+Επίπεδο~1: η αξιοπιστία $c_2(u, v) = \max(p_0, p_1)$ συγκρίνεται με το όριο $\tau_2$,
+και τα ζεύγη κάτω από το όριο κλιμακώνονται στο Επίπεδο~3.
 
-\section{Tier 3 --- Transformer Refinement}
+\section{Επίπεδο 3 --- Εκλέπτυνση Μέσω Μετασχηματιστή}
 
-\subsection{Sentence-RoBERTa Fine-tuning}
+\subsection{Προσαρμογή Sentence-RoBERTa}
 
-Tier~3 is the \textit{EmbeddingClassifier}, which uses a Sentence-Transformer encoder
-to produce dense semantic embeddings of node text documents and then trains a Logistic
-Regression classifier on the cosine similarity between the two endpoint embeddings.
+Το Επίπεδο~3 είναι ο \textit{EmbeddingClassifier}, που χρησιμοποιεί έναν κωδικοποιητή
+\en{Sentence-Transformer} για την παραγωγή πυκνών σημασιολογικών ενσωματώσεων
+κειμενικών εγγράφων κόμβων και στη συνέχεια εκπαιδεύει έναν ταξινομητή Λογιστικής
+Παλινδρόμησης στην ομοιότητα συνημίτονου μεταξύ των δύο ενσωματώσεων τελικών κόμβων.
 
-The Sentence-Transformer model used is \texttt{all-MiniLM-L6-v2}, a lightweight
-model fine-tuned from a MiniLM backbone on a large collection of sentence similarity
-tasks using contrastive learning. It produces 384-dimensional sentence embeddings and
-runs significantly faster than full BERT or RoBERTa encoders while retaining strong
-semantic similarity performance. For each node $v$, the embedding $\mathbf{e}_v =
-\mathrm{ST}(d_v) \in \mathbb{R}^{384}$ is computed once and cached. At pair
-evaluation time, the feature used is the scalar cosine similarity:
+Το μοντέλο \en{Sentence-Transformer} που χρησιμοποιείται είναι το
+\texttt{\en{all-MiniLM-L6-v2}}, ένα ελαφρύ μοντέλο προσαρμοσμένο από αρχιτεκτονική
+\en{MiniLM} σε μεγάλη συλλογή εργασιών ομοιότητας προτάσεων χρησιμοποιώντας
+αντιθετική μάθηση. Παράγει 384-διάστατες ενσωματώσεις προτάσεων και εκτελείται
+σημαντικά ταχύτερα από πλήρεις κωδικοποιητές \en{BERT} ή \en{RoBERTa} διατηρώντας
+ισχυρή απόδοση ομοιότητας σημασιολογικής. Για κάθε κόμβο $v$, η ενσωμάτωση
+$\mathbf{e}_v = \mathrm{ST}(d_v) \in \mathbb{R}^{384}$ υπολογίζεται μία φορά και
+αποθηκεύεται. Κατά τον χρόνο αξιολόγησης ζεύγους, το χαρακτηριστικό που
+χρησιμοποιείται είναι η βαθμωτή ομοιότητα συνημίτονου:
 \begin{equation}
     \mathrm{sim}(u, v) = \frac{\mathbf{e}_u \cdot \mathbf{e}_v}
                               {\|\mathbf{e}_u\| \cdot \|\mathbf{e}_v\|}.
 \end{equation}
-The EmbeddingClassifier is a Logistic Regression model trained on this single
-feature. Despite its simplicity---a one-dimensional feature fed to a linear
-model---this classifier captures the semantic alignment between node text pairs
-effectively, because the Sentence-Transformer's embedding space is specifically
-trained to place semantically similar texts close together. The choice of Logistic
-Regression over a more complex model (e.g., an MLP or SVM) is deliberate: with a
-single feature, a more complex model would overfit, and the calibrated probability
-outputs of Logistic Regression are important for the confidence-based routing
-mechanism.
+Ο \en{EmbeddingClassifier} είναι ένα μοντέλο Λογιστικής Παλινδρόμησης εκπαιδευμένο
+σε αυτό το ενιαίο χαρακτηριστικό. Παρά την απλότητά του---ένα μονοδιάστατο
+χαρακτηριστικό που τροφοδοτείται σε ένα γραμμικό μοντέλο---αυτός ο ταξινομητής
+καταγράφει αποτελεσματικά τη σημασιολογική ευθυγράμμιση μεταξύ ζευγών κειμένου
+κόμβων, επειδή ο χώρος ενσωμάτωσης του \en{Sentence-Transformer} εκπαιδεύεται ειδικά
+ώστε να τοποθετεί σημασιολογικά παρόμοια κείμενα κοντά μεταξύ τους. Η επιλογή
+Λογιστικής Παλινδρόμησης αντί πιο σύνθετου μοντέλου (π.χ., MLP ή SVM) είναι
+σκόπιμη: με ένα μόνο χαρακτηριστικό, ένα πιο σύνθετο μοντέλο θα υπερπροσαρμοζόταν,
+και οι βαθμονομημένες εξόδοι πιθανότητας της Λογιστικής Παλινδρόμησης είναι σημαντικές
+για τον μηχανισμό δρομολόγησης βάσει αξιοπιστίας.
 
-Tier~3 has no further escalation; all pairs that reach it receive the EmbeddingClassifier's
-prediction regardless of confidence.
+Το Επίπεδο~3 δεν έχει περαιτέρω κλιμάκωση· όλα τα ζεύγη που το φτάνουν λαμβάνουν
+την πρόβλεψη του \en{EmbeddingClassifier} ανεξάρτητα από αξιοπιστία.
 
-\section{Confidence-based Routing}
+\section{Δρομολόγηση Βάσει Αξιοπιστίας}
 
-Algorithm~\ref{alg:cascade} formalises the CascadeLP routing procedure. For each pair
-$(u, v)$ in the test set, the algorithm proceeds as follows. First, if $u = v$, return
-label 1 immediately (Tier~0). Second, compute the structural feature vector
-$\mathbf{f}_{\text{struct}}(u, v)$ and obtain the StructuralClassifier's predicted
-probability vector. If $\max(p_0, p_1) \geq \tau_1$, return the corresponding label
-(Tier~1 resolution). Third, compute the POS feature vector $\mathbf{f}_{\text{POS}}(u,
-v)$ and obtain the PosClassifier's predicted probability vector. If $\max(p_0, p_1)
-\geq \tau_2$, return the corresponding label (Tier~2 resolution). Finally, look up the
-precomputed Sentence-Transformer embeddings for $u$ and $v$, compute their cosine
-similarity, and return the EmbeddingClassifier's predicted label (Tier~3 resolution).
+Ο Αλγόριθμος~\ref{alg:cascade} τυποποιεί τη διαδικασία δρομολόγησης \en{CascadeLP}.
+Για κάθε ζεύγος $(u, v)$ στο σύνολο ελέγχου, ο αλγόριθμος προχωρά ως εξής. Πρώτον,
+εάν $u = v$, επιστρέφει αμέσως ετικέτα 1 (Επίπεδο~0). Δεύτερον, υπολογίζει το
+δομικό διάνυσμα χαρακτηριστικών $\mathbf{f}_{\text{struct}}(u, v)$ και λαμβάνει το
+διάνυσμα προβλεπόμενης πιθανότητας του \en{StructuralClassifier}. Εάν $\max(p_0, p_1)
+\geq \tau_1$, επιστρέφει την αντίστοιχη ετικέτα (επίλυση Επιπέδου~1). Τρίτον,
+υπολογίζει το διάνυσμα χαρακτηριστικών \en{POS} $\mathbf{f}_{\text{POS}}(u, v)$ και
+λαμβάνει το διάνυσμα προβλεπόμενης πιθανότητας του \en{PosClassifier}. Εάν $\max(p_0,
+p_1) \geq \tau_2$, επιστρέφει την αντίστοιχη ετικέτα (επίλυση Επιπέδου~2). Τέλος,
+αναζητά τις προ-υπολογισμένες ενσωματώσεις \en{Sentence-Transformer} για τους $u$ και
+$v$, υπολογίζει την ομοιότητά τους συνημίτονου, και επιστρέφει την προβλεπόμενη
+ετικέτα του \en{EmbeddingClassifier} (επίλυση Επιπέδου~3).
 
-The thresholds $\tau_1$ and $\tau_2$ are tuned on a held-out validation split of the
-training data (20\% of training pairs held out stratified by label). For each pair of
-threshold values $(\tau_1, \tau_2) \in [0.5, 1.0]^2$, the cascade is run on the
-validation set and the Macro F1-score and Tier~3 call rate are recorded. The selected
-thresholds are those that maximise the F1-score while keeping the Tier~3 call rate
-below a target value. This jointly optimises accuracy and inference cost.
+Τα όρια $\tau_1$ και $\tau_2$ ρυθμίζονται σε υπολειπόμενο σύνολο επαλήθευσης της
+εκπαίδευσης (20\% των ζευγών εκπαίδευσης διατηρούνται κατά στρωματοποίηση ανά
+ετικέτα). Για κάθε ζεύγος τιμών ορίου $(\tau_1, \tau_2) \in [0.5, 1.0]^2$, η αλυσίδα
+εκτελείται στο σύνολο επαλήθευσης και καταγράφονται η βαθμολογία \en{Macro F1} και ο
+ρυθμός κλήσεων Επιπέδου~3. Τα επιλεγμένα όρια είναι εκείνα που μεγιστοποιούν τη
+βαθμολογία F1 διατηρώντας τον ρυθμό κλήσεων Επιπέδου~3 κάτω από μια τιμή-στόχο.
+Αυτό βελτιστοποιεί από κοινού ακρίβεια και κόστος συμπερασμού.
 
-An important implementation detail is that the structural, POS, and embedding features
-are all precomputed in a single offline pass over the training pairs before any routing
-decisions are made. At inference time over the test set, the structural features are
-computed on the fly (the neighbour intersection is fast), the POS features are looked
-up from a precomputed cache, and the embeddings are looked up from a precomputed cache.
-This design ensures that the cascade adds no latency overhead beyond the cost of the
-features themselves.
+Μια σημαντική λεπτομέρεια υλοποίησης είναι ότι τα δομικά, \en{POS} και
+ενσωματωτικά χαρακτηριστικά προ-υπολογίζονται όλα σε ένα μόνο διαδικτυακό πέρασμα
+επί των ζευγών εκπαίδευσης πριν από οποιαδήποτε απόφαση δρομολόγησης. Κατά τον
+χρόνο συμπερασμού στο σύνολο ελέγχου, τα δομικά χαρακτηριστικά υπολογίζονται
+κατά παραγγελία (η τομή γειτόνων είναι ταχεία), τα χαρακτηριστικά \en{POS}
+αναζητούνται από προ-υπολογισμένη κρυφή μνήμη, και οι ενσωματώσεις αναζητούνται
+από προ-υπολογισμένη κρυφή μνήμη. Αυτός ο σχεδιασμός διασφαλίζει ότι η αλυσίδα
+δεν προσθέτει καμία πρόσθετη καθυστέρηση πέραν του κόστους των ίδιων των
+χαρακτηριστικών.
 
-\section{Cold-start Handling}
+\section{Χειρισμός Εκκίνησης εκ του Μηδενός}
 
-A \textit{cold-start} pair is a pair $(u, v)$ where at least one of $u$ or $v$ has
-no structural neighbours in the training graph---that is, where $|\Gamma(u)| = 0$ or
-$|\Gamma(v)| = 0$. For such pairs, the Common Neighbours, Jaccard, and Adamic-Adar
-features are identically zero, and the Preferential Attachment score is also zero.
-The StructuralClassifier trained on the full training set will still produce a
-probability output for these degenerate feature vectors, but the output will be the
-prior class probability (approximately 0.46 positive / 0.54 negative given the class
-balance), which is close to 0.5 and therefore below any reasonable confidence
-threshold $\tau_1$. Cold-start pairs thus naturally escalate past Tier~1 without any
-explicit detection logic.
+Ένα \textit{ζεύγος εκκίνησης εκ του μηδενός} είναι ένα ζεύγος $(u, v)$ όπου
+τουλάχιστον ένα από τα $u$ ή $v$ δεν έχει δομικούς γείτονες στον γράφο
+εκπαίδευσης---δηλαδή όπου $|\Gamma(u)| = 0$ ή $|\Gamma(v)| = 0$. Για τέτοια ζεύγη,
+τα χαρακτηριστικά \en{Common Neighbours}, \en{Jaccard} και \en{Adamic-Adar} είναι
+ταυτολογικά μηδέν, και η βαθμολογία \en{Preferential Attachment} είναι επίσης μηδέν.
+Ο \en{StructuralClassifier} εκπαιδευμένος στο πλήρες σύνολο εκπαίδευσης θα παράγει
+εξακολουθητικά έξοδο πιθανότητας για αυτά τα εκφυλισμένα διανύσματα χαρακτηριστικών,
+αλλά η έξοδος θα είναι η εκ των προτέρων πιθανότητα κλάσης (περίπου 0.46 θετικά /
+0.54 αρνητικά δεδομένης της ισορροπίας κλάσεων), η οποία βρίσκεται κοντά στο 0.5
+και επομένως κάτω από οποιοδήποτε εύλογο όριο αξιοπιστίας $\tau_1$. Τα ζεύγη
+εκκίνησης εκ του μηδενός κλιμακώνονται έτσι φυσικά πέρα από το Επίπεδο~1 χωρίς
+καμία ρητή λογική ανίχνευσης.
 
-Tier~2's POS features are computed from the node text and are therefore available for
-cold-start nodes regardless of their structural status. This is the key advantage of
-the tiered design: Tier~2 can resolve cold-start pairs that Tier~1 cannot, using a
-feature family that is completely independent of the graph topology. If the POS
-features also fail to produce a confident prediction---which occurs when both nodes
-have very short or identical text documents---the pair escalates to Tier~3, where the
-Sentence-Transformer provides the deepest semantic comparison.
+Τα χαρακτηριστικά \en{POS} του Επιπέδου~2 υπολογίζονται από το κείμενο κόμβου και
+είναι επομένως διαθέσιμα για κόμβους εκκίνησης εκ του μηδενός ανεξάρτητα από την
+κατάστασή τους στον δομικό γράφο. Αυτό είναι το κύριο πλεονέκτημα του πολυεπίπεδου
+σχεδιασμού: το Επίπεδο~2 μπορεί να επιλύσει ζεύγη εκκίνησης εκ του μηδενός που το
+Επίπεδο~1 δεν μπορεί, χρησιμοποιώντας μια οικογένεια χαρακτηριστικών που είναι
+εντελώς ανεξάρτητη από την τοπολογία του γράφου. Εάν τα χαρακτηριστικά \en{POS}
+αποτύχουν επίσης να παράγουν σίγουρη πρόβλεψη---κάτι που συμβαίνει όταν αμφότεροι
+οι κόμβοι έχουν πολύ σύντομα ή πανομοιότυπα κειμενικά έγγραφα---το ζεύγος κλιμακώνεται
+στο Επίπεδο~3, όπου ο \en{Sentence-Transformer} παρέχει τη βαθύτερη σημασιολογική
+σύγκριση.
 
-In the DSAA 2023 dataset, cold-start nodes (those absent from the structural graph)
-number approximately 170,000 out of 838,000 total nodes. Pairs involving at least one
-cold-start node constitute a non-trivial fraction of the test set. CascadeLP handles
-all such pairs gracefully by design, without requiring any special case detection or
-separate cold-start model. The ablation study in Chapter~5 evaluates the cascade's
-performance specifically on the cold-start subset and demonstrates the contribution of
-each tier to cold-start accuracy.
+Στο σύνολο δεδομένων \en{DSAA 2023}, οι κόμβοι εκκίνησης εκ του μηδενός (εκείνοι
+που απουσιάζουν από τον δομικό γράφο) ανέρχονται σε περίπου 170.000 από τους συνολικά
+838.000 κόμβους. Τα ζεύγη που περιλαμβάνουν τουλάχιστον έναν κόμβο εκκίνησης εκ
+του μηδενός αποτελούν μη αμελητέο κλάσμα του συνόλου ελέγχου. Το \en{CascadeLP}
+χειρίζεται όλα αυτά τα ζεύγη με χάρη εκ σχεδιασμού, χωρίς να απαιτείται ανίχνευση
+ειδικής περίπτωσης ή ξεχωριστό μοντέλο εκκίνησης εκ του μηδενός. Η μελέτη εκτομής
+στο Κεφάλαιο~5 αξιολογεί την απόδοση της αλυσίδας ειδικά στο υποσύνολο εκκίνησης
+εκ του μηδενός και καταδεικνύει τη συνεισφορά κάθε επιπέδου στην ακρίβεια εκκίνησης
+εκ του μηδενός.

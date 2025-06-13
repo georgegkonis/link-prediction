@@ -266,6 +266,9 @@ outputs/figures/*
 *.fdb_latexmk
 *.fls
 *.toc
+*.lof
+*.lot
+*.out
 *.synctex.gz
 *.pdf
 *.blg

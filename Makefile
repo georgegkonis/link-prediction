@@ -1,13 +1,12 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV)
 
-.PHONY: env env-update download preprocess jupyter pdf clean help
+.PHONY: env env-update download jupyter pdf clean help
 
 help:
 	@echo "env                  create conda environment"
 	@echo "env-update           update conda environment from environment.yml"
 	@echo "download             download DSAA 2023 dataset from Kaggle"
-	@echo "preprocess           clean and preprocess raw nodes (data/raw → data/interim)"
 	@echo "features-structural  compute structural features for all pairs"
 	@echo "features-semantic    compute semantic features for all pairs"
 	@echo "train MODEL=<name>   train a model (structural|tfidf|pos|embedding|cascade)"
@@ -24,9 +23,6 @@ env-update:
 
 download:
 	$(RUN) python -m scripts.download_data
-
-preprocess:
-	$(RUN) python -m scripts.preprocess
 
 features-structural:
 	$(RUN) python -m scripts.compute_structural

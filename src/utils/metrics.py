@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import networkx as nx
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
 
 @dataclass
@@ -66,6 +66,39 @@ def evaluate(
         cold_start_count=cs_count,
         latency_ms=latency_ms,
     )
+
+
+def evaluate_by_group(
+    y_true: np.ndarray, y_pred: np.ndarray, group: np.ndarray,
+) -> pd.DataFrame:
+    """Per-group n / accuracy / macro-F1, indexed by distinct group value."""
+    rows = {}
+    for g in pd.unique(group):
+        mask = group == g
+        rows[g] = {
+            'n': int(mask.sum()),
+            'accuracy': accuracy_score(y_true[mask], y_pred[mask]),
+            'macro_f1': f1_score(y_true[mask], y_pred[mask], average='macro', zero_division=0),
+        }
+    return pd.DataFrame.from_dict(rows, orient='index')
+
+
+def tier_difficulty_breakdown(
+    y_true: np.ndarray, y_pred: np.ndarray, tier_used: np.ndarray, difficulty: pd.Series,
+) -> pd.DataFrame:
+    """Cross-tab of (tier, difficulty) -> n / accuracy / macro_f1."""
+    df = pd.DataFrame({
+        'tier': tier_used, 'difficulty': difficulty.values,
+        'y_true': y_true, 'y_pred': y_pred,
+    })
+    rows = {}
+    for (tier, diff), group in df.groupby(['tier', 'difficulty']):
+        rows[(tier, diff)] = {
+            'n': len(group),
+            'accuracy': accuracy_score(group['y_true'], group['y_pred']),
+            'macro_f1': f1_score(group['y_true'], group['y_pred'], average='macro', zero_division=0),
+        }
+    return pd.DataFrame.from_dict(rows, orient='index')
 
 
 @contextmanager

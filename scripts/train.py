@@ -6,6 +6,7 @@ Available models:
     tfidf       — LogReg on TF-IDF cosine similarity
     pos         — Random Forest on POS frequency features
     embedding   — LogReg on sentence-transformer cosine similarity
+    svm         — RBF-kernel SVM on TF-IDF cosine similarity (stratified subsample)
     cascade     — CascadeLP (all three tiers combined)
 
 Usage:
@@ -25,12 +26,15 @@ from src.models.svm import (
     EmbeddingClassifier,
     PosClassifier,
     StructuralClassifier,
+    SvmClassifier,
     TfidfClassifier,
 )
-from src.utils.metrics import cold_start_mask, evaluate, timer
+from src.utils.difficulty import label_difficulty, pick_thresholds
+from src.utils.metrics import cold_start_mask, evaluate, evaluate_by_group, tier_difficulty_breakdown, timer
 
 INTERIM     = 'data/interim'
 CHECKPOINTS = 'outputs/checkpoints'
+PREDICTIONS = 'outputs/predictions'
 
 
 def _load(model_name: str) -> dict:
@@ -40,7 +44,7 @@ def _load(model_name: str) -> dict:
     if model_name in ('structural', 'cascade'):
         data['structural'] = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
 
-    if model_name == 'tfidf':
+    if model_name in ('tfidf', 'svm', 'cascade'):
         data['tfidf_scores'] = pd.read_csv(
             f'{INTERIM}/tfidf_train.csv', index_col='id')['tfidf_score'].values
 
@@ -70,7 +74,8 @@ def _split(data: dict, model_name: str, val_size: float):
     return tr, val, sub
 
 
-def main(model_name: str, t1: float, t2: float, val_size: float):
+def main(model_name: str, t1: float, t2: float, val_size: float,
+         cn_threshold: float | None = None, tfidf_threshold: float | None = None):
     print(f'Loading features for [{model_name}]...')
     data = _load(model_name)
     tr, val, sub = _split(data, model_name, val_size)
@@ -110,6 +115,14 @@ def main(model_name: str, t1: float, t2: float, val_size: float):
             proba = model.predict_proba(val_X)
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
+    elif model_name == 'svm':
+        model = SvmClassifier()
+        tr_X, val_X = sub(data['tfidf_scores'])
+        model.fit(tr_X, y[tr])
+        with timer() as t:
+            proba = model.predict_proba(val_X)
+        y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
+
     elif model_name == 'cascade':
         model = CascadeLP(tier1_threshold=t1, tier2_threshold=t2)
         model.fit(
@@ -129,6 +142,30 @@ def main(model_name: str, t1: float, t2: float, val_size: float):
         for tier, stats in model.tier_stats(tier_used).items():
             print(f"  {tier}: {stats['n']:,} pairs ({stats['pct']:.1f}%)")
 
+        cn_val, tfidf_val = data['structural']['cn'].values, data['tfidf_scores']
+        cn_thr, tfidf_thr = cn_threshold, tfidf_threshold
+        if cn_thr is None or tfidf_thr is None:
+            auto_cn, auto_tfidf = pick_thresholds(y, cn_val, tfidf_val)
+            cn_thr     = cn_thr if cn_thr is not None else auto_cn
+            tfidf_thr  = tfidf_thr if tfidf_thr is not None else auto_tfidf
+
+        difficulty = label_difficulty(
+            val_pairs, cn_val[val], tfidf_val[val], cn_thr, tfidf_thr)
+
+        print('\nAccuracy by tier:')
+        print(evaluate_by_group(y[val], y_pred, tier_used))
+        print('\nAccuracy by difficulty:')
+        print(evaluate_by_group(y[val], y_pred, difficulty.values))
+        print('\nTier × difficulty breakdown:')
+        print(tier_difficulty_breakdown(y[val], y_pred, tier_used, difficulty))
+
+        pd.DataFrame({
+            'id': val_pairs.index, 'id1': val_pairs['id1'].values, 'id2': val_pairs['id2'].values,
+            'y_true': y[val], 'y_pred': y_pred, 'correct': y_pred == y[val],
+            'tier_used': tier_used, 'difficulty': difficulty.values,
+        }).to_csv(f'{PREDICTIONS}/cascade_val_tiers.csv', index=False)
+        print(f"\nSaved → {PREDICTIONS}/cascade_val_tiers.csv")
+
     G      = build_graph(data['pairs'])
     cs     = cold_start_mask(data['pairs'].iloc[val], G)
     result = evaluate(y[val], y_pred, y_scores, cs, latency_ms=t[0] if t else None)
@@ -143,9 +180,14 @@ def main(model_name: str, t1: float, t2: float, val_size: float):
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--model',            required=True,
-                   choices=['structural', 'tfidf', 'pos', 'embedding', 'cascade'])
+                   choices=['structural', 'tfidf', 'pos', 'embedding', 'svm', 'cascade'])
     p.add_argument('--tier1-threshold',  type=float, default=0.8)
     p.add_argument('--tier2-threshold',  type=float, default=0.7)
     p.add_argument('--val-size',         type=float, default=0.2)
+    p.add_argument('--cn-threshold',     type=float, default=None,
+                   help='Cascade diagnostic: trivial-pair CN threshold (auto if omitted)')
+    p.add_argument('--tfidf-threshold',  type=float, default=None,
+                   help='Cascade diagnostic: trivial-pair TF-IDF threshold (auto if omitted)')
     args = p.parse_args()
-    main(args.model, args.tier1_threshold, args.tier2_threshold, args.val_size)
+    main(args.model, args.tier1_threshold, args.tier2_threshold, args.val_size,
+         args.cn_threshold, args.tfidf_threshold)

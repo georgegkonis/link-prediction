@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 
 class StructuralClassifier:
@@ -76,6 +78,44 @@ class PosClassifier:
 
     def predict(self, pos_features: np.ndarray) -> np.ndarray:
         return self.clf.predict(pos_features)
+
+    def save(self, path: str): joblib.dump(self, path)
+
+    @classmethod
+    def load(cls, path: str): return joblib.load(path)
+
+
+class SvmClassifier:
+    """
+    RBF-kernel SVM on TF-IDF cosine similarity (Al Hasan et al., 2006-style baseline).
+    Trained on a stratified subsample — SVC's O(n^2)-O(n^3) fit cost is
+    infeasible on the full 948K training pairs.
+    """
+
+    def __init__(self, C: float = 1.0, gamma: str = 'scale',
+                 subsample_size: int = 20_000, random_state: int = 42):
+        self.subsample_size = subsample_size
+        self.random_state = random_state
+        self.scaler = StandardScaler()
+        self.clf = SVC(C=C, gamma=gamma, kernel='rbf', probability=True, random_state=random_state)
+
+    def _subsample(self, X: np.ndarray, y: np.ndarray):
+        if len(y) <= self.subsample_size:
+            return X, y
+        X_sub, _, y_sub, _ = train_test_split(
+            X, y, train_size=self.subsample_size, stratify=y, random_state=self.random_state)
+        return X_sub, y_sub
+
+    def fit(self, scores: np.ndarray, y: np.ndarray):
+        X, y = self._subsample(scores.reshape(-1, 1), y)
+        self.clf.fit(self.scaler.fit_transform(X), y)
+        return self
+
+    def predict_proba(self, scores: np.ndarray) -> np.ndarray:
+        return self.clf.predict_proba(self.scaler.transform(scores.reshape(-1, 1)))
+
+    def predict(self, scores: np.ndarray) -> np.ndarray:
+        return self.predict_proba(scores).argmax(axis=1)
 
     def save(self, path: str): joblib.dump(self, path)
 

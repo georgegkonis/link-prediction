@@ -9,6 +9,8 @@ help:
 	@echo "download             download DSAA 2023 dataset from Kaggle"
 	@echo "features-structural  compute structural features for all pairs"
 	@echo "features-semantic    compute semantic features for all pairs"
+	@echo "audit-leakage        train/test leakage and self-loop audit"
+	@echo "analyze-dataset      separability characterization (trivial-pair fractions)"
 	@echo "train MODEL=<name>   train a model (structural|tfidf|pos|embedding|cascade)"
 	@echo "evaluate MODEL=<name> generate test set predictions"
 	@echo "pdf                  compile the thesis PDF"
@@ -29,6 +31,12 @@ features-structural:
 
 features-semantic:
 	$(RUN) python -m scripts.compute_semantic
+
+audit-leakage:
+	$(RUN) python -m scripts.audit_leakage
+
+analyze-dataset:
+	$(RUN) python -m scripts.analyze_dataset
 
 train:
 	$(RUN) python -m scripts.train --model $(MODEL)

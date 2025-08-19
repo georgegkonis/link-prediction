@@ -9,21 +9,24 @@
     συμπερασμού τα καθιστά μη πρακτικά σε κλίμακα, ενώ η γενίκευσή τους σε ακμές εκτός
     κατανομής παραμένει αδιερεύνητη.
 
-    Η παρούσα διπλωματική εργασία παρουσιάζει το \textbf{CascadeLP}, ένα πολυεπίπεδο
-    πλαίσιο πρόβλεψης ακμών που δρομολογεί ζεύγη κόμβων μέσω προοδευτικά πιο δαπανηρών
-    μοντέλων βάσει ορίων αξιοπιστίας. Το Επίπεδο~1 εφαρμόζει δομικές ευρεσιτεχνίες
-    (\en{Common Neighbours}, \en{Adamic-Adar}, \en{Node2Vec}) για ταχεία, τοπολογικά
-    ενήμερη βαθμολόγηση. Το Επίπεδο~2 εφαρμόζει έναν ελαφρύ σημασιολογικό ταξινομητή
-    (χαρακτηριστικά \en{TF-IDF} + \en{SVM} ή συχνότητες μερών του λόγου + Τυχαίο Δάσος)
-    για τον χειρισμό κόμβων χωρίς δομικούς γείτονες. Το Επίπεδο~3 εφαρμόζει ένα μοντέλο
-    \en{Sentence-RoBERTa} αποκλειστικά για ζεύγη στα οποία τα προηγούμενα επίπεδα
-    εμφανίζουν αβεβαιότητα. Αξιολογούμε το \en{CascadeLP} στο σύνολο δεδομένων
-    \en{DSAA 2023} τόσο με τυπική όσο και με χρονική διαίρεση, και αναφέρουμε ακρίβεια,
-    ρυθμό επεξεργασίας και ποσοστά κλήσης ανά επίπεδο. Τα αποτελέσματά μας δείχνουν ότι
-    το \en{CascadeLP} εξισώνει την ακρίβεια του πλήρους μετασχηματιστή ενεργοποιώντας τον
-    αποκλειστικά σε ένα μικρό κλάσμα ζευγών, παρέχοντας μια συγκεκριμένη ανάλυση
-    συμβιβασμού αποτελεσματικότητας-ακρίβειας που προηγούμενες εργασίες δεν έχουν
-    επιχειρήσει.
+    Η παρούσα διπλωματική εργασία εξετάζει κατά πόσον οι σχεδόν τέλειες βαθμολογίες
+    που αναφέρονται στο \en{DSAA 2023} οφείλονται σε γνήσια σημασιολογική
+    συλλογιστική, σε διαρροή δεδομένων, ή στην εγγενή διαχωρισιμότητα του συνόλου
+    δεδομένων. Ένας συστηματικός έλεγχος διαρροής στα αρχεία εκπαίδευσης και ελέγχου
+    βρίσκει αμελητέα επικάλυψη ζευγών, αποκλείοντας τη διαρροή ως εξήγηση. Στη
+    συνέχεια παρουσιάζουμε το \textbf{\en{CascadeLP}}, ένα τετραεπίπεδο πλαίσιο πρόβλεψης
+    ακμών που δρομολογεί ζεύγη κόμβων μέσω προοδευτικά πιο δαπανηρών μοντέλων βάσει
+    ορίων αξιοπιστίας: αυτοβρόχοι, δομικές ευρεσιτεχνίες
+    (\en{Common Neighbours}, \en{Jaccard}, \en{Adamic-Adar}, \en{Preferential
+    Attachment}), συχνότητες μερών του λόγου με Τυχαίο Δάσος για κόμβους χωρίς
+    δομικούς γείτονες, και ένας κωδικοποιητής \en{Sentence-Transformer} για ζεύγη
+    στα οποία τα προηγούμενα επίπεδα εμφανίζουν αβεβαιότητα. Χρησιμοποιούμε το
+    \en{CascadeLP} ως διαγνωστικό εργαλείο, καταγράφοντας ανά ζεύγος ποιο επίπεδο
+    το επέλυσε και διασταυρώνοντας το με έναν ανεξάρτητο χαρακτηρισμό
+    διαχωρισιμότητας του συνόλου δεδομένων, ώστε να ποσοτικοποιήσουμε το πραγματικό
+    κλάσμα ζευγών που απαιτεί σημασιολογική συλλογιστική. Συμπεριλαμβάνουμε επίσης
+    ένα μοντέλο αναφοράς \en{TF-IDF + SVM}. Η γενίκευση σε δεύτερο σύνολο δεδομένων
+    αναβάλλεται ως μελλοντική εργασία.
 
     \begin{keywords}
         Πρόβλεψη ακμών, γράφοι με κειμενικά χαρακτηριστικά, νευρωνικά δίκτυα γράφων,
@@ -43,17 +46,19 @@
         accuracy, their quadratic inference cost makes them impractical at scale, and their
         generalisation to out-of-distribution edges remains unstudied.
 
-        This thesis presents \textbf{CascadeLP}, a tiered link prediction framework that routes
-        node pairs through progressively expensive models based on confidence thresholds.
-        Tier~1 applies structural heuristics (Common Neighbours, Adamic-Adar, Node2Vec) for
-        fast, topology-aware scoring. Tier~2 applies a lightweight semantic classifier
-        (TF-IDF + SVM or POS-tag features + Random Forest) to handle cold-start nodes with no
-        structural neighbours. Tier~3 applies a fine-tuned Sentence-RoBERTa model only to pairs
-        where the earlier tiers are uncertain. We evaluate CascadeLP on the DSAA 2023 dataset
-        under both standard and temporal splits, and report accuracy, throughput, and per-tier
-        call rates. Our results show that CascadeLP matches full-transformer accuracy while
-        invoking the transformer on only a small fraction of pairs, providing a concrete
-        efficiency-accuracy trade-off analysis that prior work has not attempted.
+        This thesis examines whether the near-perfect scores reported on DSAA 2023 reflect
+        genuine semantic reasoning, data leakage, or the dataset's inherent separability. A
+        systematic leakage audit of the training and test files finds negligible pair overlap,
+        ruling out leakage as the explanation. We then present \textbf{CascadeLP}, a four-tier
+        link prediction framework that routes node pairs through progressively expensive models
+        based on confidence thresholds: self-loops, structural heuristics (Common Neighbours,
+        Jaccard, Adamic-Adar, Preferential Attachment), POS-tag frequency features with a
+        Random Forest for nodes with no structural neighbours, and a Sentence-Transformer
+        encoder for pairs where the earlier tiers remain uncertain. We use CascadeLP as a
+        diagnostic tool, logging which tier resolves each pair and cross-referencing it against
+        an independent dataset separability characterization, to quantify what fraction of
+        pairs actually require semantic reasoning. We also include a TF-IDF + SVM reference
+        baseline. Generalization to a second dataset is deferred to future work.
     }
 
     \begin{keywordseng}

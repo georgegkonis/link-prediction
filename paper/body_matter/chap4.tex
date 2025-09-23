@@ -84,6 +84,20 @@ $\theta_{\mathrm{TF\text{-}IDF}} > 0.098$ (1\% FPR στην αρνητική κ�
   \label{tab:difficulty-breakdown}
 \end{table}
 
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/separability_distributions.png}
+  \caption{Κατανομές Κοινών Γειτόνων και ομοιότητας \en{TF-IDF} για θετικά και αρνητικά ζεύγη (χωρίς αυτοβρόχους). Η καθαρή διαχώρισιμότητα της \en{TF-IDF} υποδηλώνει ότι το κειμενικό περιεχόμενο παρέχει ισχυρό σήμα.}
+  \label{fig:separability-dist}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/difficulty_breakdown.png}
+  \caption{Κατανομή δυσκολίας στο σύνολο εκπαίδευσης: περισσότερα από τα δύο τρίτα των ζευγών χαρακτηρίζονται ως «δύσκολα» και απαιτούν σημασιολογική συλλογιστική.}
+  \label{fig:difficulty-breakdown}
+\end{figure}
+
 Τα αποτελέσματα δείχνουν ότι περισσότερα από τα δύο τρίτα του συνόλου δεδομένων
 (64.1\%) απαιτούν πραγματικά σημασιολογική συλλογιστική, ενώ σχεδόν το ένα τρίτο
 (35.9\%) μπορεί να επιλυθεί αξιόπιστα με τετριμμένα χαρακτηριστικά. Αυτό
@@ -130,6 +144,13 @@ $\theta_{\mathrm{TF\text{-}IDF}} > 0.098$ (1\% FPR στην αρνητική κ�
   \caption{\en{SVM} αποτελέσματα επικύρωσης σε 187.603 ζεύγη.}
   \label{tab:svm-results}
 \end{table}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/svm_metrics.png}
+  \caption{Απόδοση μοντέλου αναφοράς \en{TF-IDF + SVM} σε σύνολο επικύρωσης. Το \en{SVM} επιτυγχάνει \en{Macro F1} = 0.909 και \en{AUC-ROC} = 0.943, υποδηλώνοντας την ισχυρή προβλεπτική ικανότητα της κειμενικής ομοιότητας.}
+  \label{fig:svm-metrics}
+\end{figure}
 
 Το \en{SVM} επιτυγχάνει υψηλή απόδοση σε όλες τις μετρικές, υπογραμμίζοντας ότι η
 \en{TF-IDF} ομοιότητα του κειμένου είναι ένας ισχυρός μεμονωμένος δείκτης για τη

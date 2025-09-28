@@ -15,7 +15,8 @@
 | Citations [8], [10] titles | **Fix** | Real titles differ from what's in your bibliography (see §1) |
 | "10,221 self-loop pairs" and other Section 1.3/2.6 specific numbers | **Re-derive from scratch, don't assume correct** | These read as placeholder numbers written before analysis — must be verified against actual data |
 | Single-dataset scope | **Expand** | Add one comparison TAG dataset — required for the generalization question, and for the thesis's strongest contribution |
-| "Beat the leaderboard" framing | **Replace** | Reframe around: why does DSAA saturate, does it leak, and does a near-perfect model generalize |
+| "Beat the leaderboard" framing | **Replace** | Reframe around: why does DSAA saturate, does it leak, and what's the cost-quality tradeoff in a tiered model |
+| Single-dataset scope | **Keep** | Focus thesis on DSAA forensics + CascadeLP diagnostic; cross-dataset generalization deferred to future work |
 
 ---
 
@@ -49,17 +50,16 @@ This single question drives three components that were previously disconnected i
 - Keep the motivation about TAGs and Wikipedia's relational structure — that part is fine.
 - **Rewrite the "three observations" section (1.1)** to remove the unverified Kim et al. claim. Replace with what you can actually support: the documented near-perfect scores from Phan et al. and Tran et al. (real, verified), and the *open question* of why — not asserted as fact.
 - **Rewrite Contributions (1.3)** to only list things you will actually have evidence for at submission. Suggested list:
-  1. A train/test leakage audit of the DSAA 2023 dataset (exact pair overlap, reversed-pair overlap)
-  2. A separability/difficulty characterization of the dataset (self-loops, common-neighbor distribution, text-similarity distribution for pos/neg pairs)
-  3. A cross-dataset generalization test: train the best-performing text classifier on DSAA, evaluate zero-shot and fine-tuned on a second TAG dataset
-  4. CascadeLP as a cost-aware diagnostic: quantify what fraction of pairs are resolved by cheap tiers, and characterize what remains in the "hard" residual
-  5. An SVM + engineered-feature baseline, positioned as a classic-ML reference point throughout
+  1. A train/test leakage audit of the DSAA 2023 dataset (exact pair overlap, reversed-pair overlap) — verifies dataset integrity
+  2. A separability/difficulty characterization of the dataset (self-loops, common-neighbor distribution, text-similarity distribution for pos/neg pairs) — explains why near-perfect scores are achievable
+  3. CascadeLP as a cost-aware diagnostic: quantify what fraction of pairs are resolved by each tier, and characterize the "hard" residual that requires semantic reasoning
+  4. An SVM + engineered-feature baseline (TF-IDF + RBF SVC, POS + RF), positioned as a classic-ML reference point and to isolate the value of text similarity
 
 ### Chapter 2 — Background and Related Work
 - Structure is fine (structural methods → semantic methods → hybrid architectures). Keep.
 - Fix all citations (§1 above).
 - **Add a subsection explicitly on evaluation integrity / leakage in link prediction benchmarks** — this is now load-bearing for your contribution, not a side note. Cite Yang, Chiang & Leskovec-style discussion of ogbl leakage issues, and Yao/Liben-Nowell type critiques of proximity-based leaderboards if available (verify before citing).
-- **Add the second dataset here**, described alongside DSAA, so the comparison feels designed rather than bolted on later.
+- DSAA 2023 is the only dataset in scope; no second dataset comparison.
 
 ### Chapter 3 — Methodology
 Reorganize into four concrete blocks:
@@ -78,39 +78,34 @@ Reorganize into four concrete blocks:
 **3.3 SVM/classic-ML baseline**
 - Keep as designed (TF-IDF + SVM, POS + RF). Position explicitly as a reference point for "how much do you need PLMs at all" — ties into 3.1/3.2.
 
-**3.4 Cross-dataset generalization protocol**
-- Train best model (likely the Sentence-Transformer tier) on DSAA.
-- Evaluate zero-shot on second dataset (no retraining).
-- Evaluate after fine-tuning on second dataset's own training split.
-- Report the delta — this is your generalization evidence.
-
 ### Chapter 4 — Experiments
-Now has real content to slot in:
-- 4.1 Datasets (DSAA + second dataset, with stats *you measured*, not copied)
-- 4.2 Leakage audit results (from 3.1)
-- 4.3 Separability characterization results (from 3.1)
+Now has real content to slot in (DSAA only):
+- 4.1 Datasets (DSAA with measured stats, not copied)
+- 4.2 Leakage audit results
+- 4.3 Separability characterization results (self-loops, CN dist, text-similarity dist)
 - 4.4 CascadeLP tier-by-tier accuracy and call-rate results, broken down by difficulty tier
-- 4.5 Cross-dataset generalization results
-- 4.6 SVM baseline comparison across all of the above
+- 4.5 SVM baseline comparison (shows value of TF-IDF alone vs. tiered approach)
 
 ### Chapter 5 — Analysis
 - Ablations on cascade thresholds (as originally planned)
-- **New:** analysis of what the "hard residual" (pairs that reach Tier 3 and are still uncertain) actually look like — read some of them qualitatively, characterize them
-- Error analysis split by difficulty tier and by dataset
+- Analysis of what the "hard residual" (pairs that require Tier 3 semantic reasoning) actually look like — per-pair breakdown by difficulty tier
+- Error analysis: which types of pairs does each tier misclassify
 
 ### Chapter 6 — Conclusion
 - Only claim what chapters 4–5 actually show.
-- Limitations section should explicitly name what you did *not* check (e.g., if you only test one second dataset, say generalization evidence is limited to that pair)
-- Future work: additional datasets, GNN-based tiers, dynamic/temporal splits
+- Limitations section: explicitly name single-dataset scope, and note that generalization is left to future work.
+- Future work: cross-dataset generalization, GNN-based tiers, temporal link prediction
 
 ---
 
 ## 4. Immediate next steps (in order)
 
-1. **Fix citations** [6], [8], [10] and spot-check the rest (§1) — fast, unblocks credibility of everything else.
-2. **Run the leakage audit** on the actual DSAA train.csv/test.csv (exact + reversed pair overlap). This is a 20-line script and settles the "were they accidentally given the test set" question empirically.
-3. **Run the separability characterization** (self-loops, common-neighbor distribution, text-similarity distribution).
-4. **Pick the second dataset** (Cora/PubMed for a fast pass, or CitationV8/ogbn-arxiv for closer scale/domain match to DSAA) and run the same forensics on it for comparability.
-5. Only after 2–4: start writing Chapter 4 with real numbers, and only then write result-dependent parts of the Abstract/Intro/Contributions.
+1. **Fix citations** [6], [8], [10] and spot-check the rest (§1) — unblocks credibility.
+2. ✅ **Leakage audit** (done — exact + reversed pair overlap verified)
+3. ✅ **Separability characterization** (done — self-loops, CN, text-sim distributions, difficulty labels)
+4. ⏳ **CascadeLP training and evaluation** (in progress — will produce tier-usage stats and per-pair routing for §4.4)
+5. **Rewrite Chapter 1** contributions to match the four items in §3 (leakage audit, separability, cascade diagnostic, SVM baseline).
+6. **Review/light touch-up** on Chapters 2–3 to ensure methodology aligns with execution.
+7. **Final polish** on entire document: verify all claims are supported by results in Chapter 4, add error analysis in Chapter 5.
 
-Once you have the leakage-audit and separability results in hand, we should revisit this plan — the findings there will determine how much weight the generalization experiment vs. the cascade experiment should carry in the final thesis.
+**Skip:** cross-dataset generalization, second dataset — moved to future work.

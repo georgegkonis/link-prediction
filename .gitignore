@@ -273,3 +273,8 @@ outputs/figures/*
 *.pdf
 *.blg
 *.bbl
+*.bcf
+*.run.xml
+*.idx
+*.ilg
+*.ind

@@ -1,16 +1,17 @@
 \documentclass[11pt,a4paper,english,greek,twoside]{ceid-thesis}
 
 \usepackage{graphicx}
-\usepackage{epstopdf}
 \usepackage{indentfirst}
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{hyperref}
+\usepackage{bookmark}
 \usepackage{makeidx}
+\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\addbibresource{back_matter/references.bib}
 
-\bibliographystyle{static/hellas}
 \makeindex
 
 \renewcommand{\baselinestretch}{1.2}
@@ -49,8 +50,6 @@
 \edef\epitropiSTitle{Καθηγητής}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\selectlanguage{greek}
-
 \begin{document}
     \selectlanguage{greek}
     \maketitle
@@ -75,7 +74,7 @@
     \include{back_matter/appA}
     \cleardoublepage
 
-    \bibliography{back_matter/references}
+    \printbibliography
     \include{back_matter/abbreviations}
     \include{back_matter/glossary}
 

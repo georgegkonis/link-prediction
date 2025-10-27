@@ -45,10 +45,10 @@ evaluate:
 	$(RUN) python -m scripts.evaluate --model $(MODEL)
 
 pdf:
-	cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+	cd paper && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex
 
 clean:
-	cd paper && rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
+	cd paper && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
 	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
 
 jupyter:

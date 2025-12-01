@@ -43,6 +43,44 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 στην πρόβλεψη αυτού του επιπέδου· δεν υπάρχει περαιτέρω κλιμάκωση. Σχηματικό
 διάγραμμα της αλυσίδας φαίνεται στο Σχήμα~\ref{fig:cascade}.
 
+\begin{figure}[h!]
+    \centering
+    \tikzset{
+        block/.style={rectangle, draw, rounded corners, minimum width=3.4cm,
+            minimum height=1cm, align=center},
+        decision/.style={diamond, draw, aspect=2, align=center, inner sep=1pt},
+        sink/.style={rectangle, draw, rounded corners, minimum width=3cm,
+            minimum height=1cm, align=center, fill=black!5},
+        escalate/.style={-{Stealth}, thick},
+        exitpath/.style={-{Stealth}, thick, dashed},
+    }
+    \begin{tikzpicture}[node distance=0.9cm and 3.2cm]
+        \node[block] (input) {Ζεύγος $(u,v)$};
+        \node[decision, below=of input] (t0) {$u = v$;};
+        \node[block, below=of t0] (t1) {Επίπεδο 1\\\en{StructuralClassifier}};
+        \node[decision, below=of t1] (d1) {$\max(p_0,p_1)\!\geq\!\tau_1$;};
+        \node[block, below=of d1] (t2) {Επίπεδο 2\\\en{PosClassifier}};
+        \node[decision, below=of t2] (d2) {$\max(p_0,p_1)\!\geq\!\tau_2$;};
+        \node[block, below=of d2] (t3) {Επίπεδο 3\\\en{EmbeddingClassifier}};
+        \node[sink, right=of d1] (sink) {Τελική\\ετικέτα};
+
+        \draw[escalate] (input) -- (t0);
+        \draw[escalate] (t0) -- node[left]{όχι} (t1);
+        \draw[exitpath] (t0.east) -- ++(1.6,0) |- node[near start, above]{ναι, $\hat y=1$} (sink.north);
+        \draw[escalate] (t1) -- (d1);
+        \draw[escalate] (d1) -- node[left]{όχι} (t2);
+        \draw[exitpath] (d1) -- node[above]{ναι} (sink);
+        \draw[escalate] (t2) -- (d2);
+        \draw[escalate] (d2) -- node[left]{όχι} (t3);
+        \draw[exitpath] (d2.east) -- ++(1.6,0) |- node[near start, above]{ναι} (sink.south);
+        \draw[exitpath] (t3.east) -- ++(1.6,0) |- node[near start, below]{πάντα} (sink.west);
+    \end{tikzpicture}
+    \caption{Σχηματική απεικόνιση της αλυσίδας \en{CascadeLP}: κάθε ζεύγος
+    δρομολογείται μέσω διαδοχικών επιπέδων ταξινομητών, με πρόωρη έξοδο όταν η
+    αξιοπιστία υπερβαίνει το αντίστοιχο όριο.}
+    \label{fig:cascade}
+\end{figure}
+
 
 \section{Πρωτόκολλο Ανίχνευσης Δεδομένων}
 \label{sec:forensics-protocol}
@@ -173,14 +211,15 @@ Attachment} (Εξίσωση \ref{eq:pa}).
 Επιπλέον των τεσσάρων βαθμωτών ευρεσιτεχνικών χαρακτηριστικών, το Επίπεδο~1
 ενσωματώνει προαιρετικά ενσωματώσεις \en{Node2Vec} \cite{grover2016node2vec} ως
 πρόσθετα χαρακτηριστικά. Το \en{Node2Vec} εκπαιδεύεται στον δομικό γράφο με μήκος
-περιπάτου 80 βημάτων, 10 περιπάτους ανά κόμβο και μέγεθος παραθύρου 10. Η
-παράμετρος επιστροφής $p$ και η παράμετρος εισόδου-εξόδου $q$ αντιμετωπίζονται ως
-υπερπαράμετροι και ρυθμίζονται στο σύνολο επαλήθευσης. Οι προκύπτουσες ενσωματώσεις
-κόμβων είναι $d$-διάστατα διανύσματα (με $d = 128$ στα πειράματά μας), και η
-ενσωμάτωση ζεύγους σχηματίζεται ως το γινόμενο \en{Hadamard} (στοιχειακό) των δύο
-ενσωματώσεων τελικών κόμβων. Αυτά τα 128 χαρακτηριστικά προσαρτώνται στα τέσσερα
-ευρεσιτεχνικά χαρακτηριστικά, δίνοντας ένα 132-διάστατο διάνυσμα χαρακτηριστικών
-όταν το \en{Node2Vec} είναι ενεργοποιημένο.
+περιπάτου 30 βημάτων, 200 περιπάτους ανά κόμβο και μέγεθος παραθύρου 10. Η
+παράμετρος επιστροφής $p$ και η παράμετρος εισόδου-εξόδου $q$ διατηρούνται και οι
+δύο σταθερές στην τιμή 1 (ισοδύναμο δειγματοληψίας \en{DeepWalk}, χωρίς προτίμηση
+προς \en{BFS} ή \en{DFS}) και δεν ρυθμίζονται στην τρέχουσα διαμόρφωση. Οι
+προκύπτουσες ενσωματώσεις κόμβων είναι $d$-διάστατα διανύσματα (με $d = 64$ στα
+πειράματά μας), και η ενσωμάτωση ζεύγους σχηματίζεται ως το γινόμενο \en{Hadamard}
+(στοιχειακό) των δύο ενσωματώσεων τελικών κόμβων. Αυτά τα 64 χαρακτηριστικά
+προσαρτώνται στα τέσσερα ευρεσιτεχνικά χαρακτηριστικά, δίνοντας ένα 68-διάστατο
+διάνυσμα χαρακτηριστικών όταν το \en{Node2Vec} είναι ενεργοποιημένο.
 
 Στην πράξη, τα τέσσερα ευρεσιτεχνικά χαρακτηριστικά μόνα τους παρέχουν ισχυρό σήμα
 για ζεύγη με μη μηδενικούς κοινούς γείτονες, και οι ενσωματώσεις \en{Node2Vec}
@@ -229,7 +268,7 @@ p_1)$ και η κλιμάκωση σταματά. Διαφορετικά, το 
 ζεύγους είναι η συνένωση των δύο διανυσμάτων τελικών κόμβων: $\mathbf{f}_{\text{POS}}(u,
 v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in \mathbb{R}^{72}$.
 
-Ο \en{PosClassifier} είναι Τυχαίο Δάσος με 100 δέντρα, εκπαιδευμένο με προεπιλεγμένες
+Ο \en{PosClassifier} είναι Τυχαίο Δάσος με 200 δέντρα, εκπαιδευμένο με προεπιλεγμένες
 υπερπαραμέτρους σε όλα τα 948.232 ζεύγη εκπαίδευσης. Τα Τυχαία Δάση είναι κατάλληλα
 για αυτόν τον χώρο χαρακτηριστικών επειδή το 72-διάστατο διάνυσμα \en{POS} περιέχει
 πολλά σχεδόν μηδενικά χαρακτηριστικά για ασυνήθεις κατηγορίες μερών του λόγου, και
@@ -284,6 +323,31 @@ $\mathbf{e}_v = \mathrm{ST}(d_v) \in \mathbb{R}^{384}$ υπολογίζεται 
 \label{sec:cascade-routing}
 
 Ο Αλγόριθμος~\ref{alg:cascade} τυποποιεί τη διαδικασία δρομολόγησης \en{CascadeLP}.
+
+\begin{algorithm}[h!]
+\caption{Δρομολόγηση \en{CascadeLP} για ζεύγος $(u, v)$}
+\label{alg:cascade}
+\begin{algorithmic}[1]
+\Require Ζεύγος κόμβων $(u, v)$· όρια $\tau_1, \tau_2$
+\Ensure Προβλεπόμενη ετικέτα $\hat{y} \in \{0, 1\}$
+\If{$u = v$}
+    \State \Return $\hat{y} \gets 1$ \Comment{Επίπεδο 0: αυτοβρόχος}
+\EndIf
+\State $\mathbf{f}_{\text{struct}} \gets$ υπολογισμός δομικών χαρακτηριστικών$(u, v)$
+\State $(p_0, p_1) \gets \text{\en{StructuralClassifier}.predict\_proba}(\mathbf{f}_{\text{struct}})$
+\If{$\max(p_0, p_1) \geq \tau_1$}
+    \State \Return $\hat{y} \gets \arg\max(p_0, p_1)$ \Comment{Επίπεδο 1: επίλυση}
+\EndIf
+\State $\mathbf{f}_{\text{POS}} \gets$ υπολογισμός χαρακτηριστικών \en{POS}$(u, v)$
+\State $(p_0, p_1) \gets \text{\en{PosClassifier}.predict\_proba}(\mathbf{f}_{\text{POS}})$
+\If{$\max(p_0, p_1) \geq \tau_2$}
+    \State \Return $\hat{y} \gets \arg\max(p_0, p_1)$ \Comment{Επίπεδο 2: επίλυση}
+\EndIf
+\State $s \gets \mathrm{sim}(\mathbf{e}_u, \mathbf{e}_v)$ \Comment{αναζήτηση προ-υπολογισμένων ενσωματώσεων}
+\State \Return $\hat{y} \gets \text{\en{EmbeddingClassifier}.predict}(s)$ \Comment{Επίπεδο 3: πάντοτε επιλύει}
+\end{algorithmic}
+\end{algorithm}
+
 Για κάθε ζεύγος $(u, v)$ στο σύνολο ελέγχου, ο αλγόριθμος προχωρά ως εξής. Πρώτον,
 εάν $u = v$, επιστρέφει αμέσως ετικέτα 1 (Επίπεδο~0). Δεύτερον, υπολογίζει το
 δομικό διάνυσμα χαρακτηριστικών $\mathbf{f}_{\text{struct}}(u, v)$ και λαμβάνει το

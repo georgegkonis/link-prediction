@@ -12,12 +12,10 @@
 \usepackage{algpseudocode}
 \usepackage{hyperref}
 \usepackage{bookmark}
-\usepackage{makeidx}
 \usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
 \addbibresource{back_matter/references.bib}
 
 \floatname{algorithm}{Αλγόριθμος}
-\makeindex
 
 \renewcommand{\baselinestretch}{1.2}
 
@@ -82,9 +80,5 @@
     \printbibliography
     \include{back_matter/abbreviations}
     \include{back_matter/glossary}
-
-    \backmatter
-    \printindex
-    \cleardoublepage
 
 \end{document}

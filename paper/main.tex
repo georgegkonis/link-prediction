@@ -60,7 +60,7 @@
     \maketitle
 
     \frontmatter
-    \include{front_matter/abstract}
+    \include{front_matter/abstract}            % Greek + English abstracts
     \thesisDedication{Στην οικογένειά μου.}
     \include{front_matter/acknowledgements}
     \tableofcontents
@@ -68,15 +68,15 @@
     \listoftables
 
     \mainmatter
-    \include{body_matter/chap1}
-    \include{body_matter/chap2}
-    \include{body_matter/chap3}
-    \include{body_matter/chap4}
-    \include{body_matter/chap5}
-    \include{body_matter/chap6}
+    \include{body_matter/chap1}                % Ch.1 Εισαγωγή              \ref{chap:introduction}
+    \include{body_matter/chap2}                % Ch.2 Θεωρητικό Υπόβαθρο    \ref{chap:background}
+    \include{body_matter/chap3}                % Ch.3 Μεθοδολογία           \ref{chap:methodology}
+    \include{body_matter/chap4}                % Ch.4 Πειράματα             \ref{chap:experiments}
+    \include{body_matter/chap5}                % Ch.5 Ανάλυση               \ref{chap:analysis}
+    \include{body_matter/chap6}                % Ch.6 Συμπέρασμα            \ref{chap:conclusion}
 
     \appendix
-    \include{back_matter/appA}
+    \include{back_matter/appA}                 % Appendix A                 \ref{app:a}
     \cleardoublepage
 
     \printbibliography

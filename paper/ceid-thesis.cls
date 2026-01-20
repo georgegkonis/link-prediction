@@ -7,8 +7,9 @@
 %
 % Last update: Oct 25, 2014
 %
-%%%%%%
-% Class Information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Class identification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\filename{ceid-thesis}
 \def\fileversion{1.0}
 \def\filedate{2014/10/25}
@@ -25,6 +26,9 @@
 \LoadClass[a4paper,11pt]{book}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Fonts and languages (Greek/English bilingual document via polyglossia)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{fontspec}
 \usepackage{polyglossia}
 \setmainlanguage[variant=monotonic]{greek}
@@ -36,7 +40,11 @@
 
 
 \pagestyle{fancy}
-% Title Page and Front Matter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title page and front matter field definitions
+% (values are set via \supervisor{...}, \institution{...}, etc. in main.tex)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\@supervisor{}              \def\supervisor#1{\gdef\@supervisor{#1}}
 \def\@supervisorSecond{}        \def\supervisorSecond#1{\gdef\@supervisorSecond{#1}}
 
@@ -56,7 +64,10 @@
 \def\@mysig{}             \long\def\mysig#1{\def\@mysig{#1}}
 
 \def\new@tpage{\newpage\thispagestyle{empty}\null}
-% Measurements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Page geometry
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Equal odd/even margins: same left/right margin on every page (no extra
 % binding gutter), unlike a typical twoside book layout.
 \setlength{\oddsidemargin}{5mm}
@@ -70,7 +81,9 @@
 \advance \topmargin by -\headheight
 \advance \topmargin by -\headsep
 
-% Maketitle
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title page (\maketitle): cover, back-of-cover, approval and signature pages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \renewcommand{\maketitle}{
     \begin{titlepage}
         \let\footnotesize\small
@@ -234,7 +247,9 @@
 }
 
 
-% Names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Localized names (Greek labels, with English counterparts for \en{} spans)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\keywordsname}{Λέξεις Κλειδιά}
 \newcommand{\keywordsnameeng}{\en{Keywords}}
 \newcommand{\abstractname}{Περίληψη}
@@ -248,6 +263,10 @@
 \division{ΤΜΗΜΑ ΜΗΧΑΝΙΚΩΝ ΗΛΕΚΤΡΟΝΙΚΩΝ ΥΠΟΛΟΓΙΣΤΩΝ ΚΑΙ ΠΛΗΡΟΦΟΡΙΚΗΣ}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Default content for the title-back pages: institution header, examination
+% committee approval block, and copyright/declaration notice
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \uppertitleback{
     \begin{minipage}{2cm}
         \includegraphics[width=2cm]{static/figures/PatrasLogo.png}
@@ -300,7 +319,9 @@
 }
 
 
-% Redefining Commands
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Front/main/back matter redefinitions (roman vs. arabic page numbering)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \renewcommand{\frontmatter}{
     \cleardoublepage
     \@mainmatterfalse \pagenumbering{roman}
@@ -315,7 +336,9 @@
     \if@openright\cleardoublepage\else\clearpage\fi
     \@mainmatterfalse
 }
-% Headings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapter start pages, running headers/footers (fancyhdr)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\invisiblethingie{\tiny\ }
 % A blank page inserted before a new chapter when the page count is even,
 % so chapters always start on the right-hand (odd) page when bound/printed.
@@ -353,6 +376,9 @@
 \setlength{\headwidth}{\textwidth}
 \addtolength{\topmargin}{-2pt}
 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Table of contents / list of figures / list of tables (add themselves to TOC)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \let\finik@tocont\tableofcontents
 \renewcommand{\tableofcontents}{
     \finik@tocont
@@ -369,7 +395,9 @@
     \finik@lot
     \addcontentsline{toc}{chapter}{\listtablename}
 }
-% More Enviroments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Front-matter environments: keywords, acknowledgements, abstract(s)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newenvironment{keywords}{\section*{\keywordsname}}{}
 \newenvironment{keywordseng}{\section*{\keywordsnameeng}}{}
 \newcommand{\footacknowledgement}[1]{%
@@ -394,13 +422,17 @@
 }
 \def\endabstract{\par\vfil\null\endtitlepage}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Dummy label marking the last page, for anyone who wants \pageref{lastback}
 % (mirrors \label{lastfront} set in \mainmatter above).
 \AtEndDocument{\subparagraph{}\label{lastback}}
 
-%% Dedication
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dedication page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\thesisDedication}[1]{%
 	\cleardoublepage
 	\thispagestyle{empty}

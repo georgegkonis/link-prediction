@@ -4,18 +4,18 @@ RUN = conda run -n $(ENV)
 .PHONY: env env-update download jupyter pdf clean help
 
 help:
-	@echo "env                  create conda environment"
-	@echo "env-update           update conda environment from environment.yml"
-	@echo "download             download DSAA 2023 dataset from Kaggle"
-	@echo "features-structural  compute structural features for all pairs"
-	@echo "features-semantic    compute semantic features for all pairs"
-	@echo "audit-leakage        train/test leakage and self-loop audit"
-	@echo "analyze-dataset      separability characterization (trivial-pair fractions)"
-	@echo "train MODEL=<name>   train a model (structural|tfidf|pos|embedding|cascade)"
-	@echo "evaluate MODEL=<name> generate test set predictions"
-	@echo "pdf                  compile the thesis PDF"
-	@echo "clean                remove LaTeX auxiliary files (keeps main.pdf)"
-	@echo "jupyter              start JupyterLab"
+	@echo "env                  	create conda environment"
+	@echo "env-update           	update conda environment from environment.yml"
+	@echo "download             	download DSAA 2023 dataset from Kaggle"
+	@echo "features-structural  	compute structural features for all pairs"
+	@echo "features-semantic    	compute semantic features for all pairs"
+	@echo "audit-leakage        	train/test leakage and self-loop audit"
+	@echo "analyze-dataset     		separability characterization (trivial-pair fractions)"
+	@echo "train MODEL=<name>  		train a model (structural|tfidf|pos|embedding|cascade)"
+	@echo "evaluate MODEL=<name> 	generate test set predictions"
+	@echo "pdf                 		compile the thesis PDF"
+	@echo "clean               		remove LaTeX auxiliary files (keeps main.pdf)"
+	@echo "jupyter             		start JupyterLab"
 
 env:
 	conda env create -f environment.yml

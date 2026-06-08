@@ -1,0 +1,16 @@
+Separability Characterization
+==============================
+
+Trivial-pair thresholds: cn > 0.000, tfidf > 0.098 (fpr=0.01)
+
+Train difficulty breakdown:
+  hard                  : 607,864 (64.10%)
+  trivial_high_textsim  : 330,111 (34.81%)
+  trivial_self_loop     : 10,221 (1.08%)
+  trivial_high_cn       : 36 (0.00%)
+
+Test difficulty breakdown:
+  hard                  : 153,160 (64.25%)
+  trivial_high_textsim  : 82,646 (34.67%)
+  trivial_self_loop     : 2,553 (1.07%)
+  trivial_high_cn       : 5 (0.00%)

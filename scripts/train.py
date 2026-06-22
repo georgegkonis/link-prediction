@@ -125,17 +125,16 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
 
     elif model_name == 'cascade':
         model = CascadeLP(tier1_threshold=t1, tier2_threshold=t2)
+        tr_structural, val_structural = sub(data['structural'])
+        tr_pos, val_pos = sub(data['pos_features'])
+        tr_st, val_st = sub(data['st_scores'])
         model.fit(
-            data['structural'], data['pos_features'],
-            data['st_scores'],  y, data['pairs'],
+            tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr],
         )
         val_pairs = data['pairs'].iloc[val]
         with timer() as t:
             y_pred, tier_used = model.predict(
-                data['structural'].iloc[val],
-                data['pos_features'][val],
-                data['st_scores'][val],
-                val_pairs,
+                val_structural, val_pos, val_st, val_pairs,
             )
         y_scores = y_pred.astype(float)
         print('\nTier usage:')

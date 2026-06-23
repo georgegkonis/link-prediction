@@ -38,4 +38,5 @@ dependencies:
       - torch-geometric
       - node2vec
       - kagglehub
+      - kagglesdk
       - python-dotenv

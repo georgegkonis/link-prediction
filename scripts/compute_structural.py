@@ -5,6 +5,8 @@ Outputs:
     data/interim/structural_train.csv   — heuristic scores for training pairs
     data/interim/structural_test.csv    — heuristic scores for test pairs
     data/interim/node2vec.kv            — trained Node2Vec KeyedVectors
+    data/interim/n2v_train.npy          — 64-dim Node2Vec Hadamard features for training pairs
+    data/interim/n2v_test.npy           — 64-dim Node2Vec Hadamard features for test pairs
 
 Usage:
     python -m scripts.compute_structural [--nrows N] [--skip-n2v]
@@ -12,10 +14,11 @@ Usage:
 
 import argparse
 
+import numpy as np
 import pandas as pd
 
 from src.data.loader import build_graph, load_edges
-from src.features.structural import compute_heuristics, node2vec_scores, train_node2vec
+from src.features.structural import compute_heuristics, node2vec_hadamard_features, train_node2vec
 
 INTERIM = 'data/interim'
 
@@ -45,14 +48,13 @@ def main(nrows: int | None, skip_n2v: bool):
         wv.save(f'{INTERIM}/node2vec.kv')
         print(f'  Saved → {INTERIM}/node2vec.kv')
 
-        print('\nComputing Node2Vec scores for train pairs...')
-        train['n2v_score'] = node2vec_scores(wv, train)
-        train[['n2v_score']].to_csv(f'{INTERIM}/n2v_train.csv')
+        print('\nComputing Node2Vec Hadamard features for train pairs...')
+        np.save(f'{INTERIM}/n2v_train.npy', node2vec_hadamard_features(wv, train))
+        print(f'  Saved → {INTERIM}/n2v_train.npy')
 
-        print('Computing Node2Vec scores for test pairs...')
-        test['n2v_score'] = node2vec_scores(wv, test)
-        test[['n2v_score']].to_csv(f'{INTERIM}/n2v_test.csv')
-        print(f'  Saved → {INTERIM}/n2v_test.csv')
+        print('Computing Node2Vec Hadamard features for test pairs...')
+        np.save(f'{INTERIM}/n2v_test.npy', node2vec_hadamard_features(wv, test))
+        print(f'  Saved → {INTERIM}/n2v_test.npy')
 
     print('\nDone.')
 

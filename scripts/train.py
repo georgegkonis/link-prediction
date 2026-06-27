@@ -43,6 +43,7 @@ def _load(model_name: str) -> dict:
 
     if model_name in ('structural', 'cascade'):
         data['structural'] = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
+        data['n2v'] = np.load(f'{INTERIM}/n2v_train.npy')
 
     if model_name in ('tfidf', 'svm', 'cascade'):
         data['tfidf_scores'] = pd.read_csv(
@@ -86,9 +87,10 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
     if model_name == 'structural':
         model = StructuralClassifier()
         tr_X, val_X = sub(data['structural'])
-        model.fit(tr_X, y[tr])
+        tr_n2v, val_n2v = sub(data['n2v'])
+        model.fit(tr_X, y[tr], tr_n2v)
         with timer() as t:
-            proba = model.predict_proba(val_X)
+            proba = model.predict_proba(val_X, val_n2v)
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
     elif model_name == 'tfidf':
@@ -128,13 +130,14 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
         tr_structural, val_structural = sub(data['structural'])
         tr_pos, val_pos = sub(data['pos_features'])
         tr_st, val_st = sub(data['st_scores'])
+        tr_n2v, val_n2v = sub(data['n2v'])
         model.fit(
-            tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr],
+            tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr], tr_n2v,
         )
         val_pairs = data['pairs'].iloc[val]
         with timer() as t:
             y_pred, tier_used = model.predict(
-                val_structural, val_pos, val_st, val_pairs,
+                val_structural, val_pos, val_st, val_pairs, val_n2v,
             )
         y_scores = y_pred.astype(float)
         print('\nTier usage:')

@@ -18,19 +18,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from src.data.loader import load_edges
+from src.features.structural import node2vec_hadamard_features
 
 INTERIM = 'data/interim'
 HEURISTICS = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
 TIER1_THRESHOLD = 0.8
-
-
-def hadamard_features(wv, pairs: pd.DataFrame, dim: int = 64) -> np.ndarray:
-    out = np.zeros((len(pairs), dim))
-    for i, (u, v) in enumerate(zip(pairs['id1'].values, pairs['id2'].values)):
-        su, sv = str(u), str(v)
-        if su in wv and sv in wv:
-            out[i] = wv[su] * wv[sv]
-    return out
 
 
 def fit_and_score(X_tr, y_tr, X_val, y_val):
@@ -63,7 +55,7 @@ def main():
 
     print('Loading Node2Vec embeddings...')
     wv = KeyedVectors.load(f'{INTERIM}/node2vec.kv')
-    hadamard = hadamard_features(wv, train)
+    hadamard = node2vec_hadamard_features(wv, train)
 
     print('\n--- Without Node2Vec (4-dim heuristics only) ---')
     baseline = fit_and_score(heuristics[tr], y[tr], heuristics[val], y[val])

@@ -116,16 +116,17 @@ def train_node2vec(
     return model.wv
 
 
-def node2vec_scores(wv, pairs: pd.DataFrame, missing_score: float = 0.0) -> np.ndarray:
+def node2vec_hadamard_features(wv, pairs: pd.DataFrame, dim: int = 64) -> np.ndarray:
     """
-    Cosine similarity between Node2Vec embeddings for each pair.
-    Returns missing_score when either node has no embedding (cold-start).
+    Element-wise (Hadamard) product of Node2Vec embeddings for each pair
+    (Grover & Leskovec, 2016). Rows where either node has no embedding
+    (cold-start) are zero vectors.
     """
-    scores = []
-    for _, row in pairs.iterrows():
-        u, v = str(row['id1']), str(row['id2'])
-        if u in wv and v in wv:
-            scores.append(float(wv.similarity(u, v)))
-        else:
-            scores.append(missing_score)
-    return np.array(scores)
+    key_to_index = wv.key_to_index
+    idx1 = np.array([key_to_index.get(str(u), -1) for u in pairs['id1'].values])
+    idx2 = np.array([key_to_index.get(str(v), -1) for v in pairs['id2'].values])
+    valid = (idx1 >= 0) & (idx2 >= 0)
+
+    out = np.zeros((len(pairs), dim), dtype=np.float32)
+    out[valid] = wv.vectors[idx1[valid]] * wv.vectors[idx2[valid]]
+    return out

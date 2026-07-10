@@ -168,11 +168,11 @@ $C=1$, $\gamma=$\en{«scale»}, υποδείγμα \SvmSampleSize{} ζευγών
 \label{subsec:implementation-details}
 
 Ολόκληρη η αλυσίδα επεξεργασίας υλοποιείται σε \en{Python 3.10} μέσα σε
-απομονωμένο περιβάλλον \en{conda} (\texttt{\en{link-prediction}}), με \en{PyTorch} σε
+απομονωμένο περιβάλλον \en{conda} (\texttt{\en{link-prediction}}), με \en{PyTorch}~\cite{paszke2019pytorch} σε
 διαμόρφωση μόνο \en{CPU}.
 Οι ταξινομητές Λογιστικής Παλινδρόμησης, Τυχαίου Δάσους
 και \en{SVC} χρησιμοποιούν το \en{scikit-learn}· ο γράφος και οι δομικοί
-ευρετικοί δείκτες υπολογίζονται με το \en{NetworkX}· η επισήμανση μερών του λόγου
+ευρετικοί δείκτες υπολογίζονται με το \en{NetworkX}~\cite{hagberg2008exploring}· η επισήμανση μερών του λόγου
 χρησιμοποιεί το \en{NLTK} (\texttt{\en{punkt}} και
 \texttt{\en{averaged\_perceptron\_tagger}}, \S\ref{sec:cascade-routing}); οι
 ενσωματώσεις κειμένου παράγονται με το μοντέλο \en{sentence-transformer}

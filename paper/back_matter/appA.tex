@@ -1,4 +1,4 @@
-% Appendix A: Supplementary material — hyperparameters, extra result tables, dataset stats
+% Appendix A: Hyperparameters, extra result tables, dataset stats, Kaggle tooling
 \selectlanguage{greek}
 
 
@@ -9,19 +9,202 @@
 \section{Διαμορφώσεις Υπερπαραμέτρων}
 \label{sec:hyperparams}
 
+Οι πίνακες~\ref{tab:hyperparam-classifiers} και~\ref{tab:hyperparam-features} καταγράφουν
+τις υπερπαραμέτρους όλων των ταξινομητών και των pipeline εξαγωγής χαρακτηριστικών που
+χρησιμοποιούνται σε αυτή την εργασία.
+
+Οι ταξινομητές Λογιστικής Παλινδρόμησης για το Επίπεδο~1, το Επίπεδο~2 (ενσωμάτωση) και
+τον αυτόνομο \texttt{\en{TfidfClassifier}} μοιράζονται ακριβώς τις ίδιες προεπιλεγμένες τιμές,
+επιλεγμένες για ευρωστία και αναπαραγωγιμότητα χωρίς \en{fine-tuning}.
+Ο \texttt{\en{PosClassifier}} χρησιμοποιεί \en{Random Forest} με \texttt{\en{class\_weight=`balanced'}}
+επειδή η κατανομή κλάσεων στα χαρακτηριστικά \en{POS} είναι άνιση.
+Ο \texttt{\en{SvmClassifier}} εκπαιδεύεται σε στρωματοποιημένο δείγμα \SvmSampleSize{} ζευγών
+λόγω του τετραγωνικού έως κυβικού κόστους του \en{SVC} με πυρήνα ακτινικής βάσης.
+
+\begin{table}[h!]
+  \centering
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Μοντέλο} & \textbf{Αλγόριθμος} & \textbf{Παράμετρος} & \textbf{Τιμή} \\
+    \midrule
+    \texttt{\en{StructuralClassifier}} & \en{Logistic Regression} & $C$ & 1{,}0 \\
+                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
+                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \midrule
+    \texttt{\en{TfidfClassifier}}      & \en{Logistic Regression} & $C$ & 1{,}0 \\
+                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
+                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \midrule
+    \texttt{\en{PosClassifier}}        & \en{Random Forest}       & \texttt{\en{n\_estimators}} & 200 \\
+                                       &                           & \texttt{\en{class\_weight}} & \texttt{\en{`balanced'}} \\
+                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \midrule
+    \texttt{\en{EmbeddingClassifier}}  & \en{Logistic Regression} & $C$ & 1{,}0 \\
+                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
+                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \midrule
+    \texttt{\en{SvmClassifier}}        & \en{SVC (RBF kernel)}    & $C$ & 1{,}0 \\
+                                       &                           & $\gamma$ & \texttt{\en{`scale'}} \\
+                                       &                           & \texttt{\en{subsample\_size}} & \SvmSampleSize{} \\
+                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \midrule
+    \en{CascadeLP}                     & ---                       & $\tau_1$ & \TauOneDefault{} \\
+                                       &                           & $\tau_2$ & \TauTwoDefault{} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Υπερπαράμετροι ταξινομητών.}
+  \label{tab:hyperparam-classifiers}
+\end{table}
+
+\begin{table}[h!]
+  \centering
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Αγωγός} & \textbf{Παράμετρος} & \textbf{Τιμή} \\
+    \midrule
+    \en{TF-IDF} & \texttt{\en{max\_features}} & 50.000 \\
+                & \texttt{\en{sublinear\_tf}} & \texttt{\en{True}} \\
+                & \texttt{\en{min\_df}} & 2 \\
+    \midrule
+    \en{Sentence-Transformer} & μοντέλο & \texttt{\en{all-MiniLM-L6-v2}} \\
+    \midrule
+    \en{Node2Vec} & \texttt{\en{dimensions}} & 64 \\
+                  & \texttt{\en{walk\_length}} & 30 \\
+                  & \texttt{\en{num\_walks}} & 10 \\
+                  & \texttt{\en{window}} & 10 \\
+                  & $p$ & 1 (αμερόληπτο \en{DeepWalk}) \\
+                  & $q$ & 1 (αμερόληπτο \en{DeepWalk}) \\
+    \bottomrule
+  \end{tabular}
+  \caption{Υπερπαράμετροι pipeline εξαγωγής χαρακτηριστικών.}
+  \label{tab:hyperparam-features}
+\end{table}
+
 
 \section{Πρόσθετοι Πίνακες Αποτελεσμάτων}
 \label{sec:extra-results}
+
+Ο πίνακας~\ref{tab:full-model-comparison} παρουσιάζει τα αποτελέσματα επικύρωσης του
+\en{CascadeLP} και του μοντέλου αναφοράς \en{TF-IDF + SVM} (\S\ref{sec:svm-results}) στις
+τέσσερις μετρικές που ορίζει το πρωτόκολλο αξιολόγησης (\S\ref{subsec:evaluation-metrics}).
+Η σύγκριση τοποθετείται σε ενιαίο πίνακα για ευκολία αναφοράς.
+
+\begin{table}[h!]
+  \centering
+  \begin{tabular}{lrrrr}
+    \toprule
+    \textbf{Μοντέλο} & \textbf{\en{Macro F1}} & \textbf{\en{AUC-ROC}} & \textbf{\en{Cold-start F1}} & \textbf{Καθυστ.\ (ms/ζ.)} \\
+    \midrule
+    \en{CascadeLP} (τελικό) & \CascadeValFone{} & \CascadeValAuc{} & \CascadeValFone{} & \ThroughputLatency{} \\
+    \en{TF-IDF + SVM}       & \SvmFone{}        & \SvmAuc{}         & \SvmCsFone{}      & \SvmLatency{}      \\
+    \bottomrule
+  \end{tabular}
+  \caption{Σύγκριση \en{CascadeLP} έναντι \en{SVM} σε όλες τις μετρικές αξιολόγησης,
+  σύνολο επικύρωσης (n=\ValSplitSize{}).
+  Το \en{Cold-start F1} του \en{CascadeLP} ταυτίζεται με το συνολικό \en{Macro F1}
+  επειδή σχεδόν το σύνολο των ζευγών επικύρωσης είναι \en{cold-start}
+  (\S\ref{sec:cold-start-results}).}
+  \label{tab:full-model-comparison}
+\end{table}
+
+Ο πίνακας~\ref{tab:baseline-tier-summary} συνοψίζει την απόδοση των ταξινομητών ανά επίπεδο
+ως αυτόνομα μοντέλα αναφοράς, όπως προκύπτει από την ανάλυση ανά επίπεδο στον
+πίνακα~\ref{tab:cascade-tier-results} (Κεφάλαιο~\ref{ch:experiments}).
+Σε αντίθεση με τη
+σύγκριση του πίνακα~\ref{tab:full-model-comparison}, η οποία αφορά ανεξάρτητη εκπαίδευση
+κάθε μοντέλου, εδώ αναφερόμαστε στην απόδοση του κάθε επιπέδου \textit{ως μέρος της
+αλυσίδας}: δηλαδή στο υποσύνολο ζευγών που ο εκάστοτε ταξινομητής επέλυσε
+ουσιαστικά.
+
+\begin{table}[h!]
+  \centering
+  \small
+  \begin{tabular}{llrrrr}
+    \toprule
+    \textbf{Επίπεδο} & \textbf{Ταξινομητής} & \textbf{n} & \textbf{Ποσοστό} & \textbf{Ακρίβεια} & \textbf{\en{Macro F1}} \\
+    \midrule
+    Επίπεδο~0 & αυτοβρόχοι        & 0              & 0{,}00\%         & ---            & ---            \\
+    Επίπεδο~1 & \en{StructuralClassifier} & \TierOneCount{} & \TierOnePct\% & \TierOneAcc{} & \TierOneFone{} \\
+    Επίπεδο~2 & \en{PosClassifier}        & \TierTwoCount{} & \TierTwoPct\% & \TierTwoAcc{} & \TierTwoFone{} \\
+    Επίπεδο~3 & \en{EmbeddingClassifier}  & \TierThreeCount{} & \TierThreePct\% & \TierThreeAcc{} & \TierThreeFone{} \\
+    \midrule
+    \textbf{Σύνολο} & \en{CascadeLP} & \ValSplitSize{} & 100\% & --- & \CascadeValFone{} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Απόδοση ανά επίπεδο στο σύνολο επικύρωσης. Το χαμηλό \en{Macro F1} του
+  Επιπέδου~1 οφείλεται στην ακραία ανισορροπία κλάσεων εντός του υποσυνόλου υψηλής
+  αξιοπιστίας (\S\ref{sec:cascade-results}).}
+  \label{tab:baseline-tier-summary}
+\end{table}
 
 
 \section{Στατιστικά Συνόλου Δεδομένων}
 \label{sec:dataset-stats}
 
+Ο πίνακας~\ref{tab:dataset-stats} συγκεντρώνει τα βασικά στατιστικά του \en{Wikipedia DSAA
+2023}, όπως προκύπτουν από τους ελέγχους διαρροής και χαρακτηρισμού διαχωρισιμότητας
+(Κεφάλαιο~\ref{ch:experiments}).
+
+\begin{table}[h!]
+  \centering
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Μέγεθος} & \textbf{Τιμή} \\
+    \midrule
+    Ζεύγη εκπαίδευσης (\texttt{\en{train.csv}}) & \TrainPairs{} \\
+    Ζεύγη ελέγχου (\texttt{\en{test.csv}})      & \TestPairs{}  \\
+    Σύνολο άρθρων \en{Wikipedia} (\texttt{\en{nodes.tsv}}) & \GraphNodesTotal{} \\
+    Κόμβοι στον δομικό γράφο & \GraphNodes{} \\
+    Μέσος βαθμός κόμβου & \GraphMeanDegree{} \\
+    \midrule
+    Κατανομή κλάσεων εκπαίδευσης (θετικά / αρνητικά) & \TrainPosPct\% / \TrainNegPct\% \\
+    \midrule
+    Αυτοβρόχοι εκπαίδευσης (θετικοί / αρνητικοί) & \SelfLoopsTrainPos{} / \SelfLoopsTrainNeg{} \\
+    Αυτοβρόχοι ελέγχου & \SelfLoopsTest{} \\
+    \midrule
+    Ακριβής επικάλυψη εκπαίδευσης--ελέγχου & \LeakageExact{} ζεύγη \\
+    Αντεστραμμένη επικάλυψη & \LeakageReversed{} ζεύγη \\
+    Ενδο-συνόλου διπλοεγγραφή (αμερ.\ ζεύγη) & \IntraTrainDuplicates{} \\
+    \midrule
+    Ζεύγη εκπαίδευσης χωρίς αυτοβρόχους & \TrainPairsNoSelf{} \\
+    Σύνολο εκπαίδευσης (80\%) & \TrainSplitSize{} \\
+    Σύνολο επικύρωσης (20\%) & \ValSplitSize{} \\
+    \midrule
+    Όριο $\theta_{\mathrm{CN}}$ (1\% FPR) & $> \CnThreshold{}$ \\
+    Όριο $\theta_{\mathrm{TF\text{-}IDF}}$ (1\% FPR) & $> \TfidfThreshold{}$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Στατιστικά συνόλου δεδομένων \en{Wikipedia DSAA 2023}. Τα όρια
+  $\theta_{\mathrm{CN}}$ και $\theta_{\mathrm{TF\text{-}IDF}}$ υπολογίζονται με
+  \texttt{\en{pick\_thresholds}} (\S\ref{sec:forensics-protocol}).}
+  \label{tab:dataset-stats}
+\end{table}
+
+Αξίζει να σημειωθεί η χαμηλή τιμή του μέσου βαθμού κόμβου (\GraphMeanDegree{}).
+Σε έναν τόσο αραιό γράφο, η συντριπτική πλειονότητα των ζευγών στερείται κοινών γειτόνων,
+γεγονός που εξηγεί γιατί το \ColdStartPct\% των ζευγών επικύρωσης ανήκει στο \en{cold-start} υποσύνολο
+(\S\ref{sec:cold-start-results}) και γιατί τα ευρετικά χαρακτηριστικά δομής αποτυγχάνουν
+στην πλειονότητα των ζευγών χωρίς \en{Node2Vec}.
+
 
 \section{Εργαλείο Υποβολής στο \en{Kaggle}}
 \label{sec:kaggle-submit}
 
-Η επιβεβαίωση του σκορ \en{Macro F1-score} \texttt{0.99827} στο δημόσιο \en{leaderboard} του \en{Kaggle} (Κεφάλαια \ref{ch:experiments} και \ref{ch:conclusion}) προέκυψε μέσω ενός βοηθητικού \en{script}, του \texttt{\en{scripts/submit\_kaggle.py}}, γραμμένου ειδικά για την αναπαραγωγιμότητα αυτής της διαδικασίας.
-Το \en{script} καλείται μέσω δύο στόχων του \texttt{\en{Makefile}}: ο \texttt{\en{make kaggle-submit FILE=<path> MSG=<text>}} ανεβάζει ένα αρχείο προβλέψεων στον διαγωνισμό \en{DSAA 2023}, ενώ ο \texttt{\en{make kaggle-check}} ενημερώνεται για την κατάσταση και το δημόσιο σκορ των πρόσφατων υποβολών.
-Η πιστοποίηση γίνεται μέσω ενός \en{token} αποθηκευμένου στη μεταβλητή περιβάλλοντος \texttt{\en{KAGGLE\_API\_TOKEN}} (αρχείο \texttt{.env}), το οποίο χρησιμοποιείται από τη βιβλιοθήκη \texttt{\en{kagglesdk}} για την επικοινωνία με το \en{API} του \en{Kaggle}.
-Η ίδια βιβλιοθήκη υποστηρίζει και τη λήψη του συνόλου δεδομένων (\texttt{\en{make download}}), οπότε μία μοναδική διαπίστευση καλύπτει όλο τον κύκλο αναπαραγωγιμότητας, από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ.
+Η επιβεβαίωση του σκορ \en{Macro F1-score} \texttt{0.99827} στο δημόσιο \en{leaderboard} του \en{Kaggle} απαιτεί φυσικά μία πραγματική υποβολή στον διαγωνισμό \en{DSAA 2023}.
+Για την κάλυψη αυτής της ανάγκης γράφτηκε το \texttt{\en{scripts/submit\_kaggle.py}}: ένα βοηθητικό \en{script} που αναλαμβάνει ολόκληρο τον κύκλο υποβολής, από τη μεταφόρτωση του αρχείου προβλέψεων στους εξυπηρετητές του \en{Kaggle} έως την ανάκτηση και καταγραφή του τελικού βαθμού.
+
+Το \en{script} εκτίθεται μέσω δύο στόχων του \texttt{\en{Makefile}}.
+Ο \texttt{\en{make kaggle-submit FILE=<path> MSG=<text>}} μεταφορτώνει ένα αρχείο \en{CSV} απευθείας στον διαγωνισμό.
+Ο \texttt{\en{make kaggle-check}} αναζητά και εκτυπώνει την κατάσταση και το δημόσιο σκορ των πιο πρόσφατων υποβολών.
+Και οι δύο στόχοι δέχονται προαιρετικά τη σημαία \texttt{\en{--wait}}, η οποία κρατά το \en{script} σε αναμονή έως ότου η βαθμολόγηση ολοκληρωθεί ασύγχρονα από τους εξυπηρετητές.
+
+Η πιστοποίηση γίνεται αποκλειστικά μέσω του \en{token} \texttt{\en{KAGGLE\_API\_TOKEN}}, αποθηκευμένου στο αρχείο \texttt{.env}.
+Δεν απαιτείται ξεχωριστό ζεύγος ονόματος χρήστη και κλειδιού \en{API}.
+Το ίδιο \en{token} χρησιμοποιείται από τη βιβλιοθήκη \texttt{\en{kagglesdk}} --- τη βιβλιοθήκη πίσω από το επίσημο \en{CLI} του \en{Kaggle} --- για κάθε κλήση προς το \en{API}.
+
+Κάθε υποβολή καταγράφεται αυτόματα στο αρχείο \texttt{\en{outputs/predictions/kaggle\_scores.csv}}, με πρωτεύον κλειδί τον μοναδικό αναγνωριστή \texttt{\en{ref}} που αποδίδει το \en{Kaggle} σε κάθε υποβολή.
+Η επιλογή αυτή εξασφαλίζει ότι κάθε βαθμός αντιστοιχεί με ακρίβεια στο αρχείο που το παρήγαγε, ανεξάρτητα από περιγραφές ή σειρά εμφάνισης.
+Το ίδιο \en{token} καλύπτει και τη λήψη του συνόλου δεδομένων μέσω \texttt{\en{make data-download}}, οπότε μία μοναδική διαπίστευση επαρκεί για ολόκληρο τον κύκλο αναπαραγωγιμότητας: από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ στο \en{leaderboard}.

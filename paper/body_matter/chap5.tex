@@ -319,7 +319,7 @@ $\tau_2 = 0{,}9$), το Επίπεδο~3 χειρίζεται μόλις το \T
 Από
 αυτά, το \CascadeErrorsHardPct\% (\CascadeErrorsHardN{} σφάλματα) προέρχεται από ζεύγη που χαρακτηρίζονται \en{hard}
 από το πρωτόκολλο χαρακτηρισμού δυσκολίας (\S\ref{sec:forensics-protocol}), και το
-\CascadeErrorsTrivialPct\% (17 σφάλματα) από τετριμμένα ζεύγη υψηλής ομοιότητας κειμένου --- κανένα
+\CascadeErrorsTrivialPct\% (\CascadeErrorsTrivialN{} σφάλματα) από τετριμμένα ζεύγη υψηλής ομοιότητας κειμένου --- κανένα
 σφάλμα δεν προέρχεται από αυτοβρόχους ή ζεύγη υψηλού \en{CN}, όπου το Επίπεδο~0 και το
 Επίπεδο~1 αντίστοιχα είναι αλάνθαστα.
 
@@ -339,8 +339,8 @@ $\tau_2 = 0{,}9$), το Επίπεδο~3 χειρίζεται μόλις το \T
     & \multicolumn{2}{c}{\textbf{\en{CascadeLP}}} & \multicolumn{2}{c}{\textbf{\en{SVM}}} \\
     \textbf{Κατηγορία Δυσκολίας} & \textbf{Σφάλματα} & \textbf{\%} & \textbf{Σφάλματα} & \textbf{\%} \\
     \midrule
-    \en{hard}                  & \CascadeErrorsHardN{} & \CascadeErrorsHardPct\% & 15.632 & \SvmErrorsHardPct\% \\
-    Υψηλή Ομοιότητα Κειμένου   & 17  & \CascadeErrorsTrivialPct\%  & 1.064  & \SvmErrorsTrivialPct\%  \\
+    \en{hard}                  & \CascadeErrorsHardN{} & \CascadeErrorsHardPct\% & \SvmErrorsHardN{} & \SvmErrorsHardPct\% \\
+    Υψηλή Ομοιότητα Κειμένου   & \CascadeErrorsTrivialN{}  & \CascadeErrorsTrivialPct\%  & \SvmErrorsTrivialN{}  & \SvmErrorsTrivialPct\%  \\
     \midrule
     \textbf{Σύνολο}             & \textbf{\CascadeTotalErrors{}} & \textbf{100\%} & \textbf{\SvmTotalErrors{}} & \textbf{100\%} \\
     \bottomrule

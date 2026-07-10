@@ -15,6 +15,7 @@ from sklearn.metrics import f1_score
 
 from src.data.loader import load_edges
 from src.models.cascade import CascadeLP
+from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim'
 CHECKPOINTS = 'outputs/checkpoints'
@@ -24,6 +25,7 @@ T2_GRID = [0.5, 0.6, 0.7, 0.8, 0.9]
 
 
 def main():
+    log = setup_logging('ablate_cascade_thresholds')
     train = load_edges('data/raw/train.csv')
     y = train['label'].values
     structural = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
@@ -42,7 +44,7 @@ def main():
 
     model = CascadeLP.load(f'{CHECKPOINTS}/cascade.joblib')
 
-    print(f'{"tau1":>6} {"tau2":>6} {"macro_f1":>10} {"tier1_%":>9} {"tier2_%":>9} {"tier3_%":>9}')
+    log.info('%6s %6s %10s %9s %9s %9s', 'tau1', 'tau2', 'macro_f1', 'tier1_%', 'tier2_%', 'tier3_%')
     rows = []
     for t1 in T1_GRID:
         for t2 in T2_GRID:
@@ -50,15 +52,14 @@ def main():
             model.tier2_threshold = t2
             y_pred, tier_used = model.predict(val_structural, val_pos, val_st, val_pairs)
             mf1 = f1_score(y_val, y_pred, average='macro', zero_division=0)
-            n = len(tier_used)
             pct = lambda t: 100 * (tier_used == t).mean()
             row = {'tau1': t1, 'tau2': t2, 'macro_f1': mf1,
                    'tier1_pct': pct(1), 'tier2_pct': pct(2), 'tier3_pct': pct(3)}
             rows.append(row)
-            print(f'{t1:>6.2f} {t2:>6.2f} {mf1:>10.4f} {pct(1):>9.2f} {pct(2):>9.2f} {pct(3):>9.2f}')
+            log.info('%6.2f %6.2f %10.4f %9.2f %9.2f %9.2f', t1, t2, mf1, pct(1), pct(2), pct(3))
 
     pd.DataFrame(rows).to_csv('outputs/predictions/cascade_threshold_ablation.csv', index=False)
-    print("\nSaved -> outputs/predictions/cascade_threshold_ablation.csv")
+    log.info('Saved → outputs/predictions/cascade_threshold_ablation.csv')
 
 
 if __name__ == '__main__':

@@ -161,8 +161,9 @@ data/interim/*
 
 # Hydra runtime artifacts
 .hydra/
-train.log
-evaluate.log
+
+# Logs
+logs/*.log
 
 # Model outputs
 outputs/predictions/*

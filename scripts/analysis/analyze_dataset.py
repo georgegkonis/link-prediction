@@ -23,13 +23,15 @@ import pandas as pd
 
 from src.data.loader import load_edges
 from src.utils.difficulty import label_difficulty, pick_thresholds
+from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim'
 OUTPUTS = 'outputs'
 
 
 def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
-    print('Loading edges and features...')
+    log = setup_logging('analyze_dataset')
+    log.info('Loading edges and features...')
     train = load_edges('data/raw/train.csv')
     test = load_edges('data/raw/test.csv')
     y = train['label'].values
@@ -40,21 +42,21 @@ def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
     tfidf_test = pd.read_csv(f'{INTERIM}/tfidf_test.csv', index_col='id')['tfidf_score'].values
 
     not_self = (train['id1'] != train['id2']).values
-    print('\nCommon-neighbor distribution (non-self train pairs):')
-    print(f'  Positive : {pd.Series(cn_train[not_self & (y == 1)]).describe()}')
-    print(f'  Negative : {pd.Series(cn_train[not_self & (y == 0)]).describe()}')
+    log.info('Common-neighbor distribution (non-self train pairs):\n  Positive : %s\n  Negative : %s',
+             pd.Series(cn_train[not_self & (y == 1)]).describe(),
+             pd.Series(cn_train[not_self & (y == 0)]).describe())
 
-    print('\nTF-IDF cosine similarity distribution (non-self train pairs):')
-    print(f'  Positive : {pd.Series(tfidf_train[not_self & (y == 1)]).describe()}')
-    print(f'  Negative : {pd.Series(tfidf_train[not_self & (y == 0)]).describe()}')
+    log.info('TF-IDF cosine similarity distribution (non-self train pairs):\n  Positive : %s\n  Negative : %s',
+             pd.Series(tfidf_train[not_self & (y == 1)]).describe(),
+             pd.Series(tfidf_train[not_self & (y == 0)]).describe())
 
     if cn_threshold is None or tfidf_threshold is None:
         auto_cn, auto_tfidf = pick_thresholds(y, cn_train, tfidf_train, fpr=fpr)
         cn_threshold = cn_threshold if cn_threshold is not None else auto_cn
         tfidf_threshold = tfidf_threshold if tfidf_threshold is not None else auto_tfidf
 
-    print(f'\nTrivial-pair thresholds: cn > {cn_threshold:.3f}  |  tfidf > {tfidf_threshold:.3f}'
-          f'  (fpr={fpr})')
+    log.info('Trivial-pair thresholds: cn > %.3f  |  tfidf > %.3f  (fpr=%s)',
+             cn_threshold, tfidf_threshold, fpr)
 
     diff_train = label_difficulty(train, cn_train, tfidf_train, cn_threshold, tfidf_threshold)
     diff_test = label_difficulty(test, cn_test, tfidf_test, cn_threshold, tfidf_threshold)
@@ -75,7 +77,7 @@ def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
         *(f'  {k:22s}: {v:,} ({v / len(diff_test) * 100:.2f}%)' for k, v in test_counts.items()),
     ]
     report = '\n'.join(lines)
-    print('\n' + report)
+    log.info('\n%s', report)
 
     diff_train.to_csv(f'{INTERIM}/difficulty_train.csv')
     diff_test.to_csv(f'{INTERIM}/difficulty_test.csv')
@@ -85,9 +87,9 @@ def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
         json.dumps({'cn_threshold': float(cn_threshold), 'tfidf_threshold': float(tfidf_threshold)}, indent=2)
     )
 
-    print(f'\nSaved → {INTERIM}/difficulty_{{train,test}}.csv')
-    print(f'Saved → {INTERIM}/difficulty_thresholds.json')
-    print(f'Saved → {OUTPUTS}/analyze_dataset-results.txt')
+    log.info('Saved → %s/difficulty_{train,test}.csv', INTERIM)
+    log.info('Saved → %s/difficulty_thresholds.json', INTERIM)
+    log.info('Saved → %s/analyze_dataset-results.txt', OUTPUTS)
 
 
 if __name__ == '__main__':

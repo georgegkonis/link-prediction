@@ -19,6 +19,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
 
+from src.utils.log_utils import setup_logging
+
 PREDICTIONS = 'outputs/predictions'
 INTERIM = 'data/interim'
 
@@ -31,16 +33,16 @@ def _mf1(y_true, y_pred):
 
 
 def main():
+    log = setup_logging('analyze_cascade')
     df = pd.read_csv(f'{PREDICTIONS}/cascade_val_tiers.csv')
     n = len(df)
     yt, yp = df['y_true'].values, df['y_pred'].values
 
-    print(f'Validation pairs: {n:,}')
-    print(f'Overall accuracy : {accuracy_score(yt, yp):.4f}')
-    print(f'Overall macro-F1 : {_mf1(yt, yp):.4f}\n')
+    log.info('Validation pairs: %s', f'{n:,}')
+    log.info('Overall accuracy : %.4f', accuracy_score(yt, yp))
+    log.info('Overall macro-F1 : %.4f', _mf1(yt, yp))
 
     # Per-tier
-    print('=== Per-tier ===')
     rows = []
     for t in sorted(df['tier_used'].unique()):
         m = df['tier_used'] == t
@@ -50,10 +52,9 @@ def main():
             'accuracy': round(accuracy_score(yt[m], yp[m]), 4),
             'macro_f1': round(_mf1(yt[m], yp[m]), 4),
         })
-    print(pd.DataFrame(rows).to_string(index=False))
+    log.info('=== Per-tier ===\n%s', pd.DataFrame(rows).to_string(index=False))
 
     # Per-difficulty
-    print('\n=== Per-difficulty ===')
     rows = []
     for d in df['difficulty'].unique():
         m = df['difficulty'] == d
@@ -63,26 +64,24 @@ def main():
             'accuracy': round(accuracy_score(yt[m], yp[m]), 4),
             'macro_f1': round(_mf1(yt[m], yp[m]), 4),
         })
-    print(pd.DataFrame(rows).to_string(index=False))
+    log.info('=== Per-difficulty ===\n%s', pd.DataFrame(rows).to_string(index=False))
 
     # Tier x difficulty
-    print('\n=== Tier x difficulty (n / accuracy) ===')
     piv_n = df.pivot_table(index='tier_used', columns='difficulty',
                            values='y_true', aggfunc='count', fill_value=0)
-    print('n:\n', piv_n.to_string())
     df['_correct'] = (yt == yp).astype(int)
     piv_acc = df.pivot_table(index='tier_used', columns='difficulty',
                              values='_correct', aggfunc='mean')
-    print('\naccuracy:\n', piv_acc.round(4).to_string())
+    log.info('=== Tier x difficulty ===\nn:\n%s\n\naccuracy:\n%s',
+             piv_n.to_string(), piv_acc.round(4).to_string())
 
     # Cold-start (zero common neighbours) — join CN by id from structural_train
     cn = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')['cn']
     df = df.merge(cn.rename('cn'), left_on='id', right_index=True, how='left')
-    # cold-start: not a self-loop, CN is 0 or NaN (node absent / no shared nbr)
     cs = (df['id1'] != df['id2']) & (df['cn'].fillna(0) == 0)
-    print(f'\n=== Cold-start subset (CN==0, non-self-loop): {int(cs.sum()):,} pairs ===')
-    print(f'Cold-start accuracy : {accuracy_score(yt[cs.values], yp[cs.values]):.4f}')
-    print(f'Cold-start macro-F1 : {_mf1(yt[cs.values], yp[cs.values]):.4f}')
+    log.info('=== Cold-start subset (CN==0, non-self-loop): %s pairs ===', f'{int(cs.sum()):,}')
+    log.info('Cold-start accuracy : %.4f', accuracy_score(yt[cs.values], yp[cs.values]))
+    log.info('Cold-start macro-F1 : %.4f', _mf1(yt[cs.values], yp[cs.values]))
     rows = []
     sub = df[cs]
     for t in sorted(sub['tier_used'].unique()):
@@ -93,22 +92,21 @@ def main():
             'accuracy': round(accuracy_score(sub['y_true'][m], sub['y_pred'][m]), 4),
             'macro_f1': round(_mf1(sub['y_true'][m], sub['y_pred'][m]), 4),
         })
-    print(pd.DataFrame(rows).to_string(index=False))
+    log.info('%s', pd.DataFrame(rows).to_string(index=False))
 
     # Hard residual reaching Tier 3
     hard_t3 = (df['tier_used'] == 3) & (df['difficulty'] == 'hard')
-    print(f'\n=== Hard residual at Tier 3: {int(hard_t3.sum()):,} pairs '
-          f'({100 * hard_t3.mean():.2f}% of val) ===')
+    log.info('=== Hard residual at Tier 3: %s pairs (%.2f%% of val) ===',
+             f'{int(hard_t3.sum()):,}', 100 * hard_t3.mean())
     if hard_t3.sum():
-        print(f'  accuracy : {accuracy_score(yt[hard_t3.values], yp[hard_t3.values]):.4f}')
-        print(f'  macro-F1 : {_mf1(yt[hard_t3.values], yp[hard_t3.values]):.4f}')
+        log.info('  accuracy : %.4f', accuracy_score(yt[hard_t3.values], yp[hard_t3.values]))
+        log.info('  macro-F1 : %.4f', _mf1(yt[hard_t3.values], yp[hard_t3.values]))
 
     # Error concentration by difficulty
-    print('\n=== Error concentration by difficulty ===')
     err = df[yt != yp]
-    print(f'Total errors: {len(err):,}')
     conc = (err['difficulty'].value_counts(normalize=True) * 100).round(2)
-    print(conc.to_string())
+    log.info('=== Error concentration by difficulty ===\nTotal errors: %s\n%s',
+             f'{len(err):,}', conc.to_string())
 
 
 if __name__ == '__main__':

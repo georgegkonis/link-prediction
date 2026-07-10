@@ -18,3 +18,7 @@ seed: 42
 hydra:
   run:
     dir: .
+  job_logging:
+    handlers:
+      file:
+        filename: logs/${hydra.job.name}.log

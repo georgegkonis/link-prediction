@@ -19,7 +19,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from src.utils.log_utils import setup_logging
+
 matplotlib.use('Agg')
+
+log = setup_logging('generate_figures')
 
 INTERIM     = pathlib.Path('data/interim')
 RAW         = pathlib.Path('data/raw')
@@ -41,7 +45,7 @@ def _save(fig: plt.Figure, name: str) -> None:
     dst = PAPER_FIGS / name
     fig.savefig(src, dpi=150, bbox_inches='tight')
     shutil.copy2(src, dst)
-    print(f'Saved → {src}  (copied to {dst})')
+    log.info('Saved → %s  (copied to %s)', src, dst)
     plt.close(fig)
 
 
@@ -50,7 +54,7 @@ def _save(fig: plt.Figure, name: str) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_separability(subsample: int = 100_000) -> None:
-    print('Generating separability_distributions.png ...')
+    log.info('Generating separability_distributions.png ...')
     train = pd.read_csv(RAW / 'train.csv')
     structural = pd.read_csv(INTERIM / 'structural_train.csv', index_col='id')
     tfidf = pd.read_csv(INTERIM / 'tfidf_train.csv', index_col='id')
@@ -102,7 +106,7 @@ def fig_separability(subsample: int = 100_000) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_difficulty() -> None:
-    print('Generating difficulty_breakdown.png ...')
+    log.info('Generating difficulty_breakdown.png ...')
     diff = pd.read_csv(INTERIM / 'difficulty_train.csv', index_col='id')
 
     labels_map = {
@@ -141,10 +145,10 @@ def fig_difficulty() -> None:
 # ---------------------------------------------------------------------------
 
 def fig_svm_metrics() -> None:
-    print('Generating svm_metrics.png ...')
+    log.info('Generating svm_metrics.png ...')
     svm_path = PREDICTIONS / 'svm_val_metrics.json'
     if not svm_path.exists():
-        print('  SKIP: svm_val_metrics.json not found — run make train MODEL=svm first')
+        log.warning('SKIP: svm_val_metrics.json not found — run make train MODEL=svm first')
         return
 
     svm = json.loads(svm_path.read_text())
@@ -183,7 +187,7 @@ def main() -> None:
     fig_separability()
     fig_difficulty()
     fig_svm_metrics()
-    print('Done.')
+    log.info('Done.')
 
 
 if __name__ == '__main__':

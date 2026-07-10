@@ -19,44 +19,46 @@ import pandas as pd
 
 from src.data.loader import build_graph, load_edges
 from src.features.structural import compute_heuristics, node2vec_hadamard_features, train_node2vec
+from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim'
 
 
 def main(nrows: int | None, skip_n2v: bool):
-    print('Loading edges...')
+    log = setup_logging('compute_structural')
+    log.info('Loading edges...')
     train = load_edges('data/raw/train.csv', nrows=nrows)
     test  = load_edges('data/raw/test.csv',  nrows=nrows)
 
-    print('Building graph from positive training edges...')
+    log.info('Building graph from positive training edges...')
     G = build_graph(train)
-    print(f'  {G.number_of_nodes():,} nodes  |  {G.number_of_edges():,} edges')
+    log.info('  %s nodes  |  %s edges', f'{G.number_of_nodes():,}', f'{G.number_of_edges():,}')
 
-    print('\nComputing heuristics for train pairs...')
+    log.info('Computing heuristics for train pairs...')
     h_train = compute_heuristics(G, train)
     h_train.to_csv(f'{INTERIM}/structural_train.csv')
-    print(f'  Saved → {INTERIM}/structural_train.csv')
+    log.info('  Saved → %s/structural_train.csv', INTERIM)
 
-    print('\nComputing heuristics for test pairs...')
+    log.info('Computing heuristics for test pairs...')
     h_test = compute_heuristics(G, test)
     h_test.to_csv(f'{INTERIM}/structural_test.csv')
-    print(f'  Saved → {INTERIM}/structural_test.csv')
+    log.info('  Saved → %s/structural_test.csv', INTERIM)
 
     if not skip_n2v:
-        print('\nTraining Node2Vec...')
+        log.info('Training Node2Vec...')
         wv = train_node2vec(G)
         wv.save(f'{INTERIM}/node2vec.kv')
-        print(f'  Saved → {INTERIM}/node2vec.kv')
+        log.info('  Saved → %s/node2vec.kv', INTERIM)
 
-        print('\nComputing Node2Vec Hadamard features for train pairs...')
+        log.info('Computing Node2Vec Hadamard features for train pairs...')
         np.save(f'{INTERIM}/n2v_train.npy', node2vec_hadamard_features(wv, train))
-        print(f'  Saved → {INTERIM}/n2v_train.npy')
+        log.info('  Saved → %s/n2v_train.npy', INTERIM)
 
-        print('Computing Node2Vec Hadamard features for test pairs...')
+        log.info('Computing Node2Vec Hadamard features for test pairs...')
         np.save(f'{INTERIM}/n2v_test.npy', node2vec_hadamard_features(wv, test))
-        print(f'  Saved → {INTERIM}/n2v_test.npy')
+        log.info('  Saved → %s/n2v_test.npy', INTERIM)
 
-    print('\nDone.')
+    log.info('Done.')
 
 
 if __name__ == '__main__':

@@ -27,6 +27,10 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from src.utils.log_utils import setup_logging
+
+log = setup_logging('generate_macros')
+
 # ---------------------------------------------------------------------------
 # Structural constants — cannot change without full pipeline re-run
 # ---------------------------------------------------------------------------
@@ -72,7 +76,7 @@ def gpct(x: float, d: int = 2) -> str:
 # ---------------------------------------------------------------------------
 
 def _load() -> dict:
-    print('Loading CSVs...')
+    log.info('Loading CSVs...')
     d: dict = {}
 
     d['train'] = pd.read_csv(RAW / 'train.csv')
@@ -85,7 +89,7 @@ def _load() -> dict:
     if thresh_path.exists():
         d['thresholds'] = json.loads(thresh_path.read_text())
     else:
-        print('  WARNING: difficulty_thresholds.json not found — run make analyze-dataset first')
+        log.warning('difficulty_thresholds.json not found — run make analyze-dataset first')
         d['thresholds'] = {'cn_threshold': 0.0, 'tfidf_threshold': 0.098}
 
     d['leakage']  = pd.read_csv(INTERIM / 'leakage_pairs.csv')
@@ -98,7 +102,7 @@ def _load() -> dict:
     if svm_path.exists():
         d['svm'] = json.loads(svm_path.read_text())
     else:
-        print('  WARNING: svm_val_metrics.json not found — run make train MODEL=svm first')
+        log.warning('svm_val_metrics.json not found — run make train MODEL=svm first')
         d['svm'] = None
 
     return d
@@ -531,7 +535,7 @@ def _emit_tex(macros: dict[str, str]) -> None:
 
     out = PAPER / 'generated_macros.tex'
     out.write_text('\n'.join(lines))
-    print(f'Wrote {len(macros)} macros → {out}')
+    log.info('Wrote %d macros → %s', len(macros), out)
 
 
 def main():

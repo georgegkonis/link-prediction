@@ -21,6 +21,7 @@ import argparse
 import pandas as pd
 
 from src.data.loader import load_edges
+from src.utils.log_utils import setup_logging
 
 OUTPUTS = 'outputs'
 INTERIM = 'data/interim'
@@ -68,18 +69,19 @@ def self_loop_report(df: pd.DataFrame, name: str) -> dict:
 
 
 def main(train_path: str, test_path: str):
-    print('Loading edges...')
+    log = setup_logging('audit_leakage')
+    log.info('Loading edges...')
     train = load_edges(train_path)
     test = load_edges(test_path)
 
-    print('\nSelf-loop report...')
+    log.info('Self-loop report...')
     train_loops = self_loop_report(train, 'train')
     test_loops = self_loop_report(test, 'test')
 
-    print('\nChecking train/test pair overlap...')
+    log.info('Checking train/test pair overlap...')
     overlap = pair_overlap(train, test)
 
-    print('Checking intra-train duplicate pairs...')
+    log.info('Checking intra-train duplicate pairs...')
     dupes = intra_train_duplicates(train)
 
     lines = [
@@ -99,7 +101,7 @@ def main(train_path: str, test_path: str):
         f"  ({len(dupes):,} rows), label_conflicts={int(dupes['label_conflict'].sum()) if len(dupes) else 0}",
     ]
     report = '\n'.join(lines)
-    print('\n' + report)
+    log.info('\n%s', report)
 
     exact_set = set(overlap['exact_overlap'])
     reversed_set = set(overlap['reversed_overlap'])
@@ -114,8 +116,8 @@ def main(train_path: str, test_path: str):
     with open(f'{OUTPUTS}/leakage_audit-results.txt', 'w') as f:
         f.write(report + '\n')
 
-    print(f'\nSaved → {INTERIM}/leakage_pairs.csv')
-    print(f'Saved → {OUTPUTS}/leakage_audit-results.txt')
+    log.info('Saved → %s/leakage_pairs.csv', INTERIM)
+    log.info('Saved → %s/leakage_audit-results.txt', OUTPUTS)
 
 
 if __name__ == '__main__':

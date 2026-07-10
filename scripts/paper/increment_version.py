@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+from src.utils.log_utils import setup_logging
+
+
 def main():
     paper_dir = Path("paper")
     version_file = paper_dir / ".version"
@@ -19,7 +22,7 @@ def main():
     tex_content = f"\\newcommand{{\\draftversion}}{{DRAFT v{version}}}\n"
     tex_file.write_text(tex_content)
     
-    print(f"Incremented paper draft version to {version}")
+    setup_logging('increment_version').info('Incremented paper draft version to %d', version)
 
 if __name__ == "__main__":
     main()

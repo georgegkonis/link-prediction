@@ -15,18 +15,21 @@ from pathlib import Path
 from dotenv import load_dotenv
 import kagglehub
 
+from src.utils.log_utils import setup_logging
+
 load_dotenv()
 
 RAW = Path('data/raw')
+log = setup_logging('download_data')
 
 
 def main():
-    print('Downloading DSAA 2023 competition dataset...')
+    log.info('Downloading DSAA 2023 competition dataset...')
     cache_path = Path(kagglehub.competition_download('dsaa-2023-competition'))
-    print(f'Downloaded to cache: {cache_path}')
+    log.info('Downloaded to cache: %s', cache_path)
 
     files = list(cache_path.rglob('*'))
-    print(f'Files in download: {[f.name for f in files if f.is_file()]}')
+    log.info('Files in download: %s', [f.name for f in files if f.is_file()])
 
     for src in files:
         if not src.is_file():
@@ -35,16 +38,16 @@ def main():
         dest = RAW / src.name
 
         if src.suffix == '.zip':
-            print(f'Extracting {src.name} → {RAW}/')
+            log.info('Extracting %s → %s/', src.name, RAW)
             with zipfile.ZipFile(src) as zf:
                 zf.extractall(RAW)
         else:
-            print(f'Copying {src.name} → {dest}')
+            log.info('Copying %s → %s', src.name, dest)
             shutil.copy2(src, dest)
 
-    print(f'\nDone. Files in data/raw/:')
+    log.info('Done. Files in data/raw/:')
     for f in sorted(RAW.iterdir()):
-        print(f'  {f.name}  ({f.stat().st_size / 1024:.1f} KB)')
+        log.info('  %s  (%.1f KB)', f.name, f.stat().st_size / 1024)
 
 
 if __name__ == '__main__':

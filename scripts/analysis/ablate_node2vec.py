@@ -19,6 +19,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.data.loader import load_edges
 from src.features.structural import node2vec_hadamard_features
+from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim'
 HEURISTICS = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
@@ -43,6 +44,7 @@ def fit_and_score(X_tr, y_tr, X_val, y_val):
 
 
 def main():
+    log = setup_logging('ablate_node2vec')
     train = load_edges('data/raw/train.csv')
     y = train['label'].values
     structural = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
@@ -53,26 +55,29 @@ def main():
 
     heuristics = structural[HEURISTICS].fillna(0).values
 
-    print('Loading Node2Vec embeddings...')
+    log.info('Loading Node2Vec embeddings...')
     wv = KeyedVectors.load(f'{INTERIM}/node2vec.kv')
     hadamard = node2vec_hadamard_features(wv, train)
 
-    print('\n--- Without Node2Vec (4-dim heuristics only) ---')
     baseline = fit_and_score(heuristics[tr], y[tr], heuristics[val], y[val])
+    lines = ['--- Without Node2Vec (4-dim heuristics only) ---']
     for k, v in baseline.items():
-        print(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
+        lines.append(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
+    log.info('\n'.join(lines))
 
-    print('\n--- With Node2Vec (4 heuristics + 64-dim Hadamard = 68-dim) ---')
     augmented_tr = np.hstack([heuristics[tr], hadamard[tr]])
     augmented_val = np.hstack([heuristics[val], hadamard[val]])
     with_n2v = fit_and_score(augmented_tr, y[tr], augmented_val, y[val])
+    lines = ['--- With Node2Vec (4 heuristics + 64-dim Hadamard = 68-dim) ---']
     for k, v in with_n2v.items():
-        print(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
+        lines.append(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
+    log.info('\n'.join(lines))
 
-    print('\n--- Delta (with - without) ---')
+    lines = ['--- Delta (with - without) ---']
     for k in baseline:
         if isinstance(baseline[k], float):
-            print(f'  {k}: {with_n2v[k] - baseline[k]:+.4f}')
+            lines.append(f'  {k}: {with_n2v[k] - baseline[k]:+.4f}')
+    log.info('\n'.join(lines))
 
 
 if __name__ == '__main__':

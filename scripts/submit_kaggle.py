@@ -30,7 +30,11 @@ load_dotenv()
 
 import pathlib
 from omegaconf import OmegaConf
+
+from src.utils.log_utils import setup_logging
+
 cfg = OmegaConf.load(pathlib.Path(__file__).parent.parent / 'configs' / 'config.yaml')
+log = setup_logging('submit_kaggle')
 COMPETITION = cfg.kaggle.competition
 LOG_PATH = cfg.paths.log_path
 LOG_COLUMNS = ['ref', 'date', 'file_name', 'description', 'status', 'public_score', 'private_score']
@@ -83,7 +87,7 @@ def submit(file_path: str, message: str, wait: bool):
     start_req.file_name = file_name
     start_resp = api.start_submission_upload(start_req)
 
-    print(f'Uploading {file_path}...')
+    log.info('Uploading %s...', file_path)
     with open(file_path, 'rb') as f:
         resp = requests.put(start_resp.create_url, data=f)
     if resp.status_code not in (200, 201):
@@ -94,7 +98,7 @@ def submit(file_path: str, message: str, wait: bool):
     create_req.blob_file_tokens = start_resp.token
     create_req.submission_description = message
     api.create_submission(create_req)
-    print('Submitted.')
+    log.info('Submitted.')
 
     # The newest submission matching this file_name is ours (Kaggle assigns
     # the `ref` on creation; list_submissions is our only way to learn it).
@@ -105,15 +109,15 @@ def submit(file_path: str, message: str, wait: bool):
             time.sleep(3)
             continue
         if wait and ours.status.name == 'PENDING':
-            print('Pending... waiting 15s')
+            log.info('Pending... waiting 15s')
             time.sleep(15)
             continue
         break
 
     _log_upsert(subs)
     score = ours.public_score or '(pending)'
-    print(f'ref={ours.ref}  status={ours.status.name}  public_score={score}')
-    print(f'Logged → {LOG_PATH}')
+    log.info('ref=%s  status=%s  public_score=%s', ours.ref, ours.status.name, score)
+    log.info('Logged → %s', LOG_PATH)
 
 
 def check(wait: bool = False):
@@ -123,16 +127,16 @@ def check(wait: bool = False):
     while True:
         subs = _list(api)
         if not subs:
-            print('No submissions found.')
+            log.info('No submissions found.')
             return
         if wait and subs[0].status.name == 'PENDING':
-            print('Pending... waiting 15s')
+            log.info('Pending... waiting 15s')
             time.sleep(15)
             continue
         break
 
-    log = _log_upsert(subs)
-    print(log.head(10).to_string(index=False))
+    scores = _log_upsert(subs)
+    log.info('\n%s', scores.head(10).to_string(index=False))
 
 
 if __name__ == '__main__':

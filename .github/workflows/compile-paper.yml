@@ -8,6 +8,9 @@ on:
       - "paper/version.tex"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   compile:
     runs-on: ubuntu-latest
@@ -28,9 +31,9 @@ jobs:
           xelatex -interaction=nonstopmode main.tex
           xelatex -interaction=nonstopmode main.tex
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: thesis-v${{ steps.version.outputs.number }}
-          path: paper/main.pdf
-          retention-days: 90
+          tag_name: paper-v${{ steps.version.outputs.number }}
+          name: "Draft v${{ steps.version.outputs.number }}"
+          files: paper/main.pdf

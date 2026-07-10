@@ -7,6 +7,7 @@
 
 
 \section{Επισκόπηση Πλαισίου}
+\label{sec:framework-overview}
 
 Το \en{CascadeLP} είναι ένα τετραεπίπεδο πλαίσιο συμπερασμού βασισμένο σε αξιοπιστία
 για πρόβλεψη ακμών σε γράφους με κειμενικά χαρακτηριστικά κόμβων.
@@ -187,8 +188,10 @@ $\theta_{\mathrm{CN}}$ και $\theta_{\mathrm{TF\text{-}IDF}}$ ορίζοντα
 
 
 \section{Προεπεξεργασία Δεδομένων}
+\label{sec:preprocessing}
 
 \subsection{Καθαρισμός Κειμένου}
+\label{subsec:text-cleaning}
 
 Το ακατέργαστο κείμενο που παρέχεται στο αρχείο \texttt{\en{nodes.tsv}} είναι
 περιεχόμενο \en{Wikipedia} που περιέχει ποικίλο θόρυβο: κωδικοί οντοτήτων \en{HTML}
@@ -224,6 +227,7 @@ $\theta_{\mathrm{CN}}$ και $\theta_{\mathrm{TF\text{-}IDF}}$ ορίζοντα
 \en{Sentence-Transformer} στα Επίπεδα~2 και~3.
 
 \subsection{Εξαγωγή \en{Infobox} και Περιγραφής}
+\label{subsec:infobox-extraction}
 
 Το αρχείο \texttt{\en{nodes.tsv}} παρέχει δύο πεδία κειμένου ανά κόμβο: μια σύντομη
 περιγραφή (τυπικά μία πρόταση εξαγμένη από την εισαγωγική ενότητα της \en{Wikipedia})
@@ -257,6 +261,7 @@ $\theta_{\mathrm{CN}}$ και $\theta_{\mathrm{TF\text{-}IDF}}$ ορίζοντα
 \label{sec:level1-heuristics}
 
 \subsection{Δείκτες Ευρεσιτεχνίας}
+\label{subsec:heuristic-features}
 
 Το Επίπεδο~1 αναπαριστά κάθε ζεύγος κόμβων $(u, v)$ ως τετραδιάστατο διάνυσμα
 χαρακτηριστικών $\mathbf{f}_{\text{struct}}(u, v) = [\mathrm{CN}, \mathrm{Jaccard},
@@ -313,6 +318,7 @@ Attachment} (Εξίσωση \ref{eq:pa}).
 \end{algorithm}
 
 \subsection{Ενσωματώσεις \en{Node2Vec}}
+\label{subsec:node2vec}
 
 Επιπλέον των τεσσάρων βαθμωτών ευρετικών χαρακτηριστικών, το Επίπεδο~1
 ενσωματώνει προαιρετικά ενσωματώσεις \en{Node2Vec} \cite{grover2016node2vec} ως
@@ -398,6 +404,7 @@ $d$-διάστατα διανύσματα (με $d = 64$ στα πειράματ
 χαρακτηριστικά στο Επίπεδο~1.
 
 \subsection{Βαθμολόγηση Αξιοπιστίας}
+\label{subsec:confidence-scoring}
 
 Ο \en{StructuralClassifier} είναι ένα μοντέλο Λογιστικής Παλινδρόμησης με ποινή
 κανονικοποίησης $L_2$, εκπαιδευμένο στα δομικά διανύσματα χαρακτηριστικών όλων των
@@ -412,6 +419,7 @@ $d$-διάστατα διανύσματα (με $d = 64$ στα πειράματ
 Η αξιοπιστία της πρόβλεψης του Επιπέδου~1 για ένα ζεύγος ορίζεται ως:
 \begin{equation}
     c_1(u, v) = \max(p_0, p_1).
+    \label{eq:confidence-tier1}
 \end{equation}
 Εάν $c_1(u, v) \geq \tau_1$, το ζεύγος αντιστοιχίζεται στην ετικέτα $\arg\max(p_0,
 p_1)$ και η κλιμάκωση σταματά.
@@ -426,8 +434,10 @@ p_1)$ και η κλιμάκωση σταματά.
 
 
 \section{Επίπεδο 2 --- Ελαφρύς Σημασιολογικός Ταξινομητής}
+\label{sec:tier2}
 
 \subsection{Χαρακτηριστικά Μερών του Λόγου + Τυχαίο Δάσος}
+\label{subsec:pos-features}
 
 Ο προεπιλεγμένος ταξινομητής Επιπέδου~2 είναι ο \texttt{\en{PosClassifier}}, ένα Τυχαίο
 Δάσος εκπαιδευμένο σε 72-διάστατα διανύσματα χαρακτηριστικών συχνότητας μερών του
@@ -469,8 +479,10 @@ v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in \mathbb{R}^{72}$.
 
 
 \section{Επίπεδο 3 --- Εκλέπτυνση Μέσω Μετασχηματιστή}
+\label{sec:tier3}
 
 \subsection{Προσαρμογή \en{Sentence-Transformer}}
+\label{subsec:sentence-transformer}
 
 Το Επίπεδο~3 είναι ο \texttt{\en{EmbeddingClassifier}}, που χρησιμοποιεί έναν κωδικοποιητή
 \en{Sentence-Transformer} για την παραγωγή πυκνών σημασιολογικών ενσωματώσεων
@@ -492,6 +504,7 @@ $\mathbf{e}_v = \mathrm{ST}(d_v) \in \mathbb{R}^{384}$ υπολογίζεται 
 \begin{equation}
     \mathrm{sim}(u, v) = \frac{\mathbf{e}_u \cdot \mathbf{e}_v}
     {\|\mathbf{e}_u\| \cdot \|\mathbf{e}_v\|}.
+    \label{eq:cosine-sim}
 \end{equation}
 Ο \en{EmbeddingClassifier} είναι ένα μοντέλο Λογιστικής Παλινδρόμησης εκπαιδευμένο
 σε αυτό το ενιαίο χαρακτηριστικό.
@@ -584,6 +597,7 @@ $v$, υπολογίζει την ομοιότητά τους συνημίτον�
 
 
 \section{Χειρισμός \en{Cold-Start}}
+\label{sec:cold-start}
 
 Ένα \textit{ζεύγος \en{cold-start}} είναι ένα ζεύγος $(u, v)$ όπου
 τουλάχιστον ένα από τα $u$ ή $v$ δεν έχει δομικούς γείτονες στον γράφο

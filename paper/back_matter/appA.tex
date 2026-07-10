@@ -7,15 +7,19 @@
 
 
 \section{Διαμορφώσεις Υπερπαραμέτρων}
+\label{sec:hyperparams}
 
 
 \section{Πρόσθετοι Πίνακες Αποτελεσμάτων}
+\label{sec:extra-results}
 
 
 \section{Στατιστικά Συνόλου Δεδομένων}
+\label{sec:dataset-stats}
 
 
 \section{Εργαλείο Υποβολής στο \en{Kaggle}}
+\label{sec:kaggle-submit}
 
 Η επιβεβαίωση του σκορ \en{Macro F1-score} \texttt{0.99827} στο δημόσιο \en{leaderboard} του \en{Kaggle} (Κεφάλαια \ref{ch:experiments} και \ref{ch:conclusion}) προέκυψε μέσω ενός βοηθητικού \en{script}, του \texttt{\en{scripts/submit\_kaggle.py}}, γραμμένου ειδικά για την αναπαραγωγιμότητα αυτής της διαδικασίας.
 Το \en{script} καλείται μέσω δύο στόχων του \texttt{\en{Makefile}}: ο \texttt{\en{make kaggle-submit FILE=<path> MSG=<text>}} ανεβάζει ένα αρχείο προβλέψεων στον διαγωνισμό \en{DSAA 2023}, ενώ ο \texttt{\en{make kaggle-check}} ενημερώνεται για την κατάσταση και το δημόσιο σκορ των πρόσφατων υποβολών.

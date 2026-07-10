@@ -26,19 +26,19 @@ env-update:
 	conda env update -f environment.yml --prune
 
 download:
-	$(RUN) python -m scripts.download_data
+	$(RUN) python -m scripts.data.download_data
 
 features-structural:
-	$(RUN) python -m scripts.compute_structural
+	$(RUN) python -m scripts.data.compute_structural
 
 features-semantic:
-	$(RUN) python -m scripts.compute_semantic
+	$(RUN) python -m scripts.data.compute_semantic
 
 audit-leakage:
-	$(RUN) python -m scripts.audit_leakage
+	$(RUN) python -m scripts.analysis.audit_leakage
 
 analyze-dataset:
-	$(RUN) python -m scripts.analyze_dataset
+	$(RUN) python -m scripts.analysis.analyze_dataset
 
 train:
 	$(RUN) python -m scripts.train --model $(MODEL)
@@ -60,10 +60,10 @@ clean:
 	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
 
 generate-macros:
-	$(RUN) python -m scripts.generate_macros
+	$(RUN) python -m scripts.paper.generate_macros
 
 generate-figures:
-	$(RUN) python -m scripts.generate_figures
+	$(RUN) python -m scripts.paper.generate_figures
 
 generate: generate-macros generate-figures
 

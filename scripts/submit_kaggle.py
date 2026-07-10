@@ -28,8 +28,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-COMPETITION = 'dsaa-2023-competition'
-LOG_PATH = 'outputs/predictions/kaggle_scores.csv'
+import pathlib
+from omegaconf import OmegaConf
+cfg = OmegaConf.load(pathlib.Path(__file__).parent.parent / 'configs' / 'config.yaml')
+COMPETITION = cfg.kaggle.competition
+LOG_PATH = cfg.paths.log_path
 LOG_COLUMNS = ['ref', 'date', 'file_name', 'description', 'status', 'public_score', 'private_score']
 
 if not os.environ.get('KAGGLE_API_TOKEN'):

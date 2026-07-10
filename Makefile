@@ -71,10 +71,10 @@ analyze-cascade:
 analyze: analyze-leakage analyze-dataset analyze-cascade
 
 train:
-	$(RUN) python -m scripts.train --model $(MODEL)
+	$(RUN) python -m scripts.train model=$(MODEL)
 
 evaluate:
-	$(RUN) python -m scripts.evaluate --model $(MODEL)
+	$(RUN) python -m scripts.evaluate model=$(MODEL)
 
 kaggle-submit:
 	$(RUN) python -m scripts.submit_kaggle --file $(FILE) --message "$(MSG)"

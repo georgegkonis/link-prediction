@@ -74,7 +74,9 @@ def encode_nodes(
     Returns {node_id: embedding_vector}.
     Only encodes node_ids that exist in nodes.index.
     """
-    model = SentenceTransformer(model_name)
+    import torch
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = SentenceTransformer(model_name, device=device)
     present = [i for i in node_ids if i in nodes.index]
     texts   = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
 

@@ -90,7 +90,10 @@ paper-figures:
 
 paper-assets: paper-macros paper-figures
 
-paper-compile:
+paper-version:
+	$(RUN) python -m scripts.paper.increment_version
+
+paper-compile: paper-version
 	cd paper && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex
 
 paper-clean:

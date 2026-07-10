@@ -133,6 +133,14 @@ def _compute(d: dict) -> dict[str, str]:
     m['GraphMeanDegree']  = gfloat(_GRAPH_MEAN_DEGREE, 2)
     m['GraphNodesTotal']  = gint(_GRAPH_NODES_TOTAL)
 
+    # Class balance (full train.csv including self-loops)
+    n_train_pos = int((d['train']['label'] == 1).sum())
+    n_train_neg = int((d['train']['label'] == 0).sum())
+    m['TrainPosCount'] = gint(n_train_pos)
+    m['TrainNegCount'] = gint(n_train_neg)
+    m['TrainPosPct']   = gpct(100 * n_train_pos / n_train_raw, 1)
+    m['TrainNegPct']   = gpct(100 * n_train_neg / n_train_raw, 1)
+
     # ---- Leakage audit ----
     exact    = (d['leakage']['kind'] == 'exact').sum()
     reversed_ = (d['leakage']['kind'] == 'reversed').sum()
@@ -444,7 +452,8 @@ def _compute(d: dict) -> dict[str, str]:
 _GROUPS = [
     ('Dataset sizes',          ['TrainPairs', 'TrainPairsNoSelf', 'TrainSplitSize', 'ValSplitSize',
                                  'TestPairs', 'SvmSampleSize', 'GraphNodes', 'GraphMeanDegree',
-                                 'GraphNodesTotal']),
+                                 'GraphNodesTotal',
+                                 'TrainPosCount', 'TrainNegCount', 'TrainPosPct', 'TrainNegPct']),
     ('Leakage audit',          ['LeakageExact', 'LeakageExactPct', 'LeakageReversed',
                                  'LeakageReversedPct', 'SelfLoopsTrain', 'SelfLoopsTrainPos',
                                  'SelfLoopsTrainNeg', 'SelfLoopsTest', 'IntraTrainDuplicates']),

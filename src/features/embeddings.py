@@ -46,18 +46,29 @@ def compute_tfidf_scores(
     present = [i for i in unique_ids if i in nodes.index]
 
     texts  = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
-    matrix = vectorizer.transform(texts)
+    matrix = vectorizer.transform(texts)          # sparse (n_nodes, vocab)
     id_to_row = {node_id: idx for idx, node_id in enumerate(present)}
 
-    scores = []
-    for _, row in pairs.iterrows():
-        u, v = row['id1'], row['id2']
-        if u in id_to_row and v in id_to_row:
-            sim = cosine_similarity(matrix[id_to_row[u]], matrix[id_to_row[v]])[0, 0]
-            scores.append(float(sim))
-        else:
-            scores.append(0.0)
-    return np.array(scores)
+    id1 = pairs['id1'].values
+    id2 = pairs['id2'].values
+    missing = np.zeros(len(pairs))
+
+    # rows where both nodes are present
+    mask = np.array([u in id_to_row and v in id_to_row for u, v in zip(id1, id2)])
+    if not mask.any():
+        return missing
+
+    rows1 = [id_to_row[u] for u in id1[mask]]
+    rows2 = [id_to_row[v] for v in id2[mask]]
+
+    # element-wise dot product of unit-normed sparse rows = cosine similarity
+    from sklearn.preprocessing import normalize
+    normed = normalize(matrix, norm='l2')
+    dots = np.asarray(normed[rows1].multiply(normed[rows2]).sum(axis=1)).ravel()
+
+    scores = missing.copy()
+    scores[mask] = dots
+    return scores
 
 
 # ── Sentence Transformers ────────────────────────────────────────────────────

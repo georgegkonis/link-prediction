@@ -1,5 +1,5 @@
 ENV = link-prediction
-RUN = conda run -n $(ENV)
+RUN = conda run -n $(ENV) --no-capture-output
 
 .PHONY: help \
         env env-update \

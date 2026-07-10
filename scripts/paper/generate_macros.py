@@ -165,6 +165,7 @@ def _compute(d: dict) -> dict[str, str]:
     m['SelfLoopsTrainNeg']     = str(int(self_neg))
     m['SelfLoopsTest']         = gint(test_self)
     m['IntraTrainDuplicates']  = gint(n_dup_groups)
+    m['IntraTrainDuplicatesRows'] = gint(n_dup_groups * 2)
 
     # ---- Separability thresholds ----
     cn_thr    = d['thresholds']['cn_threshold']
@@ -341,6 +342,7 @@ def _compute(d: dict) -> dict[str, str]:
 
     m['CascadeTotalErrors']     = gint(total_errors)
     m['CascadeErrorsHardN']     = gint(hard_errors)
+    m['CascadeErrorsTrivialN']  = gint(total_errors - hard_errors)
     m['CascadeErrorsHardPct']   = gpct(hard_err_pct)
     m['CascadeErrorsTrivialPct'] = gpct(triv_err_pct)
 
@@ -358,7 +360,9 @@ def _compute(d: dict) -> dict[str, str]:
     # SVM error stats (constants from paper — require separate SVM val run)
     m['SvmTotalErrors']     = gint(16_696)
     m['CascadeVsSvmRatio']  = '64'
+    m['SvmErrorsHardN']     = gint(15_632)
     m['SvmErrorsHardPct']   = gpct(93.63)
+    m['SvmErrorsTrivialN']  = gint(1_064)
     m['SvmErrorsTrivialPct'] = gpct(6.37)
     m['SvmHighTextsimAcc']  = gfloat(0.9838, 4)
     m['SvmHighTextsimFone']   = gfloat(0.4959, 4)
@@ -456,7 +460,8 @@ _GROUPS = [
                                  'TrainPosCount', 'TrainNegCount', 'TrainPosPct', 'TrainNegPct']),
     ('Leakage audit',          ['LeakageExact', 'LeakageExactPct', 'LeakageReversed',
                                  'LeakageReversedPct', 'SelfLoopsTrain', 'SelfLoopsTrainPos',
-                                 'SelfLoopsTrainNeg', 'SelfLoopsTest', 'IntraTrainDuplicates']),
+                                 'SelfLoopsTrainNeg', 'SelfLoopsTest', 'IntraTrainDuplicates',
+                                 'IntraTrainDuplicatesRows']),
     ('Separability thresholds',['CnThreshold', 'TfidfThreshold']),
     ('Difficulty — train',     ['TrainDiffSelfLoopN', 'TrainDiffSelfLoopPct', 'TrainDiffHighCnN',
                                  'TrainDiffHighCnPct', 'TrainDiffHighTextsimN', 'TrainDiffHighTextsimPct',
@@ -482,9 +487,9 @@ _GROUPS = [
                                  'HardResNodeId', 'HardResNodePairs', 'HardResNodePredPosPct']),
     ('Efficiency',             ['ThroughputSec', 'ThroughputRate', 'ThroughputLatency', 'TierThreeCallRateMax']),
     ('Error analysis',         ['CascadeTotalErrors', 'CascadeErrorsHardN', 'CascadeErrorsHardPct',
-                                 'CascadeErrorsTrivialPct', 'CascadeHardAcc', 'CascadeHardFone',
-                                 'SvmTotalErrors', 'CascadeVsSvmRatio', 'SvmErrorsHardPct',
-                                 'SvmErrorsTrivialPct', 'SvmHighTextsimAcc', 'SvmHighTextsimFone',
+                                 'CascadeErrorsTrivialN', 'CascadeErrorsTrivialPct', 'CascadeHardAcc', 'CascadeHardFone',
+                                 'SvmTotalErrors', 'CascadeVsSvmRatio', 'SvmErrorsHardN', 'SvmErrorsHardPct',
+                                 'SvmErrorsTrivialN', 'SvmErrorsTrivialPct', 'SvmHighTextsimAcc', 'SvmHighTextsimFone',
                                  'SvmHardAcc', 'SvmHardFone']),
     ('Node2Vec ablation',      ['NTwoVWithCallPct', 'NTwoVWithCallN', 'NTwoVWithOverallFone',
                                  'NTwoVWithConfFone', 'NTwoVNoOverallFone', 'NTwoVNoConfFone',

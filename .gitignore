@@ -159,6 +159,11 @@ data/raw/*
 data/interim/*
 !data/interim/.gitkeep
 
+# Hydra runtime artifacts
+.hydra/
+train.log
+evaluate.log
+
 # Model outputs
 outputs/predictions/*
 !outputs/predictions/.gitkeep

@@ -15,6 +15,8 @@ Usage:
 """
 
 import argparse
+import json
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -76,9 +78,12 @@ def _split(data: dict, model_name: str, val_size: float):
 
 
 def main(model_name: str, t1: float, t2: float, val_size: float,
-         cn_threshold: float | None = None, tfidf_threshold: float | None = None):
+         cn_threshold: float | None = None, tfidf_threshold: float | None = None,
+         no_n2v: bool = False):
     print(f'Loading features for [{model_name}]...')
     data = _load(model_name)
+    if no_n2v and 'n2v' in data:
+        del data['n2v']
     tr, val, sub = _split(data, model_name, val_size)
     y = data['y']
 
@@ -87,7 +92,9 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
     if model_name == 'structural':
         model = StructuralClassifier()
         tr_X, val_X = sub(data['structural'])
-        tr_n2v, val_n2v = sub(data['n2v'])
+        tr_n2v = val_n2v = None
+        if 'n2v' in data:
+            tr_n2v, val_n2v = sub(data['n2v'])
         model.fit(tr_X, y[tr], tr_n2v)
         with timer() as t:
             proba = model.predict_proba(val_X, val_n2v)
@@ -130,7 +137,9 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
         tr_structural, val_structural = sub(data['structural'])
         tr_pos, val_pos = sub(data['pos_features'])
         tr_st, val_st = sub(data['st_scores'])
-        tr_n2v, val_n2v = sub(data['n2v'])
+        tr_n2v = val_n2v = None
+        if 'n2v' in data:
+            tr_n2v, val_n2v = sub(data['n2v'])
         model.fit(
             tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr], tr_n2v,
         )
@@ -174,6 +183,16 @@ def main(model_name: str, t1: float, t2: float, val_size: float,
     print(f'\nValidation — {model_name}')
     print(result)
 
+    pathlib.Path(f'{PREDICTIONS}/{model_name}_val_metrics.json').write_text(
+        json.dumps({
+            'macro_f1':      result.macro_f1,
+            'auc_roc':       result.auc_roc,
+            'cold_start_f1': result.cold_start_macro_f1,
+            'latency_ms':    result.latency_ms,
+            'n_val':         int(len(y[val])),
+        }, indent=2)
+    )
+
     out = f'{CHECKPOINTS}/{model_name}.joblib'
     model.save(out)
     print(f'\nSaved → {out}')
@@ -190,6 +209,8 @@ if __name__ == '__main__':
                    help='Cascade diagnostic: trivial-pair CN threshold (auto if omitted)')
     p.add_argument('--tfidf-threshold',  type=float, default=None,
                    help='Cascade diagnostic: trivial-pair TF-IDF threshold (auto if omitted)')
+    p.add_argument('--no-n2v',           action='store_true',
+                   help='Cascade: omit Node2Vec features from Tier 1 (reproduces thesis final config)')
     args = p.parse_args()
     main(args.model, args.tier1_threshold, args.tier2_threshold, args.val_size,
-         args.cn_threshold, args.tfidf_threshold)
+         args.cn_threshold, args.tfidf_threshold, args.no_n2v)

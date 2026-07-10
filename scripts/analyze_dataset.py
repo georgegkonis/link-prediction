@@ -16,6 +16,8 @@ Usage:
 """
 
 import argparse
+import json
+import pathlib
 
 import pandas as pd
 
@@ -79,8 +81,12 @@ def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
     diff_test.to_csv(f'{INTERIM}/difficulty_test.csv')
     with open(f'{OUTPUTS}/analyze_dataset-results.txt', 'w') as f:
         f.write(report + '\n')
+    pathlib.Path(f'{INTERIM}/difficulty_thresholds.json').write_text(
+        json.dumps({'cn_threshold': float(cn_threshold), 'tfidf_threshold': float(tfidf_threshold)}, indent=2)
+    )
 
     print(f'\nSaved → {INTERIM}/difficulty_{{train,test}}.csv')
+    print(f'Saved → {INTERIM}/difficulty_thresholds.json')
     print(f'Saved → {OUTPUTS}/analyze_dataset-results.txt')
 
 

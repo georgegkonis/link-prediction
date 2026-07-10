@@ -170,7 +170,7 @@ outputs/figures/*
 # JetBrains IDEs
 .idea/*
 
-# Claude Code agent worktrees (ephemeral, not project state)
+# Agent worktrees (ephemeral, not project state)
 .claude/worktrees/
 
 # LaTeX auxiliary/build files

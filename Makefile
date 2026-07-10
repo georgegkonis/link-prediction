@@ -1,7 +1,7 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV)
 
-.PHONY: env env-update download jupyter pdf clean help kaggle-submit kaggle-check
+.PHONY: env env-update download jupyter pdf clean help kaggle-submit kaggle-check generate generate-macros generate-figures
 
 help:
 	@echo "env                  	create conda environment"
@@ -58,6 +58,14 @@ pdf:
 clean:
 	cd paper && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
 	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
+
+generate-macros:
+	$(RUN) python -m scripts.generate_macros
+
+generate-figures:
+	$(RUN) python -m scripts.generate_figures
+
+generate: generate-macros generate-figures
 
 jupyter:
 	$(RUN) jupyter lab

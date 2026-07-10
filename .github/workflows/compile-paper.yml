@@ -1,0 +1,40 @@
+name: Compile Paper
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "paper/**"
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "number=$(cat paper/.version)" >> "$GITHUB_OUTPUT"
+
+      - name: Install TeX Live
+        uses: xu-cheng/texlive-action@v2
+        with:
+          scheme: full
+          run: |
+            cd paper
+            xelatex -interaction=nonstopmode main.tex
+            biber main
+            xelatex -interaction=nonstopmode main.tex
+            xelatex -interaction=nonstopmode main.tex
+
+      - name: Rename PDF
+        run: cp paper/main.pdf thesis-v${{ steps.version.outputs.number }}.pdf
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: thesis-v${{ steps.version.outputs.number }}
+          path: thesis-v${{ steps.version.outputs.number }}.pdf
+          retention-days: 90

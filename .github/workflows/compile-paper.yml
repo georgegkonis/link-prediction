@@ -4,7 +4,8 @@ on:
   push:
     branches: [master]
     paths:
-      - "paper/**"
+      - "paper/.version"
+      - "paper/version.tex"
   workflow_dispatch:
 
 jobs:

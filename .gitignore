@@ -170,9 +170,6 @@ outputs/figures/*
 # JetBrains IDEs
 .idea/*
 
-# Agent worktrees (ephemeral, not project state)
-.claude/worktrees/
-
 # LaTeX auxiliary/build files
 *.aux
 *.fdb_latexmk

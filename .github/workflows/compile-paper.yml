@@ -10,6 +10,7 @@ on:
 jobs:
   compile:
     runs-on: ubuntu-latest
+    container: texlive/texlive:latest
 
     steps:
       - uses: actions/checkout@v4
@@ -18,23 +19,17 @@ jobs:
         id: version
         run: echo "number=$(cat paper/.version)" >> "$GITHUB_OUTPUT"
 
-      - name: Install TeX Live
-        uses: xu-cheng/texlive-action@v2
-        with:
-          scheme: full
-          run: |
-            cd paper
-            xelatex -interaction=nonstopmode main.tex
-            biber main
-            xelatex -interaction=nonstopmode main.tex
-            xelatex -interaction=nonstopmode main.tex
-
-      - name: Rename PDF
-        run: cp paper/main.pdf thesis-v${{ steps.version.outputs.number }}.pdf
+      - name: Compile
+        run: |
+          cd paper
+          xelatex -interaction=nonstopmode main.tex
+          biber main
+          xelatex -interaction=nonstopmode main.tex
+          xelatex -interaction=nonstopmode main.tex
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: thesis-v${{ steps.version.outputs.number }}
-          path: thesis-v${{ steps.version.outputs.number }}.pdf
+          path: paper/main.pdf
           retention-days: 90

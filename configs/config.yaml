@@ -1,0 +1,20 @@
+defaults:
+  - model: cascade
+  - training: default
+  - _self_
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  checkpoints: outputs/checkpoints
+  predictions: outputs/predictions
+  log_path: outputs/predictions/kaggle_scores.csv
+
+kaggle:
+  competition: dsaa-2023-competition
+
+seed: 42
+
+hydra:
+  run:
+    dir: .

@@ -1,0 +1,3 @@
+name: cascade
+tier1_threshold: 0.8
+tier2_threshold: 0.7

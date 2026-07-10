@@ -40,3 +40,4 @@ dependencies:
       - kagglehub
       - kagglesdk
       - python-dotenv
+      - hydra-core

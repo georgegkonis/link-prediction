@@ -1,0 +1,4 @@
+name: svm
+C: 1.0
+gamma: scale
+subsample_size: 20000

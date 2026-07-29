@@ -1,4 +1,4 @@
-# Link Prediction on Wikipedia Graphs
+# Link Prediction on Text Attributed Graphs
 
 Computer Engineering diploma thesis (University of Patras, CEID). Binary classification of Wikipedia article pairs: does a hyperlink exist between them?
 

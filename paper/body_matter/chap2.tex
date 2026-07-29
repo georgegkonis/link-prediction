@@ -355,21 +355,22 @@ $d_1, d_2$:
 
 \begin{table}[htbp]
     \centering
+    \small
     \caption{Σύγκριση οικογενειών μεθόδων πρόβλεψης ακμών σε γράφους με κειμενικά
     χαρακτηριστικά κόμβων.}
     \label{tab:method-family-comparison}
-    \begin{tabular}{lcccl}
+    \begin{tabular}{@{}p{3.1cm}ccp{2.4cm}p{4.2cm}@{}}
         \toprule
-        Μέθοδος & Δομή γράφου & Κείμενο & Απαιτεί εκπαίδευση & Κόστος συμπερασμού ανά ζεύγος \\
+        Μέθοδος & Γράφος & Κείμενο & Απαιτεί εκπαίδευση & Κόστος συμπερασμού ανά ζεύγος \\
         \midrule
         \en{CN} / \en{Jaccard} / \en{AA} / \en{PA} & \checkmark & -- & Όχι & $O(1)$--$O(|\Gamma|)$ \\
         \en{Node2Vec} & \checkmark & -- & Ναι (ανά γράφο) & $O(d)$ μετά την εκπαίδευση \\
         \en{TF-IDF} + ταξινομητής & -- & \checkmark & Ναι & $O(|V_{\text{λεξιλόγιο}}|)$ \\
         \en{POS} + Τυχαίο Δάσος & -- & \checkmark & Ναι & Γραμμικό στο μήκος κειμένου \\
-        \en{BERT} / \en{RoBERTa} (\en{cross-encoder}) & -- & \checkmark & Ναι & $O(n^2)$ διελεύσεις Μετασχηματιστή \\
-        \en{Sentence-BERT} & -- & \checkmark & Ναι & $O(n)$ κωδικοποίηση $+$ $O(n^2)$ συνημίτονο \\
+        \en{BERT}/\en{RoBERTa} (\en{cross-encoder}) & -- & \checkmark & Ναι & $O(n^2)$ διελεύσεις Μετασχηματιστή \\
+        \en{Sentence-BERT} & -- & \checkmark & Ναι & $O(n)$ κωδικοπ. $+$ $O(n^2)$ συνημίτονο \\
         \en{LinkBERT} & \checkmark & \checkmark & Ναι (προ-εκπαίδευση) & Ισοδύναμο \en{BERT} ανά έγγραφο \\
-        \en{GraphFormers} & \checkmark & \checkmark & Ναι, απαιτεί πλήρη γράφο & Υψηλό (ΝΔΓ $+$ Μετασχηματιστής) \\
+        \en{GraphFormers} & \checkmark & \checkmark & Ναι, πλήρης γράφος & Υψηλό (ΝΔΓ $+$ Μετασχηματιστής) \\
         \en{Patton} & \checkmark & \checkmark & Ναι (προ-εκπαίδευση) & Ισοδύναμο \en{BERT} $+$ όρος γείτονα \\
         \en{CascadeLP} (παρούσα εργασία) & \checkmark & \checkmark & Ναι, ανά επίπεδο & Μεταβλητό---κλιμακούμενο ανά ζεύγος \\
         \bottomrule

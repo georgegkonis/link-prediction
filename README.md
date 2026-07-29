@@ -1,6 +1,7 @@
 # Link Prediction on Text Attributed Graphs
 
-Computer Engineering diploma thesis (University of Patras, CEID). Binary classification of Wikipedia article pairs: does a hyperlink exist between them?
+Computer Engineering diploma thesis (University of Patras, CEID). Binary classification of Wikipedia article pairs: does
+a hyperlink exist between them?
 
 Dataset: DSAA 2023 Kaggle Competition — Wikipedia subgraph link prediction.
 
@@ -10,12 +11,12 @@ Dataset: DSAA 2023 Kaggle Competition — Wikipedia subgraph link prediction.
 
 Novel four-tier, confidence-based link predictor that routes node pairs through progressively expensive models:
 
-| Tier | Method | Feature |
-|------|--------|---------|
-| 0 | Self-loop check | id1 == id2 |
-| 1 | Structural (LogReg) | CN, Jaccard, Adamic-Adar, PageRank |
-| 2 | Linguistic (Random Forest) | POS frequency vectors |
-| 3 | Semantic (LogReg) | TF-IDF + Sentence-Transformer cosine similarity |
+| Tier | Method                     | Feature                                         |
+|------|----------------------------|-------------------------------------------------|
+| 0    | Self-loop check            | id1 == id2                                      |
+| 1    | Structural (LogReg)        | CN, Jaccard, Adamic-Adar, PageRank              |
+| 2    | Linguistic (Random Forest) | POS frequency vectors                           |
+| 3    | Semantic (LogReg)          | TF-IDF + Sentence-Transformer cosine similarity |
 
 Each tier exits if `max(proba) ≥ threshold`; otherwise the pair cascades to the next tier.
 
@@ -55,12 +56,12 @@ make paper-compile
 
 ## Documentation
 
-| Doc | Contents |
-|-----|----------|
-| [docs/architecture.md](docs/architecture.md) | Repository layout, module reference |
-| [docs/data.md](docs/data.md) | Data files, key facts, separability stats |
-| [docs/commands.md](docs/commands.md) | All make targets and dev flags |
-| [docs/design.md](docs/design.md) | CascadeLP architecture, key design decisions |
+| Doc                                          | Contents                                     |
+|----------------------------------------------|----------------------------------------------|
+| [docs/architecture.md](docs/architecture.md) | Repository layout, module reference          |
+| [docs/data.md](docs/data.md)                 | Data files, key facts, separability stats    |
+| [docs/commands.md](docs/commands.md)         | All make targets and dev flags               |
+| [docs/design.md](docs/design.md)             | CascadeLP architecture, key design decisions |
 
 ## Troubleshooting
 

@@ -1,0 +1,36 @@
+name: Compile Check
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "paper/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write version
+        run: echo '\newcommand{\draftversion}{DRAFT}' > paper/version.tex
+
+      - name: Compile
+        run: |
+          cd paper
+          xelatex -interaction=nonstopmode main.tex
+          biber main
+          xelatex -interaction=nonstopmode main.tex
+          xelatex -interaction=nonstopmode main.tex
+
+      - name: Upload PDF preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-pdf-preview
+          path: paper/main.pdf

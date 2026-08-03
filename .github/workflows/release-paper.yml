@@ -1,27 +1,21 @@
-name: Compile Paper
+name: Release Paper
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - "paper/.version"
-      - "paper/version.tex"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  compile:
+  release:
     runs-on: ubuntu-latest
     container: texlive/texlive:latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version
-        id: version
-        run: echo "number=$(cat paper/.version)" >> "$GITHUB_OUTPUT"
+      - name: Write version
+        run: echo '\newcommand{\draftversion}{DRAFT v${{ github.run_number }}}' > paper/version.tex
 
       - name: Compile
         run: |
@@ -34,6 +28,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: paper-v${{ steps.version.outputs.number }}
-          name: "Draft v${{ steps.version.outputs.number }}"
+          tag_name: paper-v${{ github.run_number }}
+          name: "Draft v${{ github.run_number }}"
           files: paper/main.pdf

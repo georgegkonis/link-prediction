@@ -91,7 +91,7 @@ paper-figures:
 paper-assets: paper-macros paper-figures
 
 paper-version:
-	$(RUN) python -m scripts.paper.increment_version
+	echo '\newcommand{\draftversion}{DRAFT}' > paper/version.tex
 
 paper-compile: paper-version
 	cd paper && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex

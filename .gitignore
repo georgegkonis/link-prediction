@@ -176,6 +176,10 @@ outputs/figures/*
 # JetBrains IDEs
 .idea/*
 
+# Draft watermark — generated locally (static) or by CI (run-numbered), never committed
+paper/.version
+paper/version.tex
+
 # LaTeX auxiliary/build files
 *.aux
 *.fdb_latexmk

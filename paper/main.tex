@@ -13,7 +13,9 @@
 \usepackage{algpseudocode}
 \usepackage{hyperref}
 \usepackage{bookmark}
-\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\usepackage{csquotes}
+\usepackage[backend=biber, style=apa]{biblatex}
+\DeclareLanguageMapping{english}{american-apa}
 \addbibresource{back_matter/references.bib}
 
 \InputIfFileExists{version}{}{}
@@ -90,7 +92,9 @@
     \include{back_matter/appA}                 % Appendix A                 \ref{app:a}
     \cleardoublepage
 
-    \printbibliography
+    \begin{otherlanguage}{english}
+        \printbibliography
+    \end{otherlanguage}
     \include{back_matter/abbreviations}
     \include{back_matter/glossary}
 

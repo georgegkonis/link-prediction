@@ -190,6 +190,60 @@
 στην πλειονότητα των ζευγών χωρίς \en{Node2Vec}.
 
 
+\section{Σύνολο Ζευγών Ανάλυσης}
+\label{sec:worked-examples}
+
+Ο Πίνακας~\ref{tab:worked-examples} καταγράφει, ανά γραμμή, όλα τα ζεύγη που
+συζητούνται ρητά στην ποιοτική ανάλυση των Επιπέδων~0--3 (\S\ref{subsec:tier-examples},
+\S\ref{sec:tier3-hard-residual}): το αναγνωριστικό \texttt{\en{id}} τους στο
+\texttt{\en{train.csv}}, ώστε κάθε ισχυρισμός να ανιχνεύεται σε συγκεκριμένη γραμμή
+του \texttt{\en{cascade\_val\_tiers.csv}} (ή του \texttt{\en{train.csv}} για τους
+αυτοβρόχους του Επιπέδου~0, οι οποίοι εξαιρούνται από την εκπαίδευση των
+Επιπέδων~1--3 και άρα δεν εμφανίζονται στο πρώτο αρχείο), τα δύο άρθρα, το
+επίπεδο που έδωσε την τελική πρόβλεψη, τον χαρακτηρισμό δυσκολίας
+(\S\ref{sec:forensics-protocol}), την πραγματική και την προβλεπόμενη ετικέτα, και
+το αν η πρόβλεψη ήταν ορθή.
+
+\begin{table}[h!]
+  \centering
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{r p{3.6cm} p{3.6cm} c l c c c}
+    \toprule
+    \textbf{\en{id}} & \textbf{Άρθρο 1} & \textbf{Άρθρο 2} & \textbf{Επ.} & \textbf{Δυσκολία} & \textbf{Αλ.} & \textbf{Πρ.} & \textbf{Ορθή} \\
+    \midrule
+    557    & \en{Young Lake}            & \en{Young Lake} (αυτοσύνδεσμος)      & 0 & \en{self\_loop}       & 1 & 1 & Ναι \\
+    289062 & \en{Hartbeespoort Aerial Cableway} & (αυτοσύνδεσμος)               & 0 & \en{self\_loop}       & 0 & 1 & Όχι \\
+    \midrule
+    769405 & \en{Molanna}               & \en{Molanna ulmerina}                & 1 & \en{high\_cn}         & 1 & 1 & Ναι \\
+    310976 & \en{The Golden Mile}       & \en{Angling}                         & 1 & \en{high\_textsim}    & 1 & 1 & Ναι \\
+    1021664& \en{Leaf River} (αποσαφ.)  & \en{Wapello} (αποσαφ.)               & 1 & \en{high\_textsim}    & 0 & 1 & Όχι \\
+    479304 & \en{Viktoriya Mikhnovich}  & \en{Belarus}                         & 1 & \en{hard}             & 1 & 1 & Ναι \\
+    947382 & \en{Plethodontohyla notosticta} & \en{The Phi Beta Kappa Society} & 1 & \en{hard}             & 0 & 1 & Όχι \\
+    \midrule
+    576964 & \en{N.\,G.\,Paulet, 18th Marquess of Winchester} & \en{Marquessate of Winchester} & 2 & \en{high\_textsim} & 1 & 1 & Ναι \\
+    7608   & \en{Hood River} (αποσαφ.)  & \en{Hood River} (ποταμός)            & 2 & \en{high\_textsim}    & 1 & 0 & Όχι \\
+    972868 & \en{No.\,3 Komarapalayam}  & \en{Mallur} (σταθμός)                & 2 & \en{hard}             & 1 & 1 & Ναι \\
+    907028 & \en{Dutch Uncle} (ιδίωμα)  & \en{Dutch Uncle} (θεατρικό έργο)     & 2 & \en{hard}             & 1 & 0 & Όχι \\
+    \midrule
+    830738 & \en{FASTRAC 1}             & \en{JCB Fastrac}                     & 3 & \en{hard}             & 1 & 0 & Όχι \\
+    505706 & \en{Abacetus laevigatus}   & (άσχετο είδος \en{Abacetus})         & 3 & \en{hard}             & 0 & 1 & Όχι \\
+    841732 & \en{poor me} (αποσαφ.)     & \en{Victim mentality}                & 3 & \en{hard}             & 1 & 0 & Όχι \\
+    735703 & \en{Abacetus laevigatus}   & \en{Tidal downsizing}                & 3 & \en{hard}             & 0 & 0 & Ναι \\
+    710094 & \en{Niigata Institute of Technology} & \en{Kashiwazaki} (αποσαφ.) & 3 & \en{hard}             & 1 & 1 & Ναι \\
+    37745  & \en{Stormrider}            & \en{David Gemmell}                   & 3 & \en{hard}             & 1 & 0 & Όχι \\
+    429190 & \en{Stephen Breyer}        & \en{Individuals with Disabilities Education Act} & 3 & \en{hard} & 1 & 0 & Όχι \\
+    \bottomrule
+  \end{tabular}%
+  }
+  \caption{Πλήρες σύνολο ζευγών που αναλύονται ποιοτικά στο Κεφάλαιο~\ref{ch:analysis}
+  (\S\ref{subsec:tier-examples}, \S\ref{sec:tier3-hard-residual}). Στήλες: επίπεδο
+  \en{CascadeLP} που έδωσε την τελική πρόβλεψη (\en{Επ.}), χαρακτηρισμός
+  δυσκολίας, πραγματική ετικέτα (\en{Αλ.}), προβλεπόμενη ετικέτα (\en{Πρ.}).}
+  \label{tab:worked-examples}
+\end{table}
+
+
 \section{Εργαλείο Υποβολής στο \en{Kaggle}}
 \label{sec:kaggle-submit}
 

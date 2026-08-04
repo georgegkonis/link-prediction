@@ -1,23 +1,30 @@
 """
-Generate paper/generated_macros.tex from experiment output CSVs.
+Generate paper/generated_macros.tex from experiment output CSVs/JSONs.
 
 Reads:
-  data/raw/train.csv, test.csv                        — dataset sizes
-  data/interim/difficulty_train.csv                   — difficulty breakdown (train)
-  data/interim/difficulty_test.csv                    — difficulty breakdown (test)
-  data/interim/difficulty_thresholds.json             — CN / TF-IDF thresholds
-  data/interim/leakage_pairs.csv                      — leakage audit
-  outputs/predictions/cascade_val_tiers.csv           — per-pair val predictions
-  outputs/predictions/cascade_test_tiers.csv          — per-pair test predictions
-  outputs/predictions/cascade_threshold_ablation.csv  — threshold sweep
-  outputs/predictions/kaggle_scores.csv               — Kaggle leaderboard scores
-  outputs/predictions/svm_val_metrics.json            — SVM scalar metrics
+  data/raw/train.csv, test.csv, nodes.tsv              — dataset sizes, graph stats
+  data/interim/difficulty_train.csv                    — difficulty breakdown (train)
+  data/interim/difficulty_test.csv                     — difficulty breakdown (test)
+  data/interim/difficulty_thresholds.json              — CN / TF-IDF thresholds
+  data/interim/leakage_pairs.csv                       — leakage audit
+  data/interim/structural_train.csv                    — CN / graph coverage
+  data/interim/tfidf_train.csv                         — TF-IDF separability
+  outputs/predictions/cascade_val_tiers.csv            — per-pair val predictions (+ scores)
+  outputs/predictions/cascade_test_tiers.csv           — per-pair test predictions
+  outputs/predictions/cascade_n2v_test_tiers.csv       — per-pair test predictions (n2v variant)
+  outputs/predictions/cascade_threshold_ablation.csv   — threshold sweep
+  outputs/predictions/kaggle_scores.csv                — Kaggle leaderboard scores
+  outputs/predictions/svm_val_metrics.json             — SVM scalar metrics
+  outputs/predictions/svm_val_errors.csv               — SVM per-pair val errors by difficulty
+  outputs/predictions/node2vec_ablation.json           — Node2Vec with/without ablation + coverage
+  outputs/predictions/hard_residual_analysis.json      — Tier-3 hard-residual / nodes.tsv join
+  outputs/predictions/throughput_benchmark.json        — CPU inference throughput
 
 Writes:
   paper/generated_macros.tex
 
 Usage:
-    python -m scripts.generate_macros
+    python -m scripts.paper.generate_macros
 """
 
 import json
@@ -25,27 +32,29 @@ import pathlib
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
+from src.data.loader import build_graph
 from src.utils.log_utils import setup_logging
 
 log = setup_logging('generate_macros')
 
 # ---------------------------------------------------------------------------
-# Structural constants — cannot change without full pipeline re-run
+# Intentional literals — hyperparameter defaults, not measured statistics
+# (see CLAUDE.md "No magic numbers in LaTeX" carve-out)
 # ---------------------------------------------------------------------------
 _SVM_SAMPLE_SIZE  = 20_000
 _N2V_DIM          = 68
-_ABL_GRID_POINTS  = 25
-_GRAPH_NODES_TOTAL = 837_855   # rows in nodes.tsv
-_GRAPH_MEAN_DEGREE = 1.30       # measured via audit_leakage / graph build
-_GRAPH_NODES_STRUCTURAL = 668_452   # nodes with ≥1 positive train edge
-
+_TAU_ONE_DEFAULT  = 0.8
+_TAU_TWO_DEFAULT  = 0.7
 
 INTERIM     = pathlib.Path('data/interim')
 RAW         = pathlib.Path('data/raw')
 PREDICTIONS = pathlib.Path('outputs/predictions')
 PAPER       = pathlib.Path('paper')
+
+_MISSING = '---'
 
 # ---------------------------------------------------------------------------
 # Greek number formatters
@@ -71,6 +80,26 @@ def gpct(x: float, d: int = 2) -> str:
     return f'{i}{{,}}{f}'
 
 
+def _count_lines(path: pathlib.Path) -> int:
+    """Fast row count (minus header) without a full pandas parse of a 641MB file."""
+    with open(path, 'rb') as f:
+        return sum(1 for _ in f) - 1
+
+
+def _load_json_optional(path: pathlib.Path, hint: str) -> dict | None:
+    if path.exists():
+        return json.loads(path.read_text())
+    log.warning('%s not found — %s', path, hint)
+    return None
+
+
+def _load_csv_optional(path: pathlib.Path, hint: str) -> pd.DataFrame | None:
+    if path.exists():
+        return pd.read_csv(path)
+    log.warning('%s not found — %s', path, hint)
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------------
@@ -92,18 +121,30 @@ def _load() -> dict:
         log.warning('difficulty_thresholds.json not found — run make analyze-dataset first')
         d['thresholds'] = {'cn_threshold': 0.0, 'tfidf_threshold': 0.098}
 
-    d['leakage']  = pd.read_csv(INTERIM / 'leakage_pairs.csv')
-    d['val_tiers'] = pd.read_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    d['test_tiers'] = pd.read_csv(PREDICTIONS / 'cascade_test_tiers.csv')
-    d['ablation'] = pd.read_csv(PREDICTIONS / 'cascade_threshold_ablation.csv')
-    d['kaggle']   = pd.read_csv(PREDICTIONS / 'kaggle_scores.csv')
+    d['struct_train'] = pd.read_csv(INTERIM / 'structural_train.csv', index_col='id')
+    d['tfidf_train']  = pd.read_csv(INTERIM / 'tfidf_train.csv',      index_col='id')
 
-    svm_path = PREDICTIONS / 'svm_val_metrics.json'
-    if svm_path.exists():
-        d['svm'] = json.loads(svm_path.read_text())
-    else:
-        log.warning('svm_val_metrics.json not found — run make train MODEL=svm first')
-        d['svm'] = None
+    d['leakage']    = pd.read_csv(INTERIM / 'leakage_pairs.csv')
+    d['val_tiers']  = pd.read_csv(PREDICTIONS / 'cascade_val_tiers.csv')
+    d['test_tiers'] = pd.read_csv(PREDICTIONS / 'cascade_test_tiers.csv')
+    d['ablation']   = pd.read_csv(PREDICTIONS / 'cascade_threshold_ablation.csv')
+    d['kaggle']     = pd.read_csv(PREDICTIONS / 'kaggle_scores.csv')
+
+    d['svm'] = _load_json_optional(
+        PREDICTIONS / 'svm_val_metrics.json', 'run make train MODEL=svm first')
+    d['svm_errors'] = _load_csv_optional(
+        PREDICTIONS / 'svm_val_errors.csv', 'run make train MODEL=svm first (writes per-pair errors too)')
+    d['n2v_ablation'] = _load_json_optional(
+        PREDICTIONS / 'node2vec_ablation.json', 'run python -m scripts.analysis.ablate_node2vec first')
+    d['hard_residual'] = _load_json_optional(
+        PREDICTIONS / 'hard_residual_analysis.json',
+        'run python -m scripts.analysis.analyze_hard_residual first')
+    d['throughput'] = _load_json_optional(
+        PREDICTIONS / 'throughput_benchmark.json',
+        'run python -m scripts.analysis.benchmark_throughput first')
+    d['n2v_test_tiers'] = _load_csv_optional(
+        PREDICTIONS / 'cascade_n2v_test_tiers.csv',
+        'run python -m scripts.evaluate model=cascade training.no_n2v=false +tag=n2v first')
 
     return d
 
@@ -127,15 +168,26 @@ def _compute(d: dict) -> dict[str, str]:
     tr, val = train_test_split(not_self_idx, test_size=0.2, stratify=y[not_self_idx], random_state=42)
     n_tr, n_val = len(tr), len(val)
 
+    # Graph stats — live, from the built positive-edge graph and a fast nodes.tsv line count
+    G = build_graph(d['train'])
+    graph_nodes_structural = G.number_of_nodes()
+    graph_mean_degree = float(np.mean([deg for _, deg in G.degree()])) if graph_nodes_structural else 0.0
+    nodes_path = RAW / 'nodes.tsv'
+    if nodes_path.exists():
+        graph_nodes_total = _count_lines(nodes_path)
+    else:
+        log.warning('%s not found — GraphNodesTotal falling back to structural node count', nodes_path)
+        graph_nodes_total = graph_nodes_structural
+
     m['TrainPairs']       = gint(n_train_raw)
     m['TrainPairsNoSelf'] = gint(n_no_self)
     m['TrainSplitSize']   = gint(n_tr)
     m['ValSplitSize']     = gint(n_val)
     m['TestPairs']        = gint(n_test)
     m['SvmSampleSize']    = gint(_SVM_SAMPLE_SIZE)
-    m['GraphNodes']       = gint(_GRAPH_NODES_STRUCTURAL)
-    m['GraphMeanDegree']  = gfloat(_GRAPH_MEAN_DEGREE, 2)
-    m['GraphNodesTotal']  = gint(_GRAPH_NODES_TOTAL)
+    m['GraphNodes']       = gint(graph_nodes_structural)
+    m['GraphMeanDegree']  = gfloat(graph_mean_degree, 2)
+    m['GraphNodesTotal']  = gint(graph_nodes_total)
 
     # Class balance (full train.csv including self-loops)
     n_train_pos = int((d['train']['label'] == 1).sum())
@@ -177,6 +229,27 @@ def _compute(d: dict) -> dict[str, str]:
     m['CnThreshold']    = gfloat(cn_thr, 3)
     m['TfidfThreshold'] = gfloat(tfidf_thr, 3)
 
+    # ---- Separability distributions (CN / TF-IDF means, positive vs. negative) ----
+    train_ids  = d['train']['id'].values
+    cn_vals    = d['struct_train']['cn'].reindex(train_ids).values
+    tfidf_vals = d['tfidf_train']['tfidf_score'].reindex(train_ids).values
+    not_self   = ~self_loop_mask.values
+
+    m['StructCnMeanPos']    = gfloat(np.nanmean(cn_vals[not_self & (y == 1)]), 5)
+    m['StructCnMeanNeg']    = gfloat(np.nanmean(cn_vals[not_self & (y == 0)]), 5)
+    m['StructTfidfMeanPos'] = gfloat(np.nanmean(tfidf_vals[not_self & (y == 1)]), 3)
+    m['StructTfidfMeanNeg'] = gfloat(np.nanmean(tfidf_vals[not_self & (y == 0)]), 3)
+
+    # ---- Structural graph coverage (both endpoints present in the positive-edge graph) ----
+    graph_nodes = set(G.nodes())
+    train_nonself = d['train'][~self_loop_mask]
+    m['GraphCoverageTrainPct'] = gpct(100 * (
+        train_nonself['id1'].isin(graph_nodes) & train_nonself['id2'].isin(graph_nodes)
+    ).mean(), 2)
+    m['GraphCoverageTestPct'] = gpct(100 * (
+        d['test']['id1'].isin(graph_nodes) & d['test']['id2'].isin(graph_nodes)
+    ).mean(), 2)
+
     # ---- Difficulty distribution (train) ----
     diff_train_counts = d['diff_train']['difficulty'].value_counts()
     n_dt = len(d['diff_train'])
@@ -214,9 +287,9 @@ def _compute(d: dict) -> dict[str, str]:
     m['TestDiffHardN']          = gint(_tdiff_n('hard'))
     m['TestDiffHardPct']        = gpct(_tdiff_pct('hard'))
 
-    # ---- Cascade default thresholds ----
-    m['TauOneDefault'] = '0{,}8'
-    m['TauTwoDefault'] = '0{,}7'
+    # ---- Cascade default thresholds (config literals, not measured stats) ----
+    m['TauOneDefault'] = gfloat(_TAU_ONE_DEFAULT, 1)
+    m['TauTwoDefault'] = gfloat(_TAU_TWO_DEFAULT, 1)
     m['NTwoVDim']      = str(_N2V_DIM)
 
     # ---- Cascade validation results ----
@@ -229,7 +302,6 @@ def _compute(d: dict) -> dict[str, str]:
         if n == 0:
             return n, 0.0, float('nan'), float('nan')
         acc  = sub['correct'].mean()
-        from sklearn.metrics import f1_score
         f1   = f1_score(sub['y_true'], sub['y_pred'], average='macro', zero_division=0)
         return n, 100 * n / n_vt, acc, f1
 
@@ -237,27 +309,31 @@ def _compute(d: dict) -> dict[str, str]:
     t2_n, t2_pct, t2_acc, t2_f1 = _tier_stats(2)
     t3_n, t3_pct, t3_acc, t3_f1 = _tier_stats(3)
 
-    from sklearn.metrics import f1_score, roc_auc_score
     cascade_f1  = f1_score(vt['y_true'], vt['y_pred'], average='macro', zero_division=0)
-    cascade_auc = roc_auc_score(vt['y_true'], vt['y_pred'])
+    if 'score' in vt.columns:
+        cascade_auc = roc_auc_score(vt['y_true'], vt['score'])
+    else:
+        log.warning("cascade_val_tiers.csv has no 'score' column (stale run) — "
+                    'AUC falling back to discrete predictions as a proxy')
+        cascade_auc = roc_auc_score(vt['y_true'], vt['y_pred'])
 
-    m['CascadeValFone']  = gfloat(cascade_f1,  4)
-    m['CascadeValAuc'] = gfloat(cascade_auc, 4)
+    m['CascadeValFone'] = gfloat(cascade_f1,  4)
+    m['CascadeValAuc']  = gfloat(cascade_auc, 4)
 
     m['TierOneCount'] = gint(t1_n)
     m['TierOnePct']   = gpct(t1_pct)
     m['TierOneAcc']   = gfloat(t1_acc, 4)
-    m['TierOneFone']    = gfloat(t1_f1,  4)
+    m['TierOneFone']  = gfloat(t1_f1,  4)
 
     m['TierTwoCount'] = gint(t2_n)
     m['TierTwoPct']   = gpct(t2_pct)
     m['TierTwoAcc']   = gfloat(t2_acc, 4)
-    m['TierTwoFone']    = gfloat(t2_f1,  4)
+    m['TierTwoFone']  = gfloat(t2_f1,  4)
 
     m['TierThreeCount'] = gint(t3_n)
     m['TierThreePct']   = gpct(t3_pct, 2)
     m['TierThreeAcc']   = gfloat(t3_acc, 4)
-    m['TierThreeFone']    = gfloat(t3_f1,  4)
+    m['TierThreeFone']  = gfloat(t3_f1,  4)
 
     # Tier 1: what fraction of pairs it ACCEPTS are positive
     t1_sub = vt[vt['tier_used'] == 1]
@@ -285,14 +361,11 @@ def _compute(d: dict) -> dict[str, str]:
                 m[f'Tier{tier_name}{diff_name}Acc'] = gfloat(acc, 4)
             else:
                 m[f'Tier{tier_name}{diff_name}N']   = '0'
-                m[f'Tier{tier_name}{diff_name}Acc'] = '---'
+                m[f'Tier{tier_name}{diff_name}Acc'] = _MISSING
 
     # ---- Cold-start (no common neighbours) ----
-    # proxy: Tier 1 passes only pairs with structural signal, Tier 2/3 are cold-start
-    # actual cold-start = pairs with cn == 0 in val set; we read from val_tiers difficulty
-    # (trivial_high_cn pairs DO have structural signal; hard pairs might or might not)
-    # Simplest proxy matching the paper: pairs routed to Tier 2 or 3 are effectively cold-start
-    # The paper states 99.9963% — compute directly
+    # proxy: pairs routed to Tier 2 or 3 never got a confident Tier-1 structural
+    # decision, i.e. they behave as cold-start w.r.t. the structural signal.
     cs_count  = (vt['tier_used'] >= 2).sum()
     cs_pct    = 100 * cs_count / n_vt
     non_cs    = n_vt - cs_count
@@ -303,44 +376,65 @@ def _compute(d: dict) -> dict[str, str]:
     # ---- Hard residual (Tier 3 ∩ hard) ----
     hard_res = vt[(vt['tier_used'] == 3) & (vt['difficulty'] == 'hard')]
     n_hr     = len(hard_res)
-    if n_hr > 0:
-        hr_acc = hard_res['correct'].mean()
-    else:
-        hr_acc = float('nan')
+    hr_acc   = hard_res['correct'].mean() if n_hr > 0 else float('nan')
 
     m['HardResCount'] = gint(n_hr)
-    m['HardResAcc']   = gfloat(hr_acc, 4) if n_hr > 0 else '---'
+    m['HardResAcc']   = gfloat(hr_acc, 4) if n_hr > 0 else _MISSING
 
-    # These sub-metrics come from manual analysis in the paper; keep as constants
-    # (they'd require merging with nodes.tsv which is 641MB)
-    m['HardResMissingN']      = '37'
-    m['HardResMissingPct']    = '47{,}4'
-    m['HardResCompleteN']     = '41'
-    m['HardResCompleteAcc']   = '0{,}0732'
-    m['HardResIncompleteAcc'] = '0{,}2703'
-    m['HardResNodeId']        = '415071'
-    m['HardResNodePairs']     = '18'
-    m['HardResNodePredPosPct'] = '55{,}6'
+    hres = d['hard_residual']
+    if hres:
+        m['HardResMissingN']      = gint(hres['missing_n'])
+        m['HardResMissingPct']    = gpct(hres['missing_pct'], 1)
+        m['HardResCompleteN']     = gint(hres['complete_n'])
+        m['HardResCompleteAcc']   = gfloat(hres['complete_acc'], 4)
+        m['HardResIncompleteAcc'] = gfloat(hres['incomplete_acc'], 4)
+        m['HardResNodeId']        = str(hres['top_node_id'])
+        m['HardResNodePairs']     = gint(hres['top_node_pairs'])
+        m['HardResNodePredPosPct'] = gpct(hres['top_node_pred_pos_pct'], 1)
+    else:
+        for k in ('HardResMissingN', 'HardResMissingPct', 'HardResCompleteN', 'HardResCompleteAcc',
+                  'HardResIncompleteAcc', 'HardResNodeId', 'HardResNodePairs', 'HardResNodePredPosPct'):
+            m[k] = _MISSING
 
     # ---- Test-set tier distribution ----
+    # Live for all three tiers once cascade_test_tiers.csv comes from the
+    # heuristics-only (training.no_n2v=true) checkpoint — see plan.md's
+    # "Code↔thesis mismatch" item. If the on-disk file still looks Node2Vec-
+    # contaminated (implausibly high Tier-1 share), warn instead of silently
+    # emitting a misleading number.
     tt = d['test_tiers']
     n_tt = len(tt)
-    tt1_n   = (tt['tier_used'] == 1).sum()
-    tt0_n   = (tt['tier_used'] == 0).sum()
+    tt0_n = (tt['tier_used'] == 0).sum()
+    tt1_n = (tt['tier_used'] == 1).sum()
+    tt2_n = (tt['tier_used'] == 2).sum()
+    tt1_pct = 100 * tt1_n / n_tt
+    if tt1_pct > 50:
+        log.warning('cascade_test_tiers.csv Tier-1 share is %.1f%% — this looks like the '
+                    'Node2Vec-contaminated checkpoint, not the heuristics-only config. '
+                    'Regenerate with training.no_n2v=true before trusting TestTierOne*/TestTierTwoPct.',
+                    tt1_pct)
     m['TestTierOneCount'] = gint(tt1_n)
-    m['TestTierOnePct']   = gpct(100 * tt1_n / n_tt, 1)
+    m['TestTierOnePct']   = gpct(tt1_pct, 1)
     m['TestTierZeroPct']  = gpct(100 * tt0_n / n_tt, 1)
+    m['TestTierTwoPct']   = gpct(100 * tt2_n / n_tt, 1)
 
-    # ---- Efficiency / throughput (constants from timing run) ----
-    m['ThroughputSec']        = '1{,}68'
-    m['ThroughputRate']       = '111.600'
-    m['ThroughputLatency']    = '0{,}009'
-    m['TierThreeCallRateMax'] = '0{,}674'
+    # ---- Efficiency / throughput ----
+    thr = d['throughput']
+    if thr:
+        m['ThroughputSec']     = gfloat(thr['wall_clock_sec'], 2)
+        m['ThroughputRate']    = gint(round(thr['rate_per_sec']))
+        m['ThroughputLatency'] = gfloat(thr['ms_per_pair'], 3)
+    else:
+        m['ThroughputSec']     = _MISSING
+        m['ThroughputRate']    = _MISSING
+        m['ThroughputLatency'] = _MISSING
+
+    abl = d['ablation']
+    m['TierThreeCallRateMax'] = gpct(abl['tier3_pct'].max(), 3)
 
     # ---- Error analysis ----
     total_errors = (vt['y_true'] != vt['y_pred']).sum()
     hard_errors  = ((vt['y_true'] != vt['y_pred']) & (vt['difficulty'] == 'hard')).sum()
-    triv_errors  = total_errors - hard_errors
     hard_err_pct = 100 * hard_errors / total_errors if total_errors else 0.0
     triv_err_pct = 100 - hard_err_pct
 
@@ -356,57 +450,96 @@ def _compute(d: dict) -> dict[str, str]:
         hard_acc = hard_vt['correct'].mean()
         hard_f1  = f1_score(hard_vt['y_true'], hard_vt['y_pred'], average='macro', zero_division=0)
         m['CascadeHardAcc'] = gfloat(hard_acc, 4)
-        m['CascadeHardFone']  = gfloat(hard_f1,  4)
+        m['CascadeHardFone'] = gfloat(hard_f1,  4)
     else:
-        m['CascadeHardAcc'] = '---'
-        m['CascadeHardFone']  = '---'
+        m['CascadeHardAcc'] = _MISSING
+        m['CascadeHardFone'] = _MISSING
 
-    # SVM error stats (constants from paper — require separate SVM val run)
-    m['SvmTotalErrors']     = gint(16_696)
-    m['CascadeVsSvmRatio']  = '64'
-    m['SvmErrorsHardN']     = gint(15_632)
-    m['SvmErrorsHardPct']   = gpct(93.63)
-    m['SvmErrorsTrivialN']  = gint(1_064)
-    m['SvmErrorsTrivialPct'] = gpct(6.37)
-    m['SvmHighTextsimAcc']  = gfloat(0.9838, 4)
-    m['SvmHighTextsimFone']   = gfloat(0.4959, 4)
-    m['SvmHardAcc']         = gfloat(0.8717, 4)
-    m['SvmHardFone']          = gfloat(0.7035, 4)
+    # ---- SVM error-by-difficulty (from svm_val_errors.csv) ----
+    se = d['svm_errors']
+    if se is not None:
+        svm_total_errors = int((se['y_true'] != se['y_pred']).sum())
+        svm_hard_errors  = int(((se['y_true'] != se['y_pred']) & (se['difficulty'] == 'hard')).sum())
+        svm_hard_err_pct = 100 * svm_hard_errors / svm_total_errors if svm_total_errors else 0.0
+        svm_triv_err_pct = 100 - svm_hard_err_pct
+
+        m['SvmTotalErrors']    = gint(svm_total_errors)
+        m['CascadeVsSvmRatio'] = str(round(svm_total_errors / total_errors)) if total_errors else _MISSING
+        m['SvmErrorsHardN']    = gint(svm_hard_errors)
+        m['SvmErrorsHardPct']  = gpct(svm_hard_err_pct)
+        m['SvmErrorsTrivialN'] = gint(svm_total_errors - svm_hard_errors)
+        m['SvmErrorsTrivialPct'] = gpct(svm_triv_err_pct)
+
+        svm_textsim = se[se['difficulty'] == 'trivial_high_textsim']
+        svm_hard    = se[se['difficulty'] == 'hard']
+        if len(svm_textsim):
+            m['SvmHighTextsimAcc']  = gfloat(svm_textsim['correct'].mean(), 4)
+            m['SvmHighTextsimFone'] = gfloat(
+                f1_score(svm_textsim['y_true'], svm_textsim['y_pred'], average='macro', zero_division=0), 4)
+        else:
+            m['SvmHighTextsimAcc'] = _MISSING
+            m['SvmHighTextsimFone'] = _MISSING
+        if len(svm_hard):
+            m['SvmHardAcc']  = gfloat(svm_hard['correct'].mean(), 4)
+            m['SvmHardFone'] = gfloat(
+                f1_score(svm_hard['y_true'], svm_hard['y_pred'], average='macro', zero_division=0), 4)
+        else:
+            m['SvmHardAcc'] = _MISSING
+            m['SvmHardFone'] = _MISSING
+    else:
+        for k in ('SvmTotalErrors', 'CascadeVsSvmRatio', 'SvmErrorsHardN', 'SvmErrorsHardPct',
+                  'SvmErrorsTrivialN', 'SvmErrorsTrivialPct', 'SvmHighTextsimAcc', 'SvmHighTextsimFone',
+                  'SvmHardAcc', 'SvmHardFone'):
+            m[k] = _MISSING
 
     # ---- SVM baseline (from svm_val_metrics.json) ----
     if d['svm']:
         svm = d['svm']
-        m['SvmFone']      = gfloat(svm['macro_f1'],      4)
-        m['SvmAuc']     = gfloat(svm['auc_roc'],       4)
-        m['SvmCsFone']    = gfloat(svm['cold_start_f1'], 4)
+        m['SvmFone']   = gfloat(svm['macro_f1'],      4)
+        m['SvmAuc']    = gfloat(svm['auc_roc'],       4)
+        m['SvmCsFone'] = gfloat(svm['cold_start_f1'], 4)
         lat = svm.get('latency_ms')
-        m['SvmLatency'] = gfloat(lat / svm['n_val'], 5) if lat and svm.get('n_val') else '---'
+        m['SvmLatency'] = gfloat(lat / svm['n_val'], 5) if lat and svm.get('n_val') else _MISSING
     else:
-        m['SvmFone']      = '---'
-        m['SvmAuc']     = '---'
-        m['SvmCsFone']    = '---'
-        m['SvmLatency'] = '---'
+        m['SvmFone']    = _MISSING
+        m['SvmAuc']     = _MISSING
+        m['SvmCsFone']  = _MISSING
+        m['SvmLatency'] = _MISSING
 
-    # ---- Node2Vec ablation (constants — come from train.py run with n2v) ----
-    m['NTwoVWithCallPct']   = '99{,}30'
-    m['NTwoVWithCallN']     = gint(186_298)
-    m['NTwoVWithOverallFone'] = '0{,}9958'
-    m['NTwoVWithConfFone']    = '0{,}9970'
-    m['NTwoVNoOverallFone']   = '0{,}7693'
-    m['NTwoVNoConfFone']      = '0{,}4996'
-    m['NTwoVIdOneCoverage'] = '9{,}4'
-    m['NTwoVIdTwoCoverage'] = '30{,}3'
-    m['NTwoVZeroVecPct']    = '98{,}3'
-    m['NTwoVZeroVecN']      = gint(234_276)
-    m['NTwoVTestTierOnePct'] = '98{,}6'
+    # ---- Node2Vec ablation (from node2vec_ablation.json) ----
+    n2v = d['n2v_ablation']
+    if n2v:
+        without, with_n2v, coverage = n2v['without'], n2v['with'], n2v['coverage']
+        m['NTwoVWithCallPct']   = gpct(with_n2v['tier1_call_rate_%'], 2)
+        m['NTwoVWithCallN']     = gint(with_n2v['tier1_call_n'])
+        m['NTwoVWithOverallFone'] = gfloat(with_n2v['macro_f1'], 4)
+        m['NTwoVWithConfFone']    = gfloat(with_n2v['macro_f1_confident'], 4)
+        m['NTwoVNoOverallFone']   = gfloat(without['macro_f1'], 4)
+        m['NTwoVNoConfFone']      = gfloat(without['macro_f1_confident'], 4)
+        m['NTwoVNoAccOverall']    = gfloat(without['accuracy'], 4)
+        m['NTwoVWithAccOverall']  = gfloat(with_n2v['accuracy'], 4)
+        m['NTwoVIdOneCoverage'] = gpct(coverage['id1_coverage_pct'], 1)
+        m['NTwoVIdTwoCoverage'] = gpct(coverage['id2_coverage_pct'], 1)
+        m['NTwoVZeroVecPct']    = gpct(coverage['zero_vec_pct'], 1)
+        m['NTwoVZeroVecN']      = gint(coverage['zero_vec_n'])
+    else:
+        for k in ('NTwoVWithCallPct', 'NTwoVWithCallN', 'NTwoVWithOverallFone', 'NTwoVWithConfFone',
+                  'NTwoVNoOverallFone', 'NTwoVNoConfFone', 'NTwoVNoAccOverall', 'NTwoVWithAccOverall',
+                  'NTwoVIdOneCoverage', 'NTwoVIdTwoCoverage', 'NTwoVZeroVecPct', 'NTwoVZeroVecN'):
+            m[k] = _MISSING
+
+    n2v_tt = d['n2v_test_tiers']
+    if n2v_tt is not None:
+        m['NTwoVTestTierOnePct'] = gpct(100 * (n2v_tt['tier_used'] == 1).mean(), 1)
+    else:
+        m['NTwoVTestTierOnePct'] = _MISSING
 
     # ---- Ablation grid ----
-    abl = d['ablation']
     # τ₁∈{0.6,0.7} rows (low Tier-1 threshold → high call rate at Tier 1)
     low_t1 = abl[abl['tau1'].isin([0.6, 0.7])]
     # τ₁≥0.8, τ₂=0.5 (best F1 grid points)
     best_rows = abl[(abl['tau1'] >= 0.8) & (abl['tau2'] == 0.5)]
-    default_row = abl[(abl['tau1'] == 0.8) & (abl['tau2'] == 0.7)].iloc[0]
+    default_row = abl[(abl['tau1'] == _TAU_ONE_DEFAULT) & (abl['tau2'] == _TAU_TWO_DEFAULT)].iloc[0]
     # τ₁∈{0.9,0.95} (higher break point)
     high_t1 = abl[abl['tau1'].isin([0.9, 0.95])]
 
@@ -415,12 +548,15 @@ def _compute(d: dict) -> dict[str, str]:
     m['AblTierOneLowFone']       = gfloat(low_t1['macro_f1'].min(), 4)
     m['AblTierOneHighFone']      = gfloat(low_t1['macro_f1'].max(), 4)
     m['AblTierOneLowPct']      = gpct(low_t1['tier1_pct'].iloc[0])
-    m['AblTierOneBreakPct']    = gpct(abl[abl['tau1'] == 0.8]['tier1_pct'].iloc[0])
+    m['AblTierOneBreakPct']    = gpct(abl[abl['tau1'] == _TAU_ONE_DEFAULT]['tier1_pct'].iloc[0])
     m['AblTierOneBreakPctHigh'] = gpct(high_t1['tier1_pct'].iloc[0])
     m['AblBestFone']             = gfloat(best_rows['macro_f1'].max(), 4)
     m['AblDefaultFone']          = gfloat(default_row['macro_f1'], 4)
+    # τ₁≥0.8 overall Macro F1 range (low end; high end coincides with AblBestFone)
+    high_break_t1 = abl[abl['tau1'] >= 0.8]
+    m['AblHighTauOneLowFone']        = gfloat(high_break_t1['macro_f1'].min(), 4)
     # max Tier-3 rate at τ₁=0.8 (across τ₂ sweep)
-    t1_08 = abl[abl['tau1'] == 0.8]
+    t1_08 = abl[abl['tau1'] == _TAU_ONE_DEFAULT]
     m['AblTauTwoMaxTierThreePct']  = gpct(t1_08['tier3_pct'].max(), 2)
     # Tier-3 call rates for the τ₂ table (τ₁=0.8 fixed); use letter names (no digits/underscores in TeX)
     _tau2_names = {0.5: 'ZeroFive', 0.6: 'ZeroSix', 0.7: 'ZeroSeven', 0.8: 'ZeroEight', 0.9: 'ZeroNine'}
@@ -439,16 +575,16 @@ def _compute(d: dict) -> dict[str, str]:
         m['KaggleBaselinePublic']  = gfloat(best_ref['public_score'], 5)
         m['KaggleBaselinePrivate'] = gfloat(best_ref['private_score'], 5)
     else:
-        m['KaggleBaselinePublic']  = '---'
-        m['KaggleBaselinePrivate'] = '---'
+        m['KaggleBaselinePublic']  = _MISSING
+        m['KaggleBaselinePrivate'] = _MISSING
 
     if not n2v_rows.empty:
         best_n2v = n2v_rows.sort_values('public_score', ascending=False).iloc[0]
         m['NTwoVKagglePublic']  = gfloat(best_n2v['public_score'], 5)
         m['NTwoVKagglePrivate'] = gfloat(best_n2v['private_score'], 5)
     else:
-        m['NTwoVKagglePublic']  = '---'
-        m['NTwoVKagglePrivate'] = '---'
+        m['NTwoVKagglePublic']  = _MISSING
+        m['NTwoVKagglePrivate'] = _MISSING
 
     return m
 
@@ -466,7 +602,9 @@ _GROUPS = [
                                  'LeakageReversedPct', 'SelfLoopsTrain', 'SelfLoopsTrainPos',
                                  'SelfLoopsTrainNeg', 'SelfLoopsTest', 'IntraTrainDuplicates',
                                  'IntraTrainDuplicatesRows']),
-    ('Separability thresholds',['CnThreshold', 'TfidfThreshold']),
+    ('Separability thresholds',['CnThreshold', 'TfidfThreshold', 'StructCnMeanPos', 'StructCnMeanNeg',
+                                 'StructTfidfMeanPos', 'StructTfidfMeanNeg',
+                                 'GraphCoverageTrainPct', 'GraphCoverageTestPct']),
     ('Difficulty — train',     ['TrainDiffSelfLoopN', 'TrainDiffSelfLoopPct', 'TrainDiffHighCnN',
                                  'TrainDiffHighCnPct', 'TrainDiffHighTextsimN', 'TrainDiffHighTextsimPct',
                                  'TrainDiffHardN', 'TrainDiffHardPct', 'TrainDiffTrivialPct']),
@@ -484,7 +622,7 @@ _GROUPS = [
                                  'TierTwoHardN', 'TierTwoHardAcc', 'TierTwoHighTextsimN', 'TierTwoHighTextsimAcc',
                                  'TierThreeHardN', 'TierThreeHardAcc',
                                  'TierThreeHighTextsimN', 'TierThreeHighTextsimAcc']),
-    ('Test-set tier dist',     ['TestTierOneCount', 'TestTierOnePct', 'TestTierZeroPct']),
+    ('Test-set tier dist',     ['TestTierOneCount', 'TestTierOnePct', 'TestTierZeroPct', 'TestTierTwoPct']),
     ('Cold-start',             ['ColdStartCount', 'ColdStartPct', 'ColdStartNonCount']),
     ('Hard residual',          ['HardResCount', 'HardResAcc', 'HardResMissingN', 'HardResMissingPct',
                                  'HardResCompleteN', 'HardResCompleteAcc', 'HardResIncompleteAcc',
@@ -497,11 +635,12 @@ _GROUPS = [
                                  'SvmHardAcc', 'SvmHardFone']),
     ('Node2Vec ablation',      ['NTwoVWithCallPct', 'NTwoVWithCallN', 'NTwoVWithOverallFone',
                                  'NTwoVWithConfFone', 'NTwoVNoOverallFone', 'NTwoVNoConfFone',
+                                 'NTwoVNoAccOverall', 'NTwoVWithAccOverall',
                                  'NTwoVIdOneCoverage', 'NTwoVIdTwoCoverage', 'NTwoVZeroVecPct',
                                  'NTwoVZeroVecN', 'NTwoVTestTierOnePct']),
     ('Threshold ablation',     ['AblGridPoints', 'AblTierOneLowFone', 'AblTierOneHighFone',
                                  'AblTierOneLowPct', 'AblTierOneBreakPct', 'AblTierOneBreakPctHigh',
-                                 'AblBestFone', 'AblDefaultFone', 'AblTauTwoMaxTierThreePct',
+                                 'AblBestFone', 'AblDefaultFone', 'AblHighTauOneLowFone', 'AblTauTwoMaxTierThreePct',
                                  'AblTThreeRateZeroFive', 'AblTThreeRateZeroSix', 'AblTThreeRateZeroSeven',
                                  'AblTThreeRateZeroEight', 'AblTThreeRateZeroNine']),
     ('SVM baseline',           ['SvmFone', 'SvmAuc', 'SvmCsFone', 'SvmLatency']),
@@ -512,8 +651,8 @@ _GROUPS = [
 
 def _emit_tex(macros: dict[str, str]) -> None:
     lines = [
-        '% AUTO-GENERATED by scripts/generate_macros.py — do not edit by hand.',
-        '% Re-run: make generate-macros',
+        '% AUTO-GENERATED by scripts/paper/generate_macros.py — do not edit by hand.',
+        '% Re-run: make paper-macros',
         '',
     ]
     emitted = set()

@@ -55,3 +55,19 @@ conda run -n link-prediction python -m scripts.data.compute_structural --nrows 5
 # Skip Sentence-Transformer (slow model download + inference)
 conda run -n link-prediction python -m scripts.data.compute_semantic --nrows 300 --skip-st
 ```
+
+## Running on Kaggle
+
+`notebooks/kaggle_full_pipeline.ipynb` runs the whole pipeline (features → analysis → train all
+six models → evaluate → submission) inside a Kaggle notebook session. Import it, then:
+
+1. **Accelerator:** GPU (the sentence-transformer encoder uses it).
+2. **Internet:** on — required for `git clone`, `pip install`, and the NLTK/HuggingFace downloads.
+3. **Input:** attach the `dsaa-2023-competition` competition data.
+4. **Secret:** Add-ons → Secrets → `GITHUB_PAT`, a GitHub token with `repo` read scope. The
+   notebook clones this repo, so any local change must be pushed before it will be picked up.
+
+The notebook is a thin driver — it symlinks `data/raw`, `data/interim` and `outputs/checkpoints`
+onto Kaggle paths and then calls the same `python -m scripts.…` entry points as the make targets.
+Set `SAMPLE_ROWS` in the first cell to truncate `train.csv`/`test.csv` for a minutes-long smoke
+test before committing to a multi-hour full run.

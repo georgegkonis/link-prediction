@@ -54,6 +54,11 @@ make evaluate MODEL=cascade
 make paper-compile
 ```
 
+To run the whole pipeline on Kaggle instead of locally, import
+[`notebooks/kaggle_full_pipeline.ipynb`](notebooks/kaggle_full_pipeline.ipynb). It needs a GPU
+accelerator, Internet enabled, the `dsaa-2023-competition` data attached, and a `GITHUB_PAT`
+secret (it clones this repo). See [docs/commands.md](docs/commands.md#running-on-kaggle).
+
 ## Documentation
 
 | Doc                                          | Contents                                     |

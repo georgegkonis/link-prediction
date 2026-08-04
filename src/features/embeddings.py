@@ -44,6 +44,9 @@ def compute_tfidf_scores(
     """
     unique_ids = pd.unique(pairs[['id1', 'id2']].values.ravel())
     present = [i for i in unique_ids if i in nodes.index]
+    if not present:
+        # TfidfVectorizer.transform([]) raises on an empty document list
+        return np.zeros(len(pairs))
 
     texts  = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
     matrix = vectorizer.transform(texts)          # sparse (n_nodes, vocab)

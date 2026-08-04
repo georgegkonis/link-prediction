@@ -16,6 +16,14 @@ def compute_heuristics(G: nx.Graph, pairs: pd.DataFrame, show_progress: bool = T
     self_loop = pairs['id1'] == pairs['id2']
     non_self = pairs[~self_loop]
 
+    if non_self.empty:
+        # `DataFrame.apply(..., axis=1)` on an empty frame yields an empty
+        # DataFrame rather than a boolean Series, which breaks the masking below.
+        return pd.DataFrame(
+            np.nan, index=pairs.index,
+            columns=['cn', 'jaccard', 'adamic_adar', 'pref_attach'],
+        )
+
     both_present = non_self.apply(lambda r: G.has_node(r['id1']) and G.has_node(r['id2']), axis=1)
     valid = non_self[both_present]
     cold = non_self[~both_present]
@@ -123,8 +131,9 @@ def node2vec_hadamard_features(wv, pairs: pd.DataFrame, dim: int = 64) -> np.nda
     (cold-start) are zero vectors.
     """
     key_to_index = wv.key_to_index
-    idx1 = np.array([key_to_index.get(str(u), -1) for u in pairs['id1'].values])
-    idx2 = np.array([key_to_index.get(str(v), -1) for v in pairs['id2'].values])
+    # dtype is pinned so an empty pair set still yields an integer index array
+    idx1 = np.array([key_to_index.get(str(u), -1) for u in pairs['id1'].values], dtype=np.int64)
+    idx2 = np.array([key_to_index.get(str(v), -1) for v in pairs['id2'].values], dtype=np.int64)
     valid = (idx1 >= 0) & (idx2 >= 0)
 
     out = np.zeros((len(pairs), dim), dtype=np.float32)

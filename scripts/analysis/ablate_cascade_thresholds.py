@@ -50,7 +50,7 @@ def main():
         for t2 in T2_GRID:
             model.tier1_threshold = t1
             model.tier2_threshold = t2
-            y_pred, tier_used = model.predict(val_structural, val_pos, val_st, val_pairs)
+            y_pred, tier_used, _ = model.predict(val_structural, val_pos, val_st, val_pairs)
             mf1 = f1_score(y_val, y_pred, average='macro', zero_division=0)
             pct = lambda t: 100 * (tier_used == t).mean()
             row = {'tau1': t1, 'tau2': t2, 'macro_f1': mf1,

@@ -63,7 +63,7 @@ def main(cfg: DictConfig):
     log.info('Loading test features...')
     if model_name in ('structural', 'cascade'):
         structural = pd.read_csv(f'{interim_path}/structural_test.csv', index_col='id')
-        n2v = np.load(f'{interim_path}/n2v_test.npy')
+        n2v = None if cfg.training.no_n2v else np.load(f'{interim_path}/n2v_test.npy')
     if model_name in ('tfidf', 'svm', 'cascade'):
         tfidf_scores = pd.read_csv(
             f'{interim_path}/tfidf_test.csv', index_col='id')['tfidf_score'].values
@@ -86,7 +86,7 @@ def main(cfg: DictConfig):
         elif model_name == 'svm':
             y_pred = model.predict(tfidf_scores)
         elif model_name == 'cascade':
-            y_pred, tier_used = model.predict(structural, pos_features, st_scores, test, n2v)
+            y_pred, tier_used, y_scores = model.predict(structural, pos_features, st_scores, test, n2v)
             log.info('Tier usage on test set:')
             for tier, stats in model.tier_stats(tier_used).items():
                 log.info('  %s: %s pairs (%.1f%%)', tier, f"{stats['n']:,}", stats['pct'])
@@ -112,6 +112,7 @@ def main(cfg: DictConfig):
         pd.DataFrame({
             'id': test.index, 'id1': test['id1'].values, 'id2': test['id2'].values,
             'y_pred': y_pred, 'tier_used': tier_used, 'difficulty': difficulty.values,
+            'score': y_scores,
         }).to_csv(f'{predictions_path}/{name}_test_tiers.csv', index=False)
         log.info('Saved → %s/%s_test_tiers.csv', predictions_path, name)
 

@@ -12,6 +12,10 @@ Available models:
 Usage:
     python -m scripts.train model=structural
     python -m scripts.train model=cascade model.tier1_threshold=0.8 model.tier2_threshold=0.7
+    python -m scripts.train model=cascade training.no_n2v=true        # reproducible heuristics-only checkpoint
+    python -m scripts.train model=cascade training.no_n2v=false +tag=n2v  # keeps the n2v-ablation variant
+                                                                          # alongside it (cascade_n2v.joblib,
+                                                                          # cascade_n2v_val_tiers.csv, ...)
 """
 
 import json
@@ -49,6 +53,10 @@ def _load(model_name: str, raw_path: str, interim_path: str) -> dict:
         data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
         data['n2v'] = np.load(f'{interim_path}/n2v_train.npy')
 
+    if model_name == 'svm':
+        # cn only, for per-pair difficulty labeling of the error-by-difficulty export below
+        data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
+
     if model_name in ('tfidf', 'svm', 'cascade'):
         data['tfidf_scores'] = pd.read_csv(
             f'{interim_path}/tfidf_train.csv', index_col='id')['tfidf_score'].values
@@ -82,6 +90,8 @@ def _split(data: dict, model_name: str, val_size: float, seed: int):
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig):
     model_name = cfg.model.name
+    tag = cfg.get('tag')
+    name = f'{model_name}_{tag}' if tag else model_name
     raw_path = to_absolute_path(cfg.paths.raw)
     interim_path = to_absolute_path(cfg.paths.interim)
     checkpoints_path = to_absolute_path(cfg.paths.checkpoints)
@@ -147,6 +157,21 @@ def main(cfg: DictConfig):
             proba = model.predict_proba(val_X)
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
+        val_pairs = data['pairs'].iloc[val]
+        cn_val, tfidf_val = data['structural']['cn'].values, data['tfidf_scores']
+        cn_thr, tfidf_thr = cfg.training.cn_threshold, cfg.training.tfidf_threshold
+        if cn_thr is None or tfidf_thr is None:
+            auto_cn, auto_tfidf = pick_thresholds(y, cn_val, tfidf_val)
+            cn_thr    = cn_thr if cn_thr is not None else auto_cn
+            tfidf_thr = tfidf_thr if tfidf_thr is not None else auto_tfidf
+        difficulty = label_difficulty(val_pairs, cn_val[val], tfidf_val[val], cn_thr, tfidf_thr)
+
+        pd.DataFrame({
+            'id': val_pairs.index, 'y_true': y[val], 'y_pred': y_pred,
+            'correct': y_pred == y[val], 'difficulty': difficulty.values, 'score': y_scores,
+        }).to_csv(f'{predictions_path}/{name}_val_errors.csv', index=False)
+        log.info('Saved → %s/%s_val_errors.csv', predictions_path, name)
+
     elif model_name == 'cascade':
         model = CascadeLP(tier1_threshold=cfg.model.tier1_threshold, tier2_threshold=cfg.model.tier2_threshold)
         tr_structural, val_structural = sub(data['structural'])
@@ -160,10 +185,9 @@ def main(cfg: DictConfig):
         )
         val_pairs = data['pairs'].iloc[val]
         with timer() as t:
-            y_pred, tier_used = model.predict(
+            y_pred, tier_used, y_scores = model.predict(
                 val_structural, val_pos, val_st, val_pairs, val_n2v,
             )
-        y_scores = y_pred.astype(float)
         log.info('Tier usage:')
         for tier, stats in model.tier_stats(tier_used).items():
             log.info(f"  {tier}: {stats['n']:,} pairs ({stats['pct']:.1f}%)")
@@ -185,16 +209,16 @@ def main(cfg: DictConfig):
         pd.DataFrame({
             'id': val_pairs.index, 'id1': val_pairs['id1'].values, 'id2': val_pairs['id2'].values,
             'y_true': y[val], 'y_pred': y_pred, 'correct': y_pred == y[val],
-            'tier_used': tier_used, 'difficulty': difficulty.values,
-        }).to_csv(f'{predictions_path}/cascade_val_tiers.csv', index=False)
-        log.info('Saved → %s/cascade_val_tiers.csv', predictions_path)
+            'tier_used': tier_used, 'difficulty': difficulty.values, 'score': y_scores,
+        }).to_csv(f'{predictions_path}/{name}_val_tiers.csv', index=False)
+        log.info('Saved → %s/%s_val_tiers.csv', predictions_path, name)
 
     G      = build_graph(data['pairs'])
     cs     = cold_start_mask(data['pairs'].iloc[val], G)
     result = evaluate(y[val], y_pred, y_scores, cs, latency_ms=t[0] if t else None)
     log.info('Validation — %s\n%s', model_name, result)
 
-    pathlib.Path(f'{predictions_path}/{model_name}_val_metrics.json').write_text(
+    pathlib.Path(f'{predictions_path}/{name}_val_metrics.json').write_text(
         json.dumps({
             'macro_f1':      result.macro_f1,
             'auc_roc':       result.auc_roc,
@@ -204,7 +228,7 @@ def main(cfg: DictConfig):
         }, indent=2)
     )
 
-    out = f'{checkpoints_path}/{model_name}.joblib'
+    out = f'{checkpoints_path}/{name}.joblib'
     model.save(out)
     log.info('Saved → %s', out)
 

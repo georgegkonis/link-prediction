@@ -56,22 +56,27 @@ class CascadeLP:
         st_scores: np.ndarray,
         pairs: pd.DataFrame,
         n2v: np.ndarray | None = None,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Returns
         -------
-        predictions : (n,) int array — predicted labels
-        tier_used   : (n,) int array — which tier made each decision (0-3)
+        predictions : (n,) int array   — predicted labels
+        tier_used   : (n,) int array   — which tier made each decision (0-3)
+        scores      : (n,) float array — P(y=1) at whichever tier resolved the
+                      pair (1.0 for Tier-0 self-loops), for AUC-ROC/confidence
+                      analysis
         """
         n = len(pairs)
         predictions = np.zeros(n, dtype=int)
         tier_used   = np.full(n, -1, dtype=int)
+        scores      = np.zeros(n, dtype=float)
         remaining   = np.ones(n, dtype=bool)
 
         # Tier 0 — self-loops
         self_loop = pairs['id1'].values == pairs['id2'].values
         predictions[self_loop] = 1
         tier_used[self_loop]   = 0
+        scores[self_loop]      = 1.0
         remaining[self_loop]   = False
 
         def _route(idx, proba, threshold, tier_id):
@@ -80,6 +85,7 @@ class CascadeLP:
             hit_idx   = idx[confident]
             predictions[hit_idx] = proba[confident].argmax(axis=1)
             tier_used[hit_idx]   = tier_id
+            scores[hit_idx]      = proba[confident][:, 1]
             remaining[hit_idx]   = False
             return idx[~confident]          # return indices still undecided
 
@@ -96,10 +102,12 @@ class CascadeLP:
 
         # Tier 3 — embedding (handles all remaining; no threshold needed)
         if len(idx):
-            predictions[idx] = self.tier3.predict(st_scores[idx])
+            proba3 = self.tier3.predict_proba(st_scores[idx])
+            predictions[idx] = proba3.argmax(axis=1)
             tier_used[idx]   = 3
+            scores[idx]      = proba3[:, 1]
 
-        return predictions, tier_used
+        return predictions, tier_used, scores
 
     def tier_stats(self, tier_used: np.ndarray) -> dict:
         total = len(tier_used)

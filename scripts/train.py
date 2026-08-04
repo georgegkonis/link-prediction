@@ -45,13 +45,14 @@ from src.models.svm import (
 from src.utils.difficulty import label_difficulty, pick_thresholds
 from src.utils.metrics import cold_start_mask, evaluate, evaluate_by_group, tier_difficulty_breakdown, timer
 
-def _load(model_name: str, raw_path: str, interim_path: str) -> dict:
+def _load(model_name: str, raw_path: str, interim_path: str, no_n2v: bool = False) -> dict:
     train = load_edges(os.path.join(raw_path, 'train.csv'))
     data  = {'pairs': train, 'y': train['label'].values}
 
     if model_name in ('structural', 'cascade'):
         data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
-        data['n2v'] = np.load(f'{interim_path}/n2v_train.npy')
+        if not no_n2v:
+            data['n2v'] = np.load(f'{interim_path}/n2v_train.npy')
 
     if model_name == 'svm':
         # cn only, for per-pair difficulty labeling of the error-by-difficulty export below
@@ -101,9 +102,7 @@ def main(cfg: DictConfig):
     os.makedirs(predictions_path, exist_ok=True)
 
     log.info(f'Loading features for [{model_name}]...')
-    data = _load(model_name, raw_path, interim_path)
-    if cfg.training.no_n2v and 'n2v' in data:
-        del data['n2v']
+    data = _load(model_name, raw_path, interim_path, cfg.training.no_n2v)
     tr, val, sub = _split(data, model_name, cfg.training.val_size, cfg.seed)
     y = data['y']
 

@@ -30,6 +30,9 @@ dependencies:
   # NLP
   - nltk
 
+  # Testing
+  - pytest
+
   - pip
   - pip:
       - transformers>=4.40

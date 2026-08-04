@@ -9,7 +9,7 @@ RUN = conda run -n $(ENV) --no-capture-output
         train evaluate \
         kaggle-submit kaggle-check \
         paper-macros paper-figures paper-assets paper-compile paper-clean \
-        jupyter
+        test jupyter
 
 # End-to-end order to fully populate data/interim/ + outputs/ before paper-assets
 # (figure/macro generation itself never re-runs any of this — see generate_macros.py /
@@ -59,6 +59,7 @@ help:
 	@echo "  paper-clean                       remove LaTeX auxiliary files (keeps main.pdf)"
 	@echo ""
 	@echo "Other"
+	@echo "  test                              run the unit test suite (no data/ needed)"
 	@echo "  jupyter                           start JupyterLab"
 
 env:
@@ -128,6 +129,9 @@ paper-compile: paper-version
 paper-clean:
 	cd paper && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
 	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
+
+test:
+	$(RUN) python -m pytest $(PYTEST_ARGS)
 
 jupyter:
 	$(RUN) jupyter lab

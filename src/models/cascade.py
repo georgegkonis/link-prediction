@@ -5,6 +5,31 @@ import pandas as pd
 
 from src.models.svm import EmbeddingClassifier, PosClassifier, StructuralClassifier
 
+_HEURISTIC_COLS = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
+
+
+def cold_start_from_structural(structural: pd.DataFrame) -> np.ndarray:
+    """
+    Boolean mask — True where a pair carries no structural signal at all.
+
+    ``compute_heuristics`` writes exactly 0.0 across all four heuristics when
+    either endpoint is absent from the graph, while any pair with both endpoints
+    present has ``pref_attach = deg(u) * deg(v) >= 1`` (every node in a graph
+    built from an edge list has degree >= 1). An all-zero row therefore
+    identifies a cold-start pair unambiguously, which lets CascadeLP route on
+    cold-start without being handed the graph.
+
+    Note this is a stricter notion than ``metrics.cold_start_mask``, which
+    treats any pair with zero common neighbours as cold-start; such a pair can
+    still be in the graph and still carries degree/Adamic-Adar signal.
+
+    Returns all-False if the frame does not carry the heuristic columns.
+    """
+    if not all(c in structural.columns for c in _HEURISTIC_COLS):
+        return np.zeros(len(structural), dtype=bool)
+    # NaN marks a self-loop, which Tier 0 has already resolved — never cold-start.
+    return (structural[_HEURISTIC_COLS].fillna(1.0) == 0).all(axis=1).to_numpy()
+
 
 class CascadeLP:
     """
@@ -16,7 +41,10 @@ class CascadeLP:
     Tier 3  EmbeddingClassifier   — sentence-transformer cosine; for uncertain pairs only.
 
     A pair escalates to the next tier when the current tier's confidence
-    (max predicted probability) falls below the tier's threshold.
+    (max predicted probability) falls below the tier's threshold. Cold-start
+    pairs (either endpoint absent from the graph) bypass Tier 1 entirely and
+    enter the cascade at Tier 2, since their structural features are all zero
+    and carry no signal to be confident about.
     """
 
     def __init__(self, tier1_threshold: float = 0.8, tier2_threshold: float = 0.7):
@@ -56,8 +84,15 @@ class CascadeLP:
         st_scores: np.ndarray,
         pairs: pd.DataFrame,
         n2v: np.ndarray | None = None,
+        cold_start: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
+        Parameters
+        ----------
+        cold_start : (n,) bool array, optional
+            Pairs to route past Tier 1. Derived from the structural features via
+            ``cold_start_from_structural`` when not supplied.
+
         Returns
         -------
         predictions : (n,) int array   — predicted labels
@@ -89,11 +124,21 @@ class CascadeLP:
             remaining[hit_idx]   = False
             return idx[~confident]          # return indices still undecided
 
-        # Tier 1 — structural
-        idx = np.where(remaining)[0]
+        if cold_start is None:
+            cold_start = cold_start_from_structural(structural)
+        else:
+            cold_start = np.asarray(cold_start, dtype=bool)
+            if len(cold_start) != n:
+                raise ValueError(f'cold_start has length {len(cold_start)}, expected {n}')
+
+        # Tier 1 — structural (cold-start pairs bypass it: all-zero features)
+        idx = np.where(remaining & ~cold_start)[0]
         if len(idx):
             proba1    = self.tier1.predict_proba(structural.iloc[idx], n2v[idx] if n2v is not None else None)
             idx       = _route(idx, proba1, self.tier1_threshold, 1)
+
+        # Cold-start pairs enter the cascade here, alongside Tier-1 escalations.
+        idx = np.sort(np.concatenate([idx, np.where(remaining & cold_start)[0]]))
 
         # Tier 2 — POS
         if len(idx):

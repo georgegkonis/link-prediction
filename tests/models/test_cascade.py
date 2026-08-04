@@ -367,20 +367,116 @@ def test_end_to_end_with_real_tiers_is_consistent():
 
 # ── documented-but-unimplemented behaviour ───────────────────────────────────
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='BUG/DOC MISMATCH: CascadeLP docstring and CLAUDE.md both state that '
-           'cold-start pairs "skip straight to Tier 2", but predict() has no '
-           'cold-start notion at all — every non-self-loop pair goes through '
-           'Tier 1, and a confident structural prediction on all-zero features '
-           'terminates there. See src/models/cascade.py:14 and :92-96.',
-)
+def _cs_frame(p, heuristics):
+    """Structural frame carrying both the stub's 'p' and the real heuristic columns."""
+    return pd.DataFrame({
+        'p': p,
+        'cn': [h[0] for h in heuristics],
+        'jaccard': [h[1] for h in heuristics],
+        'adamic_adar': [h[2] for h in heuristics],
+        'pref_attach': [h[3] for h in heuristics],
+    })
+
+
 def test_cold_start_pairs_skip_tier_one():
-    # A cold-start pair: neither node is in the graph, so every structural
-    # heuristic is 0 and the structural model has nothing to work with.
+    # Neither node is in the graph, so every structural heuristic is 0 and the
+    # structural model has nothing to work with — even though the stub would be
+    # confident (p=0.95), the pair must be resolved at Tier 2.
     pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
-    structural = pd.DataFrame({'p': [0.95], 'cn': [0.0], 'jaccard': [0.0],
-                               'adamic_adar': [0.0], 'pref_attach': [0.0]})
+    structural = _cs_frame([0.95], [(0.0, 0.0, 0.0, 0.0)])
     m = _stubbed()
     _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs)
     assert tier.tolist() == [2]
+
+
+def test_cold_start_pair_is_never_shown_to_tier_one():
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    structural = _cs_frame([0.95], [(0.0, 0.0, 0.0, 0.0)])
+    m = _stubbed()
+    m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs)
+    assert m.tier1.calls == []
+
+
+def test_cold_start_pair_falls_through_to_tier_three_when_tier_two_unsure():
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    structural = _cs_frame([0.95], [(0.0, 0.0, 0.0, 0.0)])
+    m = _stubbed()
+    pred, tier, score = m.predict(structural, np.full((1, 3), 0.5), np.array([0.8]), pairs)
+    assert tier.tolist() == [3]
+    assert pred.tolist() == [1]
+    assert score == pytest.approx([0.8])
+
+
+def test_in_graph_pair_with_zero_common_neighbours_still_uses_tier_one():
+    # pref_attach = deg(u) * deg(v) >= 1 for any pair present in the graph, so a
+    # zero-CN pair is NOT cold-start in the cascade's sense and keeps its Tier-1
+    # routing. This is the distinction from metrics.cold_start_mask.
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    structural = _cs_frame([0.95], [(0.0, 0.0, 0.0, 6.0)])
+    m = _stubbed()
+    _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs)
+    assert tier.tolist() == [1]
+
+
+def test_self_loop_with_nan_heuristics_resolves_at_tier_zero():
+    # compute_heuristics writes NaN for self-loops; that must not read as cold-start.
+    pairs = pd.DataFrame({'id1': [7], 'id2': [7]})
+    structural = _cs_frame([0.95], [(np.nan, np.nan, np.nan, np.nan)])
+    m = _stubbed()
+    pred, tier, score = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs)
+    assert tier.tolist() == [0]
+    assert pred.tolist() == [1]
+    assert score == pytest.approx([1.0])
+
+
+def test_cold_and_warm_pairs_are_routed_independently_in_one_call():
+    pairs = pd.DataFrame({'id1': [9, 1, 2], 'id2': [9, 2, 3]})
+    #                       self-loop  cold      warm+confident
+    structural = _cs_frame(
+        [0.95, 0.95, 0.95],
+        [(np.nan,) * 4, (0.0, 0.0, 0.0, 0.0), (3.0, 0.5, 1.2, 8.0)],
+    )
+    pos = np.full((3, 3), 0.9)
+    m = _stubbed()
+    _, tier, _ = m.predict(structural, pos, np.zeros(3), pairs)
+    assert tier.tolist() == [0, 2, 1]
+    # Only the warm pair was ever handed to Tier 1.
+    assert m.tier1.calls == [('predict', [2])]
+
+
+def test_explicit_cold_start_mask_overrides_derivation():
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    # Heuristics say warm, but the caller declares it cold.
+    structural = _cs_frame([0.95], [(3.0, 0.5, 1.2, 8.0)])
+    m = _stubbed()
+    _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs,
+                           None, np.array([True]))
+    assert tier.tolist() == [2]
+    assert m.tier1.calls == []
+
+
+def test_explicit_cold_start_mask_of_wrong_length_raises():
+    pairs = pd.DataFrame({'id1': [1, 2], 'id2': [3, 4]})
+    structural = _cs_frame([0.95, 0.95], [(3.0, 0.5, 1.2, 8.0)] * 2)
+    m = _stubbed()
+    with pytest.raises(ValueError, match='length 1, expected 2'):
+        m.predict(structural, np.full((2, 3), 0.9), np.zeros(2), pairs,
+                  None, np.array([True]))
+
+
+def test_frame_without_heuristic_columns_derives_no_cold_start():
+    # The stub-only frame used by the main routing scenario must be unaffected.
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    structural = pd.DataFrame({'p': [0.95]})
+    m = _stubbed()
+    _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs)
+    assert tier.tolist() == [1]
+
+
+def test_all_cold_start_pairs_do_not_break_routing():
+    pairs = pd.DataFrame({'id1': [1, 2], 'id2': [3, 4]})
+    structural = _cs_frame([0.95, 0.95], [(0.0, 0.0, 0.0, 0.0)] * 2)
+    m = _stubbed()
+    _, tier, _ = m.predict(structural, np.full((2, 3), 0.9), np.zeros(2), pairs)
+    assert tier.tolist() == [2, 2]
+    assert m.tier1.calls == []

@@ -4,11 +4,24 @@ RUN = conda run -n $(ENV) --no-capture-output
 .PHONY: help \
         env env-update \
         data-download features-structural features-semantic \
-        analyze-leakage analyze-dataset analyze-cascade analyze \
+        analyze-leakage analyze-dataset analyze-cascade analyze-node2vec \
+        analyze-hard-residual benchmark-throughput ablate-thresholds analyze \
         train evaluate \
         kaggle-submit kaggle-check \
         paper-macros paper-figures paper-assets paper-compile paper-clean \
         jupyter
+
+# End-to-end order to fully populate data/interim/ + outputs/ before paper-assets
+# (figure/macro generation itself never re-runs any of this — see generate_macros.py /
+# generate_figures.py docstrings):
+#   data-download
+#   → features-structural, features-semantic
+#   → analyze-leakage, analyze-dataset
+#   → train MODEL=<structural|tfidf|pos|embedding|svm|cascade>   (cascade: training.no_n2v=true
+#     for the reproducible heuristics-only checkpoint the thesis reports)
+#   → evaluate MODEL=<same 6>
+#   → ablate-thresholds, analyze-node2vec, analyze-hard-residual, benchmark-throughput
+#   → paper-assets
 
 help:
 	@echo "Environment"
@@ -24,6 +37,10 @@ help:
 	@echo "  analyze-leakage                   train/test leakage and self-loop audit"
 	@echo "  analyze-dataset                   separability characterization (trivial-pair fractions)"
 	@echo "  analyze-cascade                   CascadeLP tier and difficulty breakdown"
+	@echo "  analyze-node2vec                  Node2Vec with/without ablation + test coverage"
+	@echo "  analyze-hard-residual             Tier-3 hard-residual / nodes.tsv join"
+	@echo "  benchmark-throughput              CPU inference throughput benchmark"
+	@echo "  ablate-thresholds                 tau1/tau2 threshold grid sweep"
 	@echo "  analyze                           run all analysis targets"
 	@echo ""
 	@echo "Model"
@@ -68,7 +85,19 @@ analyze-dataset:
 analyze-cascade:
 	$(RUN) python -m scripts.analysis.analyze_cascade
 
-analyze: analyze-leakage analyze-dataset analyze-cascade
+analyze-node2vec:
+	$(RUN) python -m scripts.analysis.ablate_node2vec
+
+analyze-hard-residual:
+	$(RUN) python -m scripts.analysis.analyze_hard_residual
+
+benchmark-throughput:
+	$(RUN) python -m scripts.analysis.benchmark_throughput
+
+ablate-thresholds:
+	$(RUN) python -m scripts.analysis.ablate_cascade_thresholds
+
+analyze: analyze-leakage analyze-dataset analyze-cascade analyze-node2vec analyze-hard-residual benchmark-throughput
 
 train:
 	$(RUN) python -m scripts.train model=$(MODEL)

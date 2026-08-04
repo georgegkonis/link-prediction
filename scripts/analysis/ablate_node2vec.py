@@ -3,11 +3,21 @@ Node2Vec ablation for CascadeLP Tier 1 (thesis Ch.5 SS5.1): compare the
 StructuralClassifier's held-out validation performance with vs. without the
 64-dim Node2Vec Hadamard-product features appended to the 4 structural
 heuristics (per chap3.tex SS3.2 "Node2Vec Embeddings"), holding the split,
-threshold, and heuristic features identical.
+threshold, and heuristic features identical. Also measures how much of
+test.csv's id1/id2 population is actually covered by the trained Node2Vec
+vocabulary, since node2vec.kv only embeds nodes touched by a positive
+training edge (transductive) — this is the root cause of the Kaggle
+public-score collapse documented in chap5.tex SS5.1.
+
+Outputs:
+    outputs/predictions/node2vec_ablation.json
 
 Usage:
-    python -m scripts.ablate_node2vec
+    python -m scripts.analysis.ablate_node2vec
 """
+
+import json
+import pathlib
 
 import numpy as np
 import pandas as pd
@@ -22,6 +32,8 @@ from src.features.structural import node2vec_hadamard_features
 from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim'
+RAW = 'data/raw'
+PREDICTIONS = 'outputs/predictions'
 HEURISTICS = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
 TIER1_THRESHOLD = 0.8
 
@@ -38,14 +50,30 @@ def fit_and_score(X_tr, y_tr, X_val, y_val):
         'accuracy': accuracy_score(y_val, y_pred),
         'macro_f1': f1_score(y_val, y_pred, average='macro', zero_division=0),
         'tier1_call_rate_%': 100 * confident.mean(),
+        'tier1_call_n': int(confident.sum()),
         'accuracy_confident': accuracy_score(y_val[confident], y_pred[confident]) if confident.any() else float('nan'),
         'macro_f1_confident': f1_score(y_val[confident], y_pred[confident], average='macro', zero_division=0) if confident.any() else float('nan'),
     }
 
 
+def coverage_stats(wv, test: pd.DataFrame, hadamard_test: np.ndarray) -> dict:
+    """Fraction of test.csv id1/id2 present in the (transductive) Node2Vec vocabulary."""
+    vocab = wv.key_to_index
+    id1_covered = test['id1'].astype(str).isin(vocab)
+    id2_covered = test['id2'].astype(str).isin(vocab)
+    zero_vec = ~(hadamard_test != 0).any(axis=1)
+    return {
+        'id1_coverage_pct': 100 * id1_covered.mean(),
+        'id2_coverage_pct': 100 * id2_covered.mean(),
+        'zero_vec_pct': 100 * zero_vec.mean(),
+        'zero_vec_n': int(zero_vec.sum()),
+        'test_n': len(test),
+    }
+
+
 def main():
     log = setup_logging('ablate_node2vec')
-    train = load_edges('data/raw/train.csv')
+    train = load_edges(f'{RAW}/train.csv')
     y = train['label'].values
     structural = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
 
@@ -59,9 +87,9 @@ def main():
     wv = KeyedVectors.load(f'{INTERIM}/node2vec.kv')
     hadamard = node2vec_hadamard_features(wv, train)
 
-    baseline = fit_and_score(heuristics[tr], y[tr], heuristics[val], y[val])
+    without = fit_and_score(heuristics[tr], y[tr], heuristics[val], y[val])
     lines = ['--- Without Node2Vec (4-dim heuristics only) ---']
-    for k, v in baseline.items():
+    for k, v in without.items():
         lines.append(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
     log.info('\n'.join(lines))
 
@@ -73,11 +101,23 @@ def main():
         lines.append(f'  {k}: {v:.4f}' if isinstance(v, float) else f'  {k}: {v}')
     log.info('\n'.join(lines))
 
+    delta = {k: with_n2v[k] - without[k] for k in without if isinstance(without[k], float)}
     lines = ['--- Delta (with - without) ---']
-    for k in baseline:
-        if isinstance(baseline[k], float):
-            lines.append(f'  {k}: {with_n2v[k] - baseline[k]:+.4f}')
+    for k, v in delta.items():
+        lines.append(f'  {k}: {v:+.4f}')
     log.info('\n'.join(lines))
+
+    log.info('Computing test-set Node2Vec vocabulary coverage...')
+    test = load_edges(f'{RAW}/test.csv')
+    hadamard_test = node2vec_hadamard_features(wv, test)
+    coverage = coverage_stats(wv, test, hadamard_test)
+    log.info('Coverage: %s', coverage)
+
+    out = {'without': without, 'with': with_n2v, 'delta': delta, 'coverage': coverage}
+    out_path = pathlib.Path(PREDICTIONS) / 'node2vec_ablation.json'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(out, indent=2))
+    log.info('Saved → %s', out_path)
 
 
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ $\tau_2 \in \{0{,}5, 0{,}6, 0{,}7, 0{,}8, 0{,}9\}$ (\AblGridPoints{} συνδυ�
 το Επίπεδο~1 χειρίζεται \AblTierOneLowPct\% των ζευγών (\en{Macro F1} \AblTierOneLowFone{}--\AblTierOneHighFone), ενώ
 για $\tau_1 \geq 0{,}8$ το ποσοστό αυτό καταρρέει απότομα στο \AblTierOneBreakPct\% (και περαιτέρω
 στο \AblTierOneBreakPctHigh\% για $\tau_1 \geq 0{,}9$), με ταυτόχρονη \textit{βελτίωση} του συνολικού
-\en{Macro F1} στο 0{,}9983--0{,}9987.
+\en{Macro F1} στο \AblHighTauOneLowFone{}--\AblBestFone.
 Αυτό είναι αναμενόμενο δεδομένης της ακραίας
 ανισορροπίας κλάσεων στο εμπιστευτικό υποσύνολο του Επιπέδου~1
 (\S\ref{sec:cascade-results}): χαλαρώνοντας το όριο επιτρέπουμε σε περισσότερα ζεύγη
@@ -28,7 +28,7 @@ $\tau_2 \in \{0{,}5, 0{,}6, 0{,}7, 0{,}8, 0{,}9\}$ (\AblGridPoints{} συνδυ�
 αυτό το καθεστώς, αυξάνοντας τον κίνδυνο σφάλματος στην σπάνια αρνητική κλάση.
 
 Το όριο $\tau_2$ έχει μονότονη επίδραση: αυξάνοντάς το από 0{,}5 σε 0{,}9 (σταθερού
-$\tau_1$), το \en{Macro F1} μειώνεται σταδιακά --- π.χ. από 0{,}9987 σε 0{,}9983 για
+$\tau_1$), το \en{Macro F1} μειώνεται σταδιακά --- π.χ. από \AblBestFone{} σε \AblHighTauOneLowFone{} για
 $\tau_1 = 0{,}8$ --- ενώ το ποσοστό κλήσεων Επιπέδου~3 αυξάνεται από 0\% σε \AblTauTwoMaxTierThreePct\%.
 Αυτό αντικατοπτρίζει άμεσα την αναξιοπιστία του \texttt{\en{EmbeddingClassifier}} στο
 υπόλειμμα ζευγών που φτάνει ως εκεί (\en{Macro F1} \TierThreeFone, \S\ref{sec:hard-residual}):
@@ -60,7 +60,7 @@ $\tau_1 = 0{,}8$ --- ενώ το ποσοστό κλήσεων Επιπέδου~
     \textbf{Μετρική} & \textbf{Χωρίς \en{Node2Vec}} & \textbf{Με \en{Node2Vec}} \\
     \midrule
     Ποσοστό κλήσεων Επιπέδου~1     & \AblTierOneBreakPct\% & \NTwoVWithCallPct\% \\
-    Ακρίβεια (συνολική)            & 0{,}7900  & 0{,}9958  \\
+    Ακρίβεια (συνολική)            & \NTwoVNoAccOverall{}  & \NTwoVWithAccOverall{}  \\
     \en{Macro F1} (συνολική)       & \NTwoVNoOverallFone{} & \NTwoVWithOverallFone{} \\
     Ακρίβεια (εμπιστευτικό υποσ.)  & \TierOneAcc{} & \NTwoVWithConfFone{} \\
     \en{Macro F1} (εμπιστευτικό υποσ.) & \NTwoVNoConfFone{} & \NTwoVWithConfFone{} \\

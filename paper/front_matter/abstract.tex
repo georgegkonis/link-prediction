@@ -3,36 +3,43 @@
     Η πρόβλεψη ακμών σε γραφήματα με κειμενικά χαρακτηριστικά κόμβων αποτελεί το πρόβλημα
     εξαγωγής συμπεράσματος για την ύπαρξη ακμής μεταξύ δύο κόμβων, λαμβάνοντας υπόψη
     τόσο την τοπολογία του γραφήματος όσο και το κειμενικό περιεχόμενο των κόμβων.
-    Ενώ
-    πρόσφατες εργασίες στο σύνολο αξιολόγησης \en{DSAA 2023} της \en{Wikipedia} κατέδειξαν
-    ότι καθαρά σημασιολογικές προσεγγίσεις βασισμένες σε προ-εκπαιδευμένα γλωσσικά
-    μοντέλα μπορούν να επιτύχουν σχεδόν τέλεια ακρίβεια, το τετραγωνικό τους κόστος
-    συμπερασμού τα καθιστά μη πρακτικά σε κλίμακα, ενώ η γενίκευσή τους σε ακμές εκτός
-    κατανομής παραμένει αδιερεύνητη.
+    Πρόσφατες εργασίες σε τέτοια γραφήματα έχουν αναφέρει σχεδόν τέλεια ακρίβεια με
+    καθαρά σημασιολογικές προσεγγίσεις βασισμένες σε προ-εκπαιδευμένα γλωσσικά
+    μοντέλα, όμως το τετραγωνικό κόστος συμπερασμού τους τα καθιστά μη πρακτικά σε
+    κλίμακα.
 
-    Η παρούσα διπλωματική εργασία εξετάζει κατά πόσον οι σχεδόν τέλειες βαθμολογίες
-    που αναφέρονται στο \en{DSAA 2023} οφείλονται σε γνήσια σημασιολογική
-    συλλογιστική, σε διαρροή δεδομένων, ή στην εγγενή διαχωρισιμότητα του συνόλου
-    δεδομένων.
-    Ένας συστηματικός έλεγχος \en{data leakage} στα αρχεία εκπαίδευσης και ελέγχου
-    βρίσκει αμελητέα επικάλυψη ζευγών, αποκλείοντας τη διαρροή ως εξήγηση.
-    Στη
-    συνέχεια παρουσιάζουμε το \textbf{\en{CascadeLP}}, ένα τετραεπίπεδο πλαίσιο πρόβλεψης
-    ακμών που δρομολογεί ζεύγη κόμβων μέσω προοδευτικά πιο δαπανηρών μοντέλων βάσει
-    ορίων αξιοπιστίας: αυτοβρόχοι, δομικοί ευρετικοί δείκτες
-    (\en{Common Neighbours}, \en{Jaccard}, \en{Adamic-Adar}, \en{Preferential
-        Attachment}), συχνότητες μερών του λόγου με \en{Random Forest} για κόμβους χωρίς
-    δομικούς γείτονες, και ένας κωδικοποιητής \en{Sentence-Transformer} για ζεύγη
-    στα οποία τα προηγούμενα επίπεδα εμφανίζουν αβεβαιότητα.
-    Χρησιμοποιούμε το
-    \en{CascadeLP} ως διαγνωστικό εργαλείο, καταγράφοντας ανά ζεύγος ποιο επίπεδο
-    το επέλυσε και διασταυρώνοντας το με έναν ανεξάρτητο χαρακτηρισμό
-    διαχωρισιμότητας του συνόλου δεδομένων, ώστε να ποσοτικοποιήσουμε το πραγματικό
-    κλάσμα ζευγών που απαιτεί σημασιολογική συλλογιστική.
-    Συμπεριλαμβάνουμε επίσης
-    ένα μοντέλο αναφοράς \en{TF-IDF + SVM}.
-    Η γενίκευση σε δεύτερο σύνολο δεδομένων
-    αναβάλλεται ως μελλοντική εργασία.
+    Η παρούσα διπλωματική εργασία προτείνει το \textbf{\en{CascadeLP}}, ένα
+    τετραεπίπεδο πλαίσιο πρόβλεψης ακμών που αντιμετωπίζει το κόστος συμπερασμού ως
+    πρωταρχικό σχεδιαστικό περιορισμό: δρομολογεί κάθε ζεύγος κόμβων μέσω προοδευτικά
+    πιο δαπανηρών μοντέλων βάσει ορίων αξιοπιστίας, κλιμακώνοντας μόνο όταν το
+    φθηνότερο επίπεδο δεν είναι αρκετά σίγουρο.
+    Η αλυσίδα περιλαμβάνει: αυτοβρόχους,
+    δομικούς ευρετικούς δείκτες (\en{Common Neighbours}, \en{Jaccard},
+    \en{Adamic-Adar}, \en{Preferential Attachment}), συχνότητες μερών του λόγου με
+    \en{Random Forest} για κόμβους χωρίς δομικούς γείτονες, και έναν κωδικοποιητή
+    \en{Sentence-Transformer} για ζεύγη στα οποία τα προηγούμενα επίπεδα εμφανίζουν
+    αβεβαιότητα.
+
+    Αξιολογούμε το \en{CascadeLP} στο σύνολο αξιολόγησης \en{DSAA 2023} της
+    \en{Wikipedia}, το οποίο επιλέγεται ως πεδίο αξιολόγησης επειδή συνιστά
+    ρεαλιστικό στιγμιότυπο γραφήματος με κειμενικά χαρακτηριστικά σε κλίμακα
+    εκατοντάδων χιλιάδων κόμβων, με καθιερωμένο πίνακα κατάταξης διαγωνισμού που
+    παρέχει υπαρκτές λύσεις προς σύγκριση.
+    Για να επικυρώσουμε ότι η επιτυγχανόμενη
+    ακρίβεια είναι γνήσια και όχι τεχνούργημα διαρροής δεδομένων ή τετριμμένης
+    διαχωρισιμότητας, διεξάγουμε έναν συστηματικό έλεγχο \en{data leakage} --- που
+    βρίσκει αμελητέα επικάλυψη ζευγών --- και έναν ανεξάρτητο χαρακτηρισμό
+    διαχωρισιμότητας του συνόλου δεδομένων, τον οποίο διασταυρώνουμε ανά ζεύγος με το
+    επίπεδο που το επέλυσε.
+    Το \en{CascadeLP} πετυχαίνει \en{Macro F1} = \CascadeValFone{}
+    σε πλήρως ανεξάρτητο σύνολο επικύρωσης --- επιβεβαιωμένο ανεξάρτητα με
+    \en{Macro F1} = \KaggleBaselinePublic{} στο δημόσιο \en{leaderboard} του
+    διαγωνισμού --- καλώντας τον ακριβό κωδικοποιητή \en{Sentence-Transformer} σε
+    μόλις \TierThreePct\% των ζευγών.
+    Συμπεριλαμβάνουμε επίσης ένα μοντέλο αναφοράς
+    \en{TF-IDF + SVM}.
+    Η γενίκευση σε δεύτερο σύνολο δεδομένων αναβάλλεται ως
+    μελλοντική εργασία.
 
     \begin{keywords}
         Πρόβλεψη ακμών, γραφήματα με κειμενικά χαρακτηριστικά, νευρωνικά δίκτυα γραφημάτων,
@@ -46,24 +53,29 @@
     \en{
         Link prediction in text-attributed graphs (TAGs) is the problem of inferring whether an
         edge exists between two nodes given both the graph topology and the textual content of
-        the nodes. While recent work on the DSAA 2023 Wikipedia benchmark demonstrated that
-        pure semantic approaches based on pre-trained language models can achieve near-perfect
-        accuracy, their quadratic inference cost makes them impractical at scale, and their
-        generalisation to out-of-distribution edges remains unstudied.
+        the nodes. Recent work on such graphs has reported near-perfect accuracy with pure
+        semantic approaches based on pre-trained language models, but their quadratic inference
+        cost makes them impractical at scale.
 
-        This thesis examines whether the near-perfect scores reported on DSAA 2023
-        reflect genuine semantic reasoning, data leakage, or the dataset's inherent
-        separability. A systematic leakage audit of the training and test files finds
-        negligible pair overlap, ruling out leakage as the explanation. We then present
-        \textbf{CascadeLP}, a four-tier link prediction framework that routes node
-        pairs through progressively expensive models based on confidence thresholds:
-        self-loops, structural heuristics (Common Neighbours, Jaccard, Adamic-Adar,
-        Preferential Attachment), POS-tag frequency features with a Random Forest for
-        nodes with no structural neighbours, and a Sentence-Transformer encoder for
-        pairs where the earlier tiers remain uncertain. We use CascadeLP as a
-        diagnostic tool, logging which tier resolves each pair and cross-referencing it
-        against an independent dataset separability characterization, to quantify what
-        fraction of pairs actually require semantic reasoning. We also include a TF-IDF
+        This thesis proposes \textbf{CascadeLP}, a four-tier link prediction framework that
+        treats inference cost as a first-class design constraint: it routes each node pair
+        through progressively more expensive models based on confidence thresholds, escalating
+        only when the cheaper tier is not confident enough. The cascade includes: self-loops,
+        structural heuristics (Common Neighbours, Jaccard, Adamic-Adar, Preferential
+        Attachment), POS-tag frequency features with a Random Forest for nodes with no
+        structural neighbours, and a Sentence-Transformer encoder for pairs where the earlier
+        tiers remain uncertain.
+
+        We evaluate CascadeLP on the DSAA 2023 Wikipedia benchmark, selected as our evaluation
+        scope because it is a realistic, large-scale text-attributed graph with an established
+        competition leaderboard of existing solutions to benchmark against. To validate that the
+        achieved accuracy is genuine rather than an artifact of data leakage or trivial dataset
+        separability, we run a systematic leakage audit -- which finds negligible pair overlap --
+        and an independent dataset separability characterization, cross-referenced per pair with
+        the tier that resolved it. CascadeLP achieves Macro F1 = \CascadeValFone{} on a fully
+        held-out validation set -- independently confirmed with Macro F1 = \KaggleBaselinePublic{}
+        on the competition's public leaderboard -- while calling the expensive
+        Sentence-Transformer encoder on only \TierThreePct\% of pairs. We also include a TF-IDF
         + SVM reference baseline. Generalization to a second dataset is deferred to
         future work. }
 

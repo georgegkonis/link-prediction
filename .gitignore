@@ -178,10 +178,6 @@ outputs/checkpoints/*
 # JetBrains IDEs
 .idea/*
 
-# Draft watermark — generated locally (static) or by CI (run-numbered), never committed
-latex/thesis/.version
-latex/thesis/version.tex
-
 # LaTeX auxiliary/build files
 *.aux
 *.fdb_latexmk

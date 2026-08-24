@@ -8,7 +8,7 @@ RUN = conda run -n $(ENV) --no-capture-output
         analyze-hard-residual benchmark-throughput ablate-thresholds analyze \
         train evaluate \
         kaggle-submit kaggle-check \
-        thesis-macros thesis-figures thesis-assets thesis-version thesis-compile thesis-clean \
+        thesis-macros thesis-figures thesis-assets thesis-compile thesis-clean \
         presentation-compile presentation-clean \
         paper-compile paper-clean \
         test jupyter
@@ -59,7 +59,7 @@ help:
 	@echo "  thesis-figures                    regenerate all figures into outputs/figures/"
 	@echo "  thesis-assets                     run thesis-macros and thesis-figures"
 	@echo "  thesis-compile                    compile the thesis PDF"
-	@echo "  thesis-clean                      remove LaTeX auxiliary files (keeps main.pdf)"
+	@echo "  thesis-clean                      remove LaTeX auxiliary files (keeps thesis.pdf)"
 	@echo ""
 	@echo "Presentation (latex/presentation/)"
 	@echo "  presentation-compile              compile the presentation slides PDF"
@@ -131,11 +131,8 @@ thesis-figures:
 
 thesis-assets: thesis-macros thesis-figures
 
-thesis-version:
-	echo '\newcommand{\draftversion}{DRAFT}' > latex/thesis/version.tex
-
-thesis-compile: thesis-version
-	cd latex/thesis && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex
+thesis-compile:
+	cd latex/thesis && xelatex thesis.tex && biber thesis && xelatex thesis.tex && xelatex thesis.tex
 
 thesis-clean:
 	cd latex/thesis && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \

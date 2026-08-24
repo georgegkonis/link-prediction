@@ -4,8 +4,7 @@ on:
   push:
     branches: [master]
     paths:
-      - "latex/thesis/**"
-      - "latex/shared/**"
+      - "latex/**"
       - "outputs/figures/**"
   workflow_dispatch:
 
@@ -17,22 +16,36 @@ jobs:
     runs-on: ubuntu-latest
     container: texlive/texlive:latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: thesis
+            dir: latex/thesis
+            main: thesis
+            biber: true
+          - name: presentation
+            dir: latex/presentation
+            main: presentation
+            biber: false
+          - name: paper
+            dir: latex/paper
+            main: paper
+            biber: true
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write version
-        run: echo '\newcommand{\draftversion}{DRAFT}' > latex/thesis/version.tex
-
       - name: Compile
         run: |
-          cd latex/thesis
-          xelatex -interaction=nonstopmode main.tex
-          biber main
-          xelatex -interaction=nonstopmode main.tex
-          xelatex -interaction=nonstopmode main.tex
+          cd ${{ matrix.dir }}
+          xelatex -interaction=nonstopmode ${{ matrix.main }}.tex
+          if [ "${{ matrix.biber }}" = "true" ]; then biber ${{ matrix.main }}; fi
+          xelatex -interaction=nonstopmode ${{ matrix.main }}.tex
+          xelatex -interaction=nonstopmode ${{ matrix.main }}.tex
 
       - name: Upload PDF preview
         uses: actions/upload-artifact@v4
         with:
-          name: main-pdf-preview
-          path: latex/thesis/main.pdf
+          name: ${{ matrix.name }}-pdf-preview
+          path: ${{ matrix.dir }}/${{ matrix.main }}.pdf

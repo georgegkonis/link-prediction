@@ -43,7 +43,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Title page and front matter field definitions
-% (values are set via \supervisor{...}, \institution{...}, etc. in main.tex)
+% (values are set via \supervisor{...}, \institution{...}, etc. in thesis.tex)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\@supervisor{}              \def\supervisor#1{\gdef\@supervisor{#1}}
 \def\@supervisorSecond{}        \def\supervisorSecond#1{\gdef\@supervisorSecond{#1}}

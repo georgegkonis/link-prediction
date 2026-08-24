@@ -1,7 +1,9 @@
 name: Release Paper
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -14,20 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write version
-        run: echo '\newcommand{\draftversion}{DRAFT v${{ github.run_number }}}' > latex/thesis/version.tex
-
-      - name: Compile
+      - name: Compile thesis
         run: |
           cd latex/thesis
-          xelatex -interaction=nonstopmode main.tex
-          biber main
-          xelatex -interaction=nonstopmode main.tex
-          xelatex -interaction=nonstopmode main.tex
+          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
+          biber thesis
+          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
+          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
+
+      - name: Compile presentation
+        run: |
+          cd latex/presentation
+          xelatex -interaction=nonstopmode presentation.tex
+          xelatex -interaction=nonstopmode presentation.tex
+
+      - name: Compile paper
+        run: |
+          cd latex/paper
+          xelatex -interaction=nonstopmode paper.tex
+          biber paper
+          xelatex -interaction=nonstopmode paper.tex
+          xelatex -interaction=nonstopmode paper.tex
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: paper-v${{ github.run_number }}
-          name: "Draft v${{ github.run_number }}"
-          files: latex/thesis/main.pdf
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          files: |
+            latex/thesis/thesis.pdf
+            latex/presentation/presentation.pdf
+            latex/paper/paper.pdf

@@ -15,11 +15,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Write version
-        run: echo '\newcommand{\draftversion}{DRAFT v${{ github.run_number }}}' > paper/version.tex
+        run: echo '\newcommand{\draftversion}{DRAFT v${{ github.run_number }}}' > latex/thesis/version.tex
 
       - name: Compile
         run: |
-          cd paper
+          cd latex/thesis
           xelatex -interaction=nonstopmode main.tex
           biber main
           xelatex -interaction=nonstopmode main.tex
@@ -30,4 +30,4 @@ jobs:
         with:
           tag_name: paper-v${{ github.run_number }}
           name: "Draft v${{ github.run_number }}"
-          files: paper/main.pdf
+          files: latex/thesis/main.pdf

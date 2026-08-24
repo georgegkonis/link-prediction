@@ -8,10 +8,12 @@ RUN = conda run -n $(ENV) --no-capture-output
         analyze-hard-residual benchmark-throughput ablate-thresholds analyze \
         train evaluate \
         kaggle-submit kaggle-check \
-        paper-macros paper-figures paper-assets paper-compile paper-clean \
+        thesis-macros thesis-figures thesis-assets thesis-version thesis-compile thesis-clean \
+        presentation-compile presentation-clean \
+        paper-compile paper-clean \
         test jupyter
 
-# End-to-end order to fully populate data/interim/ + outputs/ before paper-assets
+# End-to-end order to fully populate data/interim/ + outputs/ before thesis-assets
 # (figure/macro generation itself never re-runs any of this — see generate_macros.py /
 # generate_figures.py docstrings):
 #   data-download
@@ -22,7 +24,7 @@ RUN = conda run -n $(ENV) --no-capture-output
 #     +tag=n2v for the n2v-ablation variant)
 #   → evaluate MODEL=<same 6>
 #   → ablate-thresholds, analyze-node2vec, analyze-hard-residual, benchmark-throughput
-#   → paper-assets
+#   → thesis-assets
 
 help:
 	@echo "Environment"
@@ -52,12 +54,20 @@ help:
 	@echo "  kaggle-submit FILE=<path> MSG=<text>  submit a predictions CSV"
 	@echo "  kaggle-check                      poll recent submission scores"
 	@echo ""
-	@echo "Paper"
-	@echo "  paper-macros                      regenerate generated_macros.tex from val metrics"
-	@echo "  paper-figures                     regenerate all thesis figures"
-	@echo "  paper-assets                      run paper-macros and paper-figures"
-	@echo "  paper-compile                     compile the thesis PDF"
-	@echo "  paper-clean                       remove LaTeX auxiliary files (keeps main.pdf)"
+	@echo "Thesis (latex/thesis/)"
+	@echo "  thesis-macros                     regenerate latex/shared/generated_macros.tex from val metrics"
+	@echo "  thesis-figures                    regenerate all figures into outputs/figures/"
+	@echo "  thesis-assets                     run thesis-macros and thesis-figures"
+	@echo "  thesis-compile                    compile the thesis PDF"
+	@echo "  thesis-clean                      remove LaTeX auxiliary files (keeps main.pdf)"
+	@echo ""
+	@echo "Presentation (latex/presentation/)"
+	@echo "  presentation-compile              compile the presentation slides PDF"
+	@echo "  presentation-clean                remove LaTeX auxiliary files (keeps the PDF)"
+	@echo ""
+	@echo "Short paper (latex/paper/)"
+	@echo "  paper-compile                     compile the short paper PDF"
+	@echo "  paper-clean                       remove LaTeX auxiliary files (keeps the PDF)"
 	@echo ""
 	@echo "Other"
 	@echo "  test                              run the unit test suite (no data/ needed)"
@@ -113,23 +123,35 @@ kaggle-submit:
 kaggle-check:
 	$(RUN) python -m scripts.submit_kaggle --check
 
-paper-macros:
+thesis-macros:
 	$(RUN) python -m scripts.paper.generate_macros
 
-paper-figures:
+thesis-figures:
 	$(RUN) python -m scripts.paper.generate_figures
 
-paper-assets: paper-macros paper-figures
+thesis-assets: thesis-macros thesis-figures
 
-paper-version:
-	echo '\newcommand{\draftversion}{DRAFT}' > paper/version.tex
+thesis-version:
+	echo '\newcommand{\draftversion}{DRAFT}' > latex/thesis/version.tex
 
-paper-compile: paper-version
-	cd paper && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex
+thesis-compile: thesis-version
+	cd latex/thesis && xelatex main.tex && biber main && xelatex main.tex && xelatex main.tex
+
+thesis-clean:
+	cd latex/thesis && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
+	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
+
+presentation-compile:
+	cd latex/presentation && xelatex presentation.tex
+
+presentation-clean:
+	cd latex/presentation && rm -f *.aux *.log *.out *.toc *.nav *.snm *.vrb
+
+paper-compile:
+	cd latex/paper && xelatex paper.tex && biber paper && xelatex paper.tex && xelatex paper.tex
 
 paper-clean:
-	cd paper && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \
-	  front_matter/*.aux back_matter/*.aux body_matter/*.aux
+	cd latex/paper && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind
 
 test:
 	$(RUN) python -m pytest $(PYTEST_ARGS)

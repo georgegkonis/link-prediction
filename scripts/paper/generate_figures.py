@@ -1,5 +1,5 @@
 """
-Generate thesis figures from experiment data and save to outputs/figures/ and paper/figures/.
+Generate thesis figures from experiment data and save to outputs/figures/.
 
 Every figure reads only persisted data/interim/ or outputs/predictions/ artifacts —
 none of them call a model live — so figure regeneration never requires re-running the
@@ -31,7 +31,6 @@ Usage:
 
 import json
 import pathlib
-import shutil
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -50,7 +49,6 @@ INTERIM     = pathlib.Path('data/interim')
 RAW         = pathlib.Path('data/raw')
 PREDICTIONS = pathlib.Path('outputs/predictions')
 OUT_FIGS    = pathlib.Path('outputs/figures')
-PAPER_FIGS  = pathlib.Path('paper/figures')
 
 PALETTE = {
     'pos': '#2196F3',
@@ -72,12 +70,9 @@ DIFF_ORDER = ['trivial_self_loop', 'trivial_high_cn', 'trivial_high_textsim', 'h
 
 def _save(fig: plt.Figure, name: str) -> None:
     OUT_FIGS.mkdir(parents=True, exist_ok=True)
-    PAPER_FIGS.mkdir(parents=True, exist_ok=True)
     src = OUT_FIGS / name
-    dst = PAPER_FIGS / name
     fig.savefig(src, dpi=150, bbox_inches='tight')
-    shutil.copy2(src, dst)
-    log.info('Saved → %s  (copied to %s)', src, dst)
+    log.info('Saved → %s', src)
     plt.close(fig)
 
 
@@ -599,7 +594,7 @@ def fig_dataset_composition() -> None:
 # ---------------------------------------------------------------------------
 
 # Reported scores from other DSAA 2023 competition entries, matching
-# paper/body_matter/chap2.tex's tab:dsaa-submissions exactly (external, citation-backed
+# latex/thesis/body_matter/chap2.tex's tab:dsaa-submissions exactly (external, citation-backed
 # facts — not this project's experiment output, hence literal here per CLAUDE.md's
 # no-magic-numbers carve-out). Teams with no reported numeric score in their short paper
 # (nguyen2023mat, mata2023link, kansal2023predict) are omitted from the chart below.

@@ -4,7 +4,9 @@ on:
   push:
     branches: [master]
     paths:
-      - "paper/**"
+      - "latex/thesis/**"
+      - "latex/shared/**"
+      - "outputs/figures/**"
   workflow_dispatch:
 
 permissions:
@@ -19,11 +21,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Write version
-        run: echo '\newcommand{\draftversion}{DRAFT}' > paper/version.tex
+        run: echo '\newcommand{\draftversion}{DRAFT}' > latex/thesis/version.tex
 
       - name: Compile
         run: |
-          cd paper
+          cd latex/thesis
           xelatex -interaction=nonstopmode main.tex
           biber main
           xelatex -interaction=nonstopmode main.tex
@@ -33,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: main-pdf-preview
-          path: paper/main.pdf
+          path: latex/thesis/main.pdf

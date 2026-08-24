@@ -1,7 +1,7 @@
 """Tests for the pure Greek-number formatters in scripts/paper/generate_macros.py.
 
 Only the formatters are exercised — `_load`, `_compute` and `_emit_tex` read
-`data/` and overwrite `paper/generated_macros.tex`, so they are out of scope here.
+`data/` and overwrite `latex/shared/generated_macros.tex`, so they are out of scope here.
 """
 
 import pytest

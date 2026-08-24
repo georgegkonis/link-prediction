@@ -1,5 +1,5 @@
 """
-Generate paper/generated_macros.tex from experiment output CSVs/JSONs.
+Generate latex/shared/generated_macros.tex from experiment output CSVs/JSONs.
 
 Reads:
   data/raw/train.csv, test.csv, nodes.tsv              — dataset sizes, graph stats
@@ -21,7 +21,7 @@ Reads:
   outputs/predictions/throughput_benchmark.json        — CPU inference throughput
 
 Writes:
-  paper/generated_macros.tex
+  latex/shared/generated_macros.tex
 
 Usage:
     python -m scripts.paper.generate_macros
@@ -52,7 +52,7 @@ _TAU_TWO_DEFAULT  = 0.7
 INTERIM     = pathlib.Path('data/interim')
 RAW         = pathlib.Path('data/raw')
 PREDICTIONS = pathlib.Path('outputs/predictions')
-PAPER       = pathlib.Path('paper')
+SHARED      = pathlib.Path('latex/shared')
 
 _MISSING = '---'
 
@@ -672,7 +672,7 @@ def _emit_tex(macros: dict[str, str]) -> None:
             lines.append(f'\\newcommand{{\\{k}}}{{{v}}}')
         lines.append('')
 
-    out = PAPER / 'generated_macros.tex'
+    out = SHARED / 'generated_macros.tex'
     out.write_text('\n'.join(lines))
     log.info('Wrote %d macros → %s', len(macros), out)
 

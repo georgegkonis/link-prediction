@@ -17,8 +17,9 @@ RUN = conda run -n $(ENV) --no-capture-output
 #   data-download
 #   → features-structural, features-semantic
 #   → analyze-leakage, analyze-dataset
-#   → train MODEL=<structural|tfidf|pos|embedding|svm|cascade>   (cascade: training.no_n2v=true
-#     for the reproducible heuristics-only checkpoint the thesis reports)
+#   → train MODEL=<structural|tfidf|pos|embedding|svm|cascade>   (cascade defaults to the
+#     reproducible heuristics-only checkpoint the thesis reports; pass training.no_n2v=false
+#     +tag=n2v for the n2v-ablation variant)
 #   → evaluate MODEL=<same 6>
 #   → ablate-thresholds, analyze-node2vec, analyze-hard-residual, benchmark-throughput
 #   → paper-assets

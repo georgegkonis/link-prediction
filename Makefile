@@ -8,14 +8,15 @@ RUN = conda run -n $(ENV) --no-capture-output
         analyze-hard-residual benchmark-throughput ablate-thresholds analyze \
         train evaluate \
         kaggle-submit kaggle-check \
-        thesis-macros thesis-figures thesis-assets thesis-compile thesis-clean \
+        compute-stats thesis-macros thesis-figures thesis-assets thesis-compile thesis-clean \
         presentation-compile presentation-clean \
         paper-compile paper-clean \
         test jupyter
 
 # End-to-end order to fully populate data/interim/ + outputs/ before thesis-assets
-# (figure/macro generation itself never re-runs any of this — see generate_macros.py /
-# generate_figures.py docstrings):
+# (thesis-macros/thesis-figures never touch data/raw, data/interim, or outputs/predictions —
+# they only read the committed outputs/stats/summary_stats.json. compute-stats is the one step
+# that does, and its output is what gets committed — see compute_summary_stats.py's docstring):
 #   data-download
 #   → features-structural, features-semantic
 #   → analyze-leakage, analyze-dataset
@@ -24,6 +25,7 @@ RUN = conda run -n $(ENV) --no-capture-output
 #     +tag=n2v for the n2v-ablation variant)
 #   → evaluate MODEL=<same 6>
 #   → ablate-thresholds, analyze-node2vec, analyze-hard-residual, benchmark-throughput
+#   → compute-stats
 #   → thesis-assets
 
 help:
@@ -55,8 +57,9 @@ help:
 	@echo "  kaggle-check                      poll recent submission scores"
 	@echo ""
 	@echo "Thesis (latex/thesis/)"
-	@echo "  thesis-macros                     regenerate latex/shared/generated_macros.tex from val metrics"
-	@echo "  thesis-figures                    regenerate all figures into outputs/figures/"
+	@echo "  compute-stats                     aggregate data/interim + outputs/predictions into outputs/stats/summary_stats.json"
+	@echo "  thesis-macros                     regenerate latex/shared/generated_macros.tex from summary_stats.json"
+	@echo "  thesis-figures                    regenerate all figures into outputs/figures/ from summary_stats.json"
 	@echo "  thesis-assets                     run thesis-macros and thesis-figures"
 	@echo "  thesis-compile                    compile the thesis PDF"
 	@echo "  thesis-clean                      remove LaTeX auxiliary files (keeps thesis.pdf)"
@@ -122,6 +125,9 @@ kaggle-submit:
 
 kaggle-check:
 	$(RUN) python -m scripts.submit_kaggle --check
+
+compute-stats:
+	$(RUN) python -m scripts.paper.compute_summary_stats
 
 thesis-macros:
 	$(RUN) python -m scripts.paper.generate_macros

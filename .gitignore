@@ -175,6 +175,11 @@ outputs/checkpoints/*
 # latex/paper) references it directly, and CI compiles from a clean checkout with no
 # pipeline run
 
+# outputs/stats/ is committed too, for the same reason: it holds only the curated aggregate
+# statistics/metrics (outputs/stats/summary_stats.json) that generate_macros.py and
+# generate_figures.py read — never raw or per-pair data — so figures/macros can regenerate
+# from a clean checkout. See scripts/paper/compute_summary_stats.py.
+
 # JetBrains IDEs
 .idea/*
 

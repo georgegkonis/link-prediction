@@ -1,16 +1,15 @@
 """
-Generate thesis figures from experiment data and save to outputs/figures/.
+Generate thesis figures from outputs/stats/summary_stats.json and save to outputs/figures/.
 
-Every figure reads only persisted data/interim/ or outputs/predictions/ artifacts —
-none of them call a model live — so figure regeneration never requires re-running the
-training/evaluation pipeline.
+All computation lives in scripts/paper/compute_summary_stats.py — this script only plots
+pre-aggregated histograms/tables/curves. It never touches data/raw/, data/interim/, or
+outputs/predictions/, so it runs from a clean checkout as long as summary_stats.json (committed)
+is present.
 
-Produces (existing):
+Produces:
   separability_distributions.png  — CN and TF-IDF distributions for pos vs. neg pairs
   difficulty_breakdown.png        — difficulty-category bar chart (train set)
   svm_metrics.png                 — SVM baseline performance bar chart
-
-Produces (new):
   tier_routing.png                 — CascadeLP tier routing breakdown (n / % per tier)
   tier_difficulty_heatmap.png      — accuracy heatmap, tier x difficulty
   tier_confusion_matrices.png      — per-tier confusion matrices
@@ -35,20 +34,15 @@ import pathlib
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from sklearn.metrics import confusion_matrix, roc_curve
 
-from src.data.loader import build_graph, load_edges
 from src.utils.log_utils import setup_logging
 
 matplotlib.use('Agg')
 
 log = setup_logging('generate_figures')
 
-INTERIM     = pathlib.Path('data/interim')
-RAW         = pathlib.Path('data/raw')
-PREDICTIONS = pathlib.Path('outputs/predictions')
-OUT_FIGS    = pathlib.Path('outputs/figures')
+STATS    = pathlib.Path('outputs/stats')
+OUT_FIGS = pathlib.Path('outputs/figures')
 
 PALETTE = {
     'pos': '#2196F3',
@@ -76,63 +70,32 @@ def _save(fig: plt.Figure, name: str) -> None:
     plt.close(fig)
 
 
-def _load_json(path: pathlib.Path):
-    if not path.exists():
-        log.warning('SKIP: %s not found', path)
-        return None
-    return json.loads(path.read_text())
-
-
-def _load_csv(path: pathlib.Path):
-    if not path.exists():
-        log.warning('SKIP: %s not found', path)
-        return None
-    return pd.read_csv(path)
-
-
 # ---------------------------------------------------------------------------
 # Figure 1: separability distributions
 # ---------------------------------------------------------------------------
 
-def fig_separability(subsample: int = 100_000) -> None:
+def fig_separability(figs: dict) -> None:
     log.info('Generating separability_distributions.png ...')
-    train = pd.read_csv(RAW / 'train.csv')
-    structural = pd.read_csv(INTERIM / 'structural_train.csv', index_col='id')
-    tfidf = pd.read_csv(INTERIM / 'tfidf_train.csv', index_col='id')
+    sep = figs.get('separability')
+    if sep is None:
+        log.warning('SKIP: no separability stats')
+        return
 
-    # Exclude self-loops
-    mask = (train['id1'] != train['id2']).values
-    labels  = train['label'].values[mask]
-    cn      = structural['cn'].values[mask]
-    tfidf_s = tfidf['tfidf_score'].values[mask]
-
-    # Subsample for speed
-    rng = np.random.default_rng(42)
-    idx = rng.choice(len(labels), min(subsample, len(labels)), replace=False)
-    labels, cn, tfidf_s = labels[idx], cn[idx], tfidf_s[idx]
-
-    pos_mask = labels == 1
-    neg_mask = labels == 0
+    cn_edges = np.array(sep['cn_bin_edges'])
+    tfidf_edges = np.array(sep['tfidf_bin_edges'])
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
 
-    # CN distribution — log scale (most values are 0, a few are high)
-    bins_cn = np.arange(0, min(cn.max() + 2, 20))
-    axes[0].hist(cn[pos_mask], bins=bins_cn, alpha=0.7, color=PALETTE['pos'],
-                 label='Θετικά', density=True)
-    axes[0].hist(cn[neg_mask], bins=bins_cn, alpha=0.7, color=PALETTE['neg'],
-                 label='Αρνητικά', density=True)
+    axes[0].stairs(sep['cn_hist_pos'], cn_edges, fill=True, alpha=0.7, color=PALETTE['pos'], label='Θετικά')
+    axes[0].stairs(sep['cn_hist_neg'], cn_edges, fill=True, alpha=0.7, color=PALETTE['neg'], label='Αρνητικά')
     axes[0].set_xlabel('Κοινοί Γείτονες (CN)')
     axes[0].set_ylabel('Πυκνότητα')
     axes[0].set_title('Κατανομή Κοινών Γειτόνων')
     axes[0].legend()
     axes[0].set_yscale('log')
 
-    # TF-IDF distribution
-    axes[1].hist(tfidf_s[pos_mask], bins=50, alpha=0.7, color=PALETTE['pos'],
-                 label='Θετικά', density=True)
-    axes[1].hist(tfidf_s[neg_mask], bins=50, alpha=0.7, color=PALETTE['neg'],
-                 label='Αρνητικά', density=True)
+    axes[1].stairs(sep['tfidf_hist_pos'], tfidf_edges, fill=True, alpha=0.7, color=PALETTE['pos'], label='Θετικά')
+    axes[1].stairs(sep['tfidf_hist_neg'], tfidf_edges, fill=True, alpha=0.7, color=PALETTE['neg'], label='Αρνητικά')
     axes[1].set_xlabel('Ομοιότητα TF-IDF')
     axes[1].set_ylabel('Πυκνότητα')
     axes[1].set_title('Κατανομή Ομοιότητας TF-IDF')
@@ -146,14 +109,14 @@ def fig_separability(subsample: int = 100_000) -> None:
 # Figure 2: difficulty breakdown
 # ---------------------------------------------------------------------------
 
-def fig_difficulty() -> None:
+def fig_difficulty(figs: dict) -> None:
     log.info('Generating difficulty_breakdown.png ...')
-    diff = pd.read_csv(INTERIM / 'difficulty_train.csv', index_col='id')
+    pcts_by_cat = figs.get('difficulty_train_pct')
+    if pcts_by_cat is None:
+        log.warning('SKIP: no difficulty_train_pct stats')
+        return
 
-    counts = diff['difficulty'].value_counts()
-    total  = len(diff)
-
-    pcts = [100 * counts.get(cat, 0) / total for cat in DIFF_ORDER]
+    pcts = [pcts_by_cat[cat] for cat in DIFF_ORDER]
     names = [DIFF_LABELS[cat] for cat in DIFF_ORDER]
 
     fig, ax = plt.subplots(figsize=(8, 3.5))
@@ -178,10 +141,11 @@ def fig_difficulty() -> None:
 # Figure 3: SVM metrics
 # ---------------------------------------------------------------------------
 
-def fig_svm_metrics() -> None:
+def fig_svm_metrics(figs: dict) -> None:
     log.info('Generating svm_metrics.png ...')
-    svm = _load_json(PREDICTIONS / 'svm_val_metrics.json')
+    svm = figs.get('svm_metrics')
     if svm is None:
+        log.warning('SKIP: no svm_metrics')
         return
 
     lat = svm.get('latency_ms', 0)
@@ -215,19 +179,18 @@ def fig_svm_metrics() -> None:
 # Figure 4: cascade tier routing
 # ---------------------------------------------------------------------------
 
-def fig_tier_routing() -> None:
+def fig_tier_routing(figs: dict) -> None:
     log.info('Generating tier_routing.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    if vt is None:
+    tier_counts = figs.get('tier_counts')
+    n_total = figs.get('tier_counts_total')
+    if not tier_counts or not n_total:
+        log.warning('SKIP: no tier_counts stats')
         return
-
-    n_total = len(vt)
-    counts = vt['tier_used'].value_counts().sort_index()
 
     fig, ax = plt.subplots(figsize=(8, 3.5))
     left = 0
     for tier in sorted(TIER_NAMES):
-        n = int(counts.get(tier, 0))
+        n = int(tier_counts.get(str(tier), 0))
         pct = 100 * n / n_total
         color = PALETTE['colors'][tier % len(PALETTE['colors'])]
         ax.barh(0, pct, left=left, color=color,
@@ -250,21 +213,22 @@ def fig_tier_routing() -> None:
 # Figure 5: tier x difficulty accuracy heatmap
 # ---------------------------------------------------------------------------
 
-def fig_tier_difficulty_heatmap() -> None:
+def fig_tier_difficulty_heatmap(figs: dict) -> None:
     log.info('Generating tier_difficulty_heatmap.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    if vt is None:
+    table = figs.get('tier_difficulty_table')
+    if not table:
+        log.warning('SKIP: no tier_difficulty_table stats')
         return
 
-    tiers = sorted(vt['tier_used'].unique())
-    diffs = [c for c in DIFF_ORDER if c in vt['difficulty'].unique()]
+    tiers = figs['tiers_present']
+    diffs = figs['diffs_present']
 
     acc = np.full((len(tiers), len(diffs)), np.nan)
     for i, tier in enumerate(tiers):
         for j, diff in enumerate(diffs):
-            sub = vt[(vt['tier_used'] == tier) & (vt['difficulty'] == diff)]
-            if len(sub):
-                acc[i, j] = sub['correct'].mean()
+            cell = table.get(str(tier), {}).get(diff)
+            if cell:
+                acc[i, j] = cell['acc']
 
     fig, ax = plt.subplots(figsize=(7, 4))
     im = ax.imshow(acc, cmap='RdYlGn', vmin=0, vmax=1, aspect='auto')
@@ -286,21 +250,21 @@ def fig_tier_difficulty_heatmap() -> None:
 # Figure 6: per-tier confusion matrices
 # ---------------------------------------------------------------------------
 
-def fig_confusion_matrices() -> None:
+def fig_confusion_matrices(figs: dict) -> None:
     log.info('Generating tier_confusion_matrices.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    if vt is None:
+    cms = figs.get('confusion_matrices')
+    if not cms:
+        log.warning('SKIP: no confusion_matrices stats')
         return
 
-    tiers = sorted(vt['tier_used'].unique())
+    tiers = figs['tiers_present']
     fig, axes = plt.subplots(1, len(tiers), figsize=(3.2 * len(tiers), 3.2))
     if len(tiers) == 1:
         axes = [axes]
 
     for ax, tier in zip(axes, tiers):
-        sub = vt[vt['tier_used'] == tier]
-        cm = confusion_matrix(sub['y_true'], sub['y_pred'], labels=[0, 1])
-        im = ax.imshow(cm, cmap='Blues')
+        cm = np.array(cms[str(tier)])
+        ax.imshow(cm, cmap='Blues')
         for i in range(2):
             for j in range(2):
                 ax.text(j, i, f'{cm[i, j]:,}', ha='center', va='center',
@@ -320,27 +284,20 @@ def fig_confusion_matrices() -> None:
 # Figure 7: ROC curve, CascadeLP vs. SVM
 # ---------------------------------------------------------------------------
 
-def fig_roc_curve() -> None:
+def fig_roc_curve(figs: dict) -> None:
     log.info('Generating roc_curve.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    se = _load_csv(PREDICTIONS / 'svm_val_errors.csv')
+    roc_cascade = figs.get('roc_cascade')
+    roc_svm = figs.get('roc_svm')
 
     fig, ax = plt.subplots(figsize=(6, 5.5))
     plotted = False
 
-    if vt is not None and 'score' in vt.columns:
-        fpr, tpr, _ = roc_curve(vt['y_true'], vt['score'])
-        ax.plot(fpr, tpr, color=PALETTE['pos'], label='CascadeLP')
+    if roc_cascade is not None:
+        ax.plot(roc_cascade['fpr'], roc_cascade['tpr'], color=PALETTE['pos'], label='CascadeLP')
         plotted = True
-    elif vt is not None:
-        log.warning('cascade_val_tiers.csv has no score column (stale run) — skipping CascadeLP ROC')
-
-    if se is not None and 'score' in se.columns:
-        fpr, tpr, _ = roc_curve(se['y_true'], se['score'])
-        ax.plot(fpr, tpr, color=PALETTE['neg'], label='SVM (TF-IDF)')
+    if roc_svm is not None:
+        ax.plot(roc_svm['fpr'], roc_svm['tpr'], color=PALETTE['neg'], label='SVM (TF-IDF)')
         plotted = True
-    elif se is not None:
-        log.warning('svm_val_errors.csv has no score column (stale run) — skipping SVM ROC')
 
     if not plotted:
         log.warning('SKIP: no scored predictions available for ROC curve')
@@ -360,21 +317,24 @@ def fig_roc_curve() -> None:
 # Figure 8: per-tier confidence-score distribution
 # ---------------------------------------------------------------------------
 
-def fig_confidence_distribution() -> None:
+def fig_confidence_distribution(figs: dict) -> None:
     log.info('Generating tier_confidence_distribution.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    if vt is None or 'score' not in vt.columns:
-        log.warning('SKIP: cascade_val_tiers.csv missing or has no score column')
+    hist = figs.get('confidence_hist')
+    if not hist:
+        log.warning('SKIP: no confidence_hist stats')
         return
 
-    tiers = [t for t in sorted(vt['tier_used'].unique()) if t > 0]
+    tiers = sorted(int(t) for t in hist)
     fig, axes = plt.subplots(1, len(tiers), figsize=(3.5 * len(tiers), 3.2), sharey=True)
     if len(tiers) == 1:
         axes = [axes]
 
     for ax, tier in zip(axes, tiers):
-        sub = vt[vt['tier_used'] == tier]
-        ax.hist(sub['score'], bins=30, color=PALETTE['colors'][tier % len(PALETTE['colors'])])
+        h = hist[str(tier)]
+        edges = np.array(h['bin_edges'])
+        widths = np.diff(edges)
+        ax.bar(edges[:-1], h['counts'], width=widths, align='edge',
+               color=PALETTE['colors'][tier % len(PALETTE['colors'])])
         ax.set_title(TIER_NAMES.get(tier, str(tier)).replace('\n', ' '), fontsize=9)
         ax.set_xlabel('P(y=1)')
     axes[0].set_ylabel('Πλήθος ζευγών')
@@ -388,25 +348,29 @@ def fig_confidence_distribution() -> None:
 # Figure 9: threshold ablation curves
 # ---------------------------------------------------------------------------
 
-def fig_threshold_ablation() -> None:
+def fig_threshold_ablation(figs: dict) -> None:
     log.info('Generating threshold_ablation.png ...')
-    abl = _load_csv(PREDICTIONS / 'cascade_threshold_ablation.csv')
-    if abl is None:
+    grid = figs.get('ablation_grid')
+    if not grid:
+        log.warning('SKIP: no ablation_grid stats')
         return
+
+    tau1s = sorted({row['tau1'] for row in grid})
+    tau2s = sorted({row['tau2'] for row in grid})
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
 
-    for i, t2 in enumerate(sorted(abl['tau2'].unique())):
-        sub = abl[abl['tau2'] == t2].sort_values('tau1')
-        axes[0].plot(sub['tau1'], sub['macro_f1'], marker='o',
+    for i, t2 in enumerate(tau2s):
+        rows = sorted((row for row in grid if row['tau2'] == t2), key=lambda r: r['tau1'])
+        axes[0].plot([r['tau1'] for r in rows], [r['macro_f1'] for r in rows], marker='o',
                      color=PALETTE['colors'][i % len(PALETTE['colors'])], label=f'$\\tau_2$={t2}')
     axes[0].set_xlabel('$\\tau_1$')
     axes[0].set_ylabel('Macro F1')
     axes[0].set_title('Macro F1 vs. $\\tau_1$')
     axes[0].legend(fontsize=8)
 
-    t1_08 = abl[abl['tau1'] == 0.8].sort_values('tau2')
-    axes[1].plot(t1_08['tau2'], t1_08['tier3_pct'], marker='o', color=PALETTE['neg'])
+    t1_08 = sorted((row for row in grid if row['tau1'] == 0.8), key=lambda r: r['tau2'])
+    axes[1].plot([r['tau2'] for r in t1_08], [r['tier3_pct'] for r in t1_08], marker='o', color=PALETTE['neg'])
     axes[1].set_xlabel('$\\tau_2$')
     axes[1].set_ylabel('Ποσοστό κλήσεων Επιπέδου 3 (%)')
     axes[1].set_title('Ρυθμός Κλήσης Επιπέδου 3 vs. $\\tau_2$ ($\\tau_1$=0.8)')
@@ -419,10 +383,11 @@ def fig_threshold_ablation() -> None:
 # Figure 10: Node2Vec ablation comparison
 # ---------------------------------------------------------------------------
 
-def fig_node2vec_ablation() -> None:
+def fig_node2vec_ablation(figs: dict) -> None:
     log.info('Generating node2vec_ablation.png ...')
-    n2v = _load_json(PREDICTIONS / 'node2vec_ablation.json')
+    n2v = figs.get('node2vec_ablation')
     if n2v is None:
+        log.warning('SKIP: no node2vec_ablation stats')
         return
 
     without, with_n2v = n2v['without'], n2v['with']
@@ -448,21 +413,15 @@ def fig_node2vec_ablation() -> None:
 # Figure 11: throughput comparison, CascadeLP vs. SVM
 # ---------------------------------------------------------------------------
 
-def fig_throughput_comparison() -> None:
+def fig_throughput_comparison(figs: dict) -> None:
     log.info('Generating throughput_comparison.png ...')
-    thr = _load_json(PREDICTIONS / 'throughput_benchmark.json')
-    svm = _load_json(PREDICTIONS / 'svm_val_metrics.json')
-    if thr is None or svm is None:
-        log.warning('SKIP: need both throughput_benchmark.json and svm_val_metrics.json')
-        return
-
-    svm_ms_per_pair = svm['latency_ms'] / svm['n_val'] if svm.get('latency_ms') and svm.get('n_val') else None
-    if svm_ms_per_pair is None:
-        log.warning('SKIP: svm_val_metrics.json missing latency_ms/n_val')
+    thr = figs.get('throughput')
+    if thr is None:
+        log.warning('SKIP: no throughput stats')
         return
 
     names = ['CascadeLP', 'SVM (TF-IDF)']
-    values = [thr['ms_per_pair'], svm_ms_per_pair]
+    values = [thr['cascade_ms_per_pair'], thr['svm_ms_per_pair']]
 
     fig, ax = plt.subplots(figsize=(6, 4))
     bars = ax.bar(names, values, color=[PALETTE['colors'][0], PALETTE['colors'][3]], width=0.5)
@@ -480,17 +439,16 @@ def fig_throughput_comparison() -> None:
 # Figure 12: cold-start comparison, CascadeLP vs. SVM
 # ---------------------------------------------------------------------------
 
-def fig_coldstart_comparison() -> None:
+def fig_coldstart_comparison(figs: dict) -> None:
     log.info('Generating coldstart_comparison.png ...')
-    cascade = _load_json(PREDICTIONS / 'cascade_val_metrics.json')
-    svm = _load_json(PREDICTIONS / 'svm_val_metrics.json')
-    if cascade is None or svm is None:
-        log.warning('SKIP: need both cascade_val_metrics.json and svm_val_metrics.json')
+    cs = figs.get('coldstart')
+    if cs is None:
+        log.warning('SKIP: no coldstart stats')
         return
 
     names = ['CascadeLP', 'SVM (TF-IDF)']
-    overall = [cascade['macro_f1'], svm['macro_f1']]
-    cold_start = [cascade['cold_start_f1'], svm['cold_start_f1']]
+    overall = [cs['cascade']['macro_f1'], cs['svm']['macro_f1']]
+    cold_start = [cs['cascade']['cold_start_f1'], cs['svm']['cold_start_f1']]
 
     x = np.arange(len(names))
     width = 0.35
@@ -510,18 +468,16 @@ def fig_coldstart_comparison() -> None:
 # Figure 13: error breakdown by difficulty, CascadeLP vs. SVM
 # ---------------------------------------------------------------------------
 
-def fig_error_by_difficulty_comparison() -> None:
+def fig_error_by_difficulty_comparison(figs: dict) -> None:
     log.info('Generating error_by_difficulty_comparison.png ...')
-    vt = _load_csv(PREDICTIONS / 'cascade_val_tiers.csv')
-    se = _load_csv(PREDICTIONS / 'svm_val_errors.csv')
-    if vt is None or se is None:
-        log.warning('SKIP: need both cascade_val_tiers.csv and svm_val_errors.csv')
+    err = figs.get('error_by_difficulty')
+    if not err or 'svm' not in err:
+        log.warning('SKIP: need both cascade and svm error_by_difficulty stats')
         return
 
-    diffs = [c for c in DIFF_ORDER if c in vt['difficulty'].unique()]
-    cascade_err_pct = [100 * (1 - vt[vt['difficulty'] == d]['correct'].mean()) for d in diffs]
-    svm_err_pct = [100 * (1 - se[se['difficulty'] == d]['correct'].mean()) if d in se['difficulty'].unique() else 0
-                   for d in diffs]
+    diffs = figs['diffs_present']
+    cascade_err_pct = [err['cascade'][d] for d in diffs]
+    svm_err_pct = [err['svm'][d] for d in diffs]
 
     x = np.arange(len(diffs))
     width = 0.35
@@ -541,15 +497,16 @@ def fig_error_by_difficulty_comparison() -> None:
 # Figure 14: graph degree distribution
 # ---------------------------------------------------------------------------
 
-def fig_graph_degree_distribution() -> None:
+def fig_graph_degree_distribution(figs: dict) -> None:
     log.info('Generating graph_degree_distribution.png ...')
-    train = load_edges(f'{RAW}/train.csv')
-    G = build_graph(train)
-    degrees = np.array([d for _, d in G.degree()])
+    hist = figs.get('graph_degree_hist')
+    if hist is None:
+        log.warning('SKIP: no graph_degree_hist stats')
+        return
 
+    edges = np.array(hist['bin_edges'])
     fig, ax = plt.subplots(figsize=(7, 4))
-    bins = np.logspace(0, np.log10(max(degrees.max(), 2)), 40)
-    ax.hist(degrees, bins=bins, color=PALETTE['colors'][0])
+    ax.stairs(hist['counts'], edges, fill=True, color=PALETTE['colors'][0])
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel('Βαθμός Κόμβου (λογαριθμική κλίμακα)')
@@ -563,23 +520,26 @@ def fig_graph_degree_distribution() -> None:
 # Figure 15: dataset composition detail
 # ---------------------------------------------------------------------------
 
-def fig_dataset_composition() -> None:
+def fig_dataset_composition(figs: dict) -> None:
     log.info('Generating dataset_composition.png ...')
-    train = pd.read_csv(RAW / 'train.csv')
-    diff = pd.read_csv(INTERIM / 'difficulty_train.csv', index_col='id')
+    comp = figs.get('dataset_composition')
+    if comp is None:
+        log.warning('SKIP: no dataset_composition stats')
+        return
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
 
-    label_counts = train['label'].value_counts()
-    axes[0].bar(['Αρνητικά', 'Θετικά'], [label_counts.get(0, 0), label_counts.get(1, 0)],
+    label_counts = comp['label_counts']
+    neg, pos = label_counts.get('0', 0), label_counts.get('1', 0)
+    axes[0].bar(['Αρνητικά', 'Θετικά'], [neg, pos],
                 color=[PALETTE['neg'], PALETTE['pos']], width=0.5)
     axes[0].set_ylabel('Πλήθος Ζευγών')
     axes[0].set_title('Ισορροπία Κλάσεων — train.csv')
-    for i, v in enumerate([label_counts.get(0, 0), label_counts.get(1, 0)]):
+    for i, v in enumerate([neg, pos]):
         axes[0].text(i, v, f'{v:,}', ha='center', va='bottom', fontsize=9)
 
-    counts = diff['difficulty'].value_counts()
-    axes[1].bar([DIFF_LABELS[c] for c in DIFF_ORDER], [counts.get(c, 0) for c in DIFF_ORDER],
+    diff_counts = comp['difficulty_counts']
+    axes[1].bar([DIFF_LABELS[c] for c in DIFF_ORDER], [diff_counts.get(c, 0) for c in DIFF_ORDER],
                 color=PALETTE['colors'][:len(DIFF_ORDER)], width=0.5)
     axes[1].set_ylabel('Πλήθος Ζευγών')
     axes[1].set_title('Κατηγορίες Δυσκολίας — train.csv')
@@ -606,16 +566,12 @@ _DSAA_OTHER_TEAMS = [
 ]
 
 
-def fig_dsaa_leaderboard_comparison() -> None:
+def fig_dsaa_leaderboard_comparison(figs: dict) -> None:
     log.info('Generating dsaa_leaderboard_comparison.png ...')
-    kg = _load_csv(PREDICTIONS / 'kaggle_scores.csv')
-    if kg is None:
+    our_score = figs.get('kaggle_our_score')
+    if our_score is None:
+        log.warning('SKIP: no kaggle_our_score stat')
         return
-    ref_rows = kg[~kg['description'].str.contains('Node2Vec', na=False)]
-    if ref_rows.empty:
-        log.warning('SKIP: no non-Node2Vec Kaggle submission found for our own score')
-        return
-    our_score = ref_rows.sort_values('public_score', ascending=False).iloc[0]['private_score']
 
     names = [t for t, _ in _DSAA_OTHER_TEAMS] + ['CascadeLP\n(παρούσα εργασία)']
     scores = [s for _, s in _DSAA_OTHER_TEAMS] + [our_score]
@@ -639,22 +595,31 @@ def fig_dsaa_leaderboard_comparison() -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    fig_separability()
-    fig_difficulty()
-    fig_svm_metrics()
-    fig_tier_routing()
-    fig_tier_difficulty_heatmap()
-    fig_confusion_matrices()
-    fig_roc_curve()
-    fig_confidence_distribution()
-    fig_threshold_ablation()
-    fig_node2vec_ablation()
-    fig_throughput_comparison()
-    fig_coldstart_comparison()
-    fig_error_by_difficulty_comparison()
-    fig_graph_degree_distribution()
-    fig_dataset_composition()
-    fig_dsaa_leaderboard_comparison()
+    stats_path = STATS / 'summary_stats.json'
+    if not stats_path.exists():
+        raise SystemExit(
+            f'{stats_path} not found — run `make compute-stats` first '
+            '(requires the full local data/feature/train pipeline output).'
+        )
+    stats = json.loads(stats_path.read_text())
+    figs = stats['figures']
+
+    fig_separability(figs)
+    fig_difficulty(figs)
+    fig_svm_metrics(figs)
+    fig_tier_routing(figs)
+    fig_tier_difficulty_heatmap(figs)
+    fig_confusion_matrices(figs)
+    fig_roc_curve(figs)
+    fig_confidence_distribution(figs)
+    fig_threshold_ablation(figs)
+    fig_node2vec_ablation(figs)
+    fig_throughput_comparison(figs)
+    fig_coldstart_comparison(figs)
+    fig_error_by_difficulty_comparison(figs)
+    fig_graph_degree_distribution(figs)
+    fig_dataset_composition(figs)
+    fig_dsaa_leaderboard_comparison(figs)
     log.info('Done.')
 
 

@@ -28,26 +28,26 @@
     \toprule
     \textbf{Μοντέλο} & \textbf{Αλγόριθμος} & \textbf{Παράμετρος} & \textbf{Τιμή} \\
     \midrule
-    \texttt{\en{StructuralClassifier}} & \en{Logistic Regression} & $C$ & 1{,}0 \\
-                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
-                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \texttt{\en{StructuralClassifier}} & \en{Logistic Regression} & $C$ & \StructuralC{} \\
+                                       &                           & \texttt{\en{max\_iter}} & \StructuralMaxIter{} \\
+                                       &                           & \texttt{\en{random\_state}} & \Seed{} \\
     \midrule
-    \texttt{\en{TfidfClassifier}}      & \en{Logistic Regression} & $C$ & 1{,}0 \\
-                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
-                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \texttt{\en{TfidfClassifier}}      & \en{Logistic Regression} & $C$ & \TfidfClfC{} \\
+                                       &                           & \texttt{\en{max\_iter}} & \TfidfClfMaxIter{} \\
+                                       &                           & \texttt{\en{random\_state}} & \Seed{} \\
     \midrule
-    \texttt{\en{PosClassifier}}        & \en{Random Forest}       & \texttt{\en{n\_estimators}} & 200 \\
-                                       &                           & \texttt{\en{class\_weight}} & \texttt{\en{`balanced'}} \\
-                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \texttt{\en{PosClassifier}}        & \en{Random Forest}       & \texttt{\en{n\_estimators}} & \PosNEstimators{} \\
+                                       &                           & \texttt{\en{class\_weight}} & \texttt{\en{`\PosClassWeight{}'}} \\
+                                       &                           & \texttt{\en{random\_state}} & \Seed{} \\
     \midrule
-    \texttt{\en{EmbeddingClassifier}}  & \en{Logistic Regression} & $C$ & 1{,}0 \\
-                                       &                           & \texttt{\en{max\_iter}} & 1.000 \\
-                                       &                           & \texttt{\en{random\_state}} & 42 \\
+    \texttt{\en{EmbeddingClassifier}}  & \en{Logistic Regression} & $C$ & \EmbeddingC{} \\
+                                       &                           & \texttt{\en{max\_iter}} & \EmbeddingMaxIter{} \\
+                                       &                           & \texttt{\en{random\_state}} & \Seed{} \\
     \midrule
-    \texttt{\en{SvmClassifier}}        & \en{SVC (RBF kernel)}    & $C$ & 1{,}0 \\
-                                       &                           & $\gamma$ & \texttt{\en{`scale'}} \\
+    \texttt{\en{SvmClassifier}}        & \en{SVC (RBF kernel)}    & $C$ & \SvmC{} \\
+                                       &                           & $\gamma$ & \texttt{\en{`\SvmGamma{}'}} \\
                                        &                           & \texttt{\en{subsample\_size}} & \SvmSampleSize{} \\
-                                       &                           & \texttt{\en{random\_state}} & 42 \\
+                                       &                           & \texttt{\en{random\_state}} & \Seed{} \\
     \midrule
     \en{CascadeLP}                     & ---                       & $\tau_1$ & \TauOneDefault{} \\
                                        &                           & $\tau_2$ & \TauTwoDefault{} \\
@@ -64,18 +64,18 @@
     \toprule
     \textbf{Pipeline} & \textbf{Παράμετρος} & \textbf{Τιμή} \\
     \midrule
-    \en{TF-IDF} & \texttt{\en{max\_features}} & 50.000 \\
-                & \texttt{\en{sublinear\_tf}} & \texttt{\en{True}} \\
-                & \texttt{\en{min\_df}} & 2 \\
+    \en{TF-IDF} & \texttt{\en{max\_features}} & \TfidfMaxFeatures{} \\
+                & \texttt{\en{sublinear\_tf}} & \texttt{\en{\TfidfSublinearTf{}}} \\
+                & \texttt{\en{min\_df}} & \TfidfMinDf{} \\
     \midrule
-    \en{Sentence-Transformer} & μοντέλο & \texttt{\en{all-MiniLM-L6-v2}} \\
+    \en{Sentence-Transformer} & μοντέλο & \texttt{\en{\EmbeddingModelName{}}} \\
     \midrule
-    \en{Node2Vec} & \texttt{\en{dimensions}} & 64 \\
-                  & \texttt{\en{walk\_length}} & 30 \\
-                  & \texttt{\en{num\_walks}} & 10 \\
-                  & \texttt{\en{window}} & 10 \\
-                  & $p$ & 1 (αμερόληπτο \en{DeepWalk}) \\
-                  & $q$ & 1 (αμερόληπτο \en{DeepWalk}) \\
+    \en{Node2Vec} & \texttt{\en{dimensions}} & \NTwoVDimensions{} \\
+                  & \texttt{\en{walk\_length}} & \NTwoVWalkLength{} \\
+                  & \texttt{\en{num\_walks}} & \NTwoVNumWalks{} \\
+                  & \texttt{\en{window}} & \NTwoVWindow{} \\
+                  & $p$ & \NTwoVP{} (αμερόληπτο \en{DeepWalk}) \\
+                  & $q$ & \NTwoVQ{} (αμερόληπτο \en{DeepWalk}) \\
     \bottomrule
   \end{tabular}
   \caption{Υπερπαράμετροι pipeline εξαγωγής χαρακτηριστικών.}

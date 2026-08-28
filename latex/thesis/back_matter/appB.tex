@@ -10,27 +10,27 @@
 \label{sec:kaggle-submit}
 
 Η επιβεβαίωση του σκορ \en{Macro F1-score} \texttt{\KaggleBaselinePublic{}} στο δημόσιο \en{leaderboard} του \en{Kaggle} απαιτεί φυσικά μία πραγματική υποβολή στον διαγωνισμό \en{DSAA 2023}.
-Για την κάλυψη αυτής της ανάγκης γράφτηκε το \texttt{\en{scripts/\allowbreak{}submit\_\allowbreak{}kaggle.py}}: ένα βοηθητικό \en{script} που αναλαμβάνει ολόκληρο τον κύκλο υποβολής, από τη μεταφόρτωση του αρχείου προβλέψεων στους εξυπηρετητές του \en{Kaggle} έως την ανάκτηση και καταγραφή του τελικού βαθμού.
+Για την κάλυψη αυτής της ανάγκης γράφτηκε το \texttt{\en{scripts\slash{}submit\_kaggle.py}}: ένα βοηθητικό \en{script} που αναλαμβάνει ολόκληρο τον κύκλο υποβολής, από τη μεταφόρτωση του αρχείου προβλέψεων στους εξυπηρετητές του \en{Kaggle} έως την ανάκτηση και καταγραφή του τελικού βαθμού.
 
 Το \en{script} εκτίθεται μέσω δύο στόχων του \texttt{\en{Makefile}}.
-Ο \texttt{\en{make kaggle-submit FILE=<path> MSG=<text>}} μεταφορτώνει ένα αρχείο \en{CSV} απευθείας στον διαγωνισμό.
-Ο \texttt{\en{make kaggle-check}} αναζητά και εκτυπώνει την κατάσταση και το δημόσιο σκορ των πιο πρόσφατων υποβολών.
+Ο \texttt{\en{make kaggle-\allowbreak{}submit FILE=<path> MSG=<text>}} μεταφορτώνει ένα αρχείο \en{CSV} απευθείας στον διαγωνισμό.
+Ο \texttt{\en{make kaggle-\allowbreak{}check}} αναζητά και εκτυπώνει την κατάσταση και το δημόσιο σκορ των πιο πρόσφατων υποβολών.
 Και οι δύο στόχοι δέχονται προαιρετικά τη σημαία \texttt{\en{--wait}}, η οποία κρατά το \en{script} σε αναμονή έως ότου η βαθμολόγηση ολοκληρωθεί ασύγχρονα από τους εξυπηρετητές.
 
-Η πιστοποίηση γίνεται αποκλειστικά μέσω του \en{token} \texttt{\en{KAGGLE\_\allowbreak{}API\_\allowbreak{}TOKEN}}, αποθηκευμένου στο αρχείο \texttt{.env}.
+Η πιστοποίηση γίνεται αποκλειστικά μέσω του \en{token} \texttt{\en{KAGGLE\_API\_TOKEN}}, αποθηκευμένου στο αρχείο \texttt{.env}.
 Δεν απαιτείται ξεχωριστό ζεύγος ονόματος χρήστη και κλειδιού \en{API}.
 Το ίδιο \en{token} χρησιμοποιείται από τη βιβλιοθήκη \texttt{\en{kagglesdk}} --- τη βιβλιοθήκη πίσω από το επίσημο \en{CLI} του \en{Kaggle} --- για κάθε κλήση προς το \en{API}.
 
-Κάθε υποβολή καταγράφεται αυτόματα στο αρχείο \texttt{\en{outputs/\allowbreak{}predictions/\allowbreak{}kaggle\_\allowbreak{}scores.csv}}, με πρωτεύον κλειδί τον μοναδικό αναγνωριστή \texttt{\en{ref}} που αποδίδει το \en{Kaggle} σε κάθε υποβολή.
+Κάθε υποβολή καταγράφεται αυτόματα στο αρχείο \texttt{\en{outputs\slash{}predictions\slash{}kaggle\_scores.csv}}, με πρωτεύον κλειδί τον μοναδικό αναγνωριστή \texttt{\en{ref}} που αποδίδει το \en{Kaggle} σε κάθε υποβολή.
 Η επιλογή αυτή εξασφαλίζει ότι κάθε βαθμός αντιστοιχεί με ακρίβεια στο αρχείο που το παρήγαγε, ανεξάρτητα από περιγραφές ή σειρά εμφάνισης.
-Το ίδιο \en{token} καλύπτει και τη λήψη του συνόλου δεδομένων μέσω \texttt{\en{make data-download}}, οπότε μία μοναδική διαπίστευση επαρκεί για ολόκληρο τον κύκλο αναπαραγωγιμότητας: από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ στο \en{leaderboard}.
+Το ίδιο \en{token} καλύπτει και τη λήψη του συνόλου δεδομένων μέσω \texttt{\en{make data-\allowbreak{}download}}, οπότε μία μοναδική διαπίστευση επαρκεί για ολόκληρο τον κύκλο αναπαραγωγιμότητας: από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ στο \en{leaderboard}.
 
 
 \section{Δομή Καταλόγων Κώδικα}
 \label{sec:code-layout}
 
 Η ενότητα~\ref{subsec:implementation-architecture} περιγράφει με πεζό λόγο τη ροή δεδομένων
-ανάμεσα στις ενότητες του \texttt{\en{src/\allowbreak{}}}. Ο πίνακας~\ref{tab:code-layout} λειτουργεί ως
+ανάμεσα στις ενότητες του \texttt{\en{src\slash{}}}. Ο πίνακας~\ref{tab:code-layout} λειτουργεί ως
 σημείο αναφοράς: καταγράφει, ανά αρχείο, τα βασικά σύμβολα (συναρτήσεις και κλάσεις) που
 εξάγονται, ώστε κάθε όνομα που αναφέρεται αλλού στο κείμενο να εντοπίζεται άμεσα.
 
@@ -41,57 +41,57 @@
     \toprule
     \textbf{Αρχείο} & \textbf{Βασικά σύμβολα} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{src/\allowbreak{}data/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{src\slash{}data\slash{}}}} \\
     \midrule
-    \texttt{\en{loader.py}} & \texttt{\en{load\_\allowbreak{}edges()}}, \texttt{\en{load\_\allowbreak{}nodes()}}, \texttt{\en{load\_\allowbreak{}nodes\_\allowbreak{}for\_\allowbreak{}ids()}}, \texttt{\en{build\_\allowbreak{}graph()}} \\
+    \texttt{\en{loader.py}} & \texttt{\en{load\_edges()}}, \texttt{\en{load\_nodes()}}, \texttt{\en{load\_nodes\_for\_ids()}}, \texttt{\en{build\_graph()}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{src/\allowbreak{}features/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{src\slash{}features\slash{}}}} \\
     \midrule
-    \texttt{\en{structural.py}} & \texttt{\en{compute\_\allowbreak{}heuristics()}}, \texttt{\en{train\_\allowbreak{}node2vec()}}, \texttt{\en{node2vec\_\allowbreak{}hadamard\_\allowbreak{}features()}} \\
-    \texttt{\en{embeddings.py}} & \texttt{\en{clean\_\allowbreak{}wiki\_\allowbreak{}text()}}, \texttt{\en{build\_\allowbreak{}tfidf()}}, \texttt{\en{compute\_\allowbreak{}tfidf\_\allowbreak{}scores()}}, \texttt{\en{encode\_\allowbreak{}nodes()}}, \texttt{\en{compute\_\allowbreak{}embedding\_\allowbreak{}scores()}} \\
-    \texttt{\en{linguistic.py}} & \texttt{\en{pos\_\allowbreak{}frequency\_\allowbreak{}vector()}}, \texttt{\en{compute\_\allowbreak{}pos\_\allowbreak{}features()}} \\
+    \texttt{\en{structural.py}} & \texttt{\en{compute\_heuristics()}}, \texttt{\en{train\_node2vec()}}, \texttt{\en{node2vec\_hadamard\_features()}} \\
+    \texttt{\en{embeddings.py}} & \texttt{\en{clean\_wiki\_text()}}, \texttt{\en{build\_tfidf()}}, \texttt{\en{compute\_tfidf\_scores()}}, \texttt{\en{encode\_nodes()}}, \texttt{\en{compute\_embedding\_scores()}} \\
+    \texttt{\en{linguistic.py}} & \texttt{\en{pos\_frequency\_vector()}}, \texttt{\en{compute\_pos\_features()}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{src/\allowbreak{}models/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{src\slash{}models\slash{}}}} \\
     \midrule
     \texttt{\en{svm.py}} & \texttt{\en{StructuralClassifier}}, \texttt{\en{TfidfClassifier}}, \texttt{\en{PosClassifier}}, \texttt{\en{SvmClassifier}}, \texttt{\en{EmbeddingClassifier}} \\
-    \texttt{\en{cascade.py}} & \texttt{\en{CascadeLP}}, \texttt{\en{cold\_\allowbreak{}start\_\allowbreak{}from\_\allowbreak{}structural()}} \\
+    \texttt{\en{cascade.py}} & \texttt{\en{CascadeLP}}, \texttt{\en{cold\_start\_from\_structural()}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{src/\allowbreak{}utils/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{src\slash{}utils\slash{}}}} \\
     \midrule
-    \texttt{\en{difficulty.py}} & \texttt{\en{pick\_\allowbreak{}thresholds()}}, \texttt{\en{label\_\allowbreak{}difficulty()}}, \texttt{\en{trivial\_\allowbreak{}mask()}} \\
-    \texttt{\en{metrics.py}} & \texttt{\en{EvalResult}}, \texttt{\en{evaluate()}}, \texttt{\en{evaluate\_\allowbreak{}by\_\allowbreak{}group()}}, \texttt{\en{tier\_\allowbreak{}difficulty\_\allowbreak{}breakdown()}}, \texttt{\en{cold\_\allowbreak{}start\_\allowbreak{}mask()}}, \texttt{\en{timer()}} \\
-    \texttt{\en{log\_\allowbreak{}utils.py}} & \texttt{\en{setup\_\allowbreak{}logging()}} \\
+    \texttt{\en{difficulty.py}} & \texttt{\en{pick\_thresholds()}}, \texttt{\en{label\_difficulty()}}, \texttt{\en{trivial\_mask()}} \\
+    \texttt{\en{metrics.py}} & \texttt{\en{EvalResult}}, \texttt{\en{evaluate()}}, \texttt{\en{evaluate\_by\_group()}}, \texttt{\en{tier\_difficulty\_breakdown()}}, \texttt{\en{cold\_start\_mask()}}, \texttt{\en{timer()}} \\
+    \texttt{\en{log\_utils.py}} & \texttt{\en{setup\_logging()}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts/\allowbreak{}data/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}data\slash{}}}} \\
     \midrule
-    \texttt{\en{download\_\allowbreak{}data.py}} & λήψη του συνόλου δεδομένων του διαγωνισμού από το \en{Kaggle} \\
-    \texttt{\en{compute\_\allowbreak{}structural.py}} & \en{CLI} για \texttt{\en{compute\_\allowbreak{}heuristics}}/\allowbreak{}\texttt{\en{train\_\allowbreak{}node2vec}} \\
-    \texttt{\en{compute\_\allowbreak{}semantic.py}} & \en{CLI} για \en{TF-IDF}/\allowbreak{}\en{Sentence-Transformer}/\allowbreak{}\en{POS} χαρακτηριστικά \\
+    \texttt{\en{download\_data.py}} & λήψη του συνόλου δεδομένων του διαγωνισμού από το \en{Kaggle} \\
+    \texttt{\en{compute\_structural.py}} & \en{CLI} για \texttt{\en{compute\_heuristics}}/\allowbreak{}\texttt{\en{train\_node2vec}} \\
+    \texttt{\en{compute\_semantic.py}} & \en{CLI} για \en{TF-IDF}/\allowbreak{}\en{Sentence-Transformer}/\allowbreak{}\en{POS} χαρακτηριστικά \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts/\allowbreak{}analysis/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}analysis\slash{}}}} \\
     \midrule
-    \texttt{\en{audit\_\allowbreak{}leakage.py}} & έλεγχος διαρροής εκπαίδευσης--ελέγχου και αυτοβρόχων \\
-    \texttt{\en{analyze\_\allowbreak{}dataset.py}} & χαρακτηρισμός διαχωρισιμότητας και ορίων $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ \\
-    \texttt{\en{analyze\_\allowbreak{}cascade.py}} & ανάλυση \en{CascadeLP} ανά επίπεδο και δυσκολία \\
-    \texttt{\en{ablate\_\allowbreak{}node2vec.py}} & \en{ablation} \en{Node2Vec} και μέτρηση κάλυψης στο σύνολο ελέγχου \\
-    \texttt{\en{ablate\_\allowbreak{}cascade\_\allowbreak{}thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
-    \texttt{\en{analyze\_\allowbreak{}hard\_\allowbreak{}residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
-    \texttt{\en{benchmark\_\allowbreak{}throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
+    \texttt{\en{audit\_leakage.py}} & έλεγχος διαρροής εκπαίδευσης--ελέγχου και αυτοβρόχων \\
+    \texttt{\en{analyze\_dataset.py}} & χαρακτηρισμός διαχωρισιμότητας και ορίων $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ \\
+    \texttt{\en{analyze\_cascade.py}} & ανάλυση \en{CascadeLP} ανά επίπεδο και δυσκολία \\
+    \texttt{\en{ablate\_node2vec.py}} & \en{ablation} \en{Node2Vec} και μέτρηση κάλυψης στο σύνολο ελέγχου \\
+    \texttt{\en{ablate\_cascade\_thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
+    \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
+    \texttt{\en{benchmark\_throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts/\allowbreak{}paper/\allowbreak{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}paper\slash{}}}} \\
     \midrule
-    \texttt{\en{compute\_\allowbreak{}summary\_\allowbreak{}stats.py}} & συγκεντρωτικά στατιστικά προς \texttt{\en{outputs/\allowbreak{}stats/\allowbreak{}summary\_\allowbreak{}stats.json}} \\
-    \texttt{\en{generate\_\allowbreak{}macros.py}} & παραγωγή \texttt{\en{latex/\allowbreak{}shared/\allowbreak{}generated\_\allowbreak{}macros.tex}} \\
-    \texttt{\en{generate\_\allowbreak{}figures.py}} & παραγωγή σχημάτων στο \texttt{\en{outputs/\allowbreak{}figures/\allowbreak{}}} \\
+    \texttt{\en{compute\_summary\_stats.py}} & συγκεντρωτικά στατιστικά προς \texttt{\en{outputs\slash{}stats\slash{}summary\_stats.json}} \\
+    \texttt{\en{generate\_macros.py}} & παραγωγή \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}} \\
+    \texttt{\en{generate\_figures.py}} & παραγωγή σχημάτων στο \texttt{\en{outputs\slash{}figures\slash{}}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts/\allowbreak{}}} (ρίζα)} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}}} (ρίζα)} \\
     \midrule
     \texttt{\en{train.py}} & εκπαίδευση ενός εκ των έξι μοντέλων \\
     \texttt{\en{evaluate.py}} & παραγωγή προβλέψεων στο σύνολο ελέγχου \\
-    \texttt{\en{submit\_\allowbreak{}kaggle.py}} & υποβολή/\allowbreak{}έλεγχος κατάστασης στο \en{Kaggle} (\S\ref{sec:kaggle-submit}) \\
+    \texttt{\en{submit\_kaggle.py}} & υποβολή/\allowbreak{}έλεγχος κατάστασης στο \en{Kaggle} (\S\ref{sec:kaggle-submit}) \\
     \bottomrule
   \end{tabular}
-  \caption{Κατάλογος αρχείων του \texttt{\en{src/\allowbreak{}}} και του \texttt{\en{scripts/\allowbreak{}}} με τα
+  \caption{Κατάλογος αρχείων του \texttt{\en{src\slash{}}} και του \texttt{\en{scripts\slash{}}} με τα
   κύρια εξαγόμενα σύμβολά τους.}
   \label{tab:code-layout}
 \end{table}
@@ -101,7 +101,7 @@
 \label{sec:cli-reference}
 
 Η παρακάτω λίστα καταγράφει τη μορφή κλήσης, τις κύριες σημαίες και την
-έξοδο κάθε σεναρίου του \texttt{\en{scripts/\allowbreak{}}}, ομαδοποιημένα ανά στάδιο του \en{pipeline}:
+έξοδο κάθε σεναρίου του \texttt{\en{scripts\slash{}}}, ομαδοποιημένα ανά στάδιο του \en{pipeline}:
 δεδομένα, εκπαίδευση/\allowbreak{}αξιολόγηση, ανάλυση, παραγωγή υλικού διατριβής. Οι στόχοι \texttt{\en{make}}
 που αναφέρονται στο Κεφάλαιο~\ref{ch:methodology} και αλλού στο παρόν παράρτημα καλούν ακριβώς
 αυτές τις εντολές μέσα σε ένα καθορισμένο περιβάλλον \en{conda} (\S\ref{sec:reproducibility}).
@@ -110,51 +110,51 @@
 \textit{Δεδομένα}
 
 \begin{itemize}
-  \item \texttt{\en{python -m scripts.\allowbreak{}data.\allowbreak{}download\_\allowbreak{}data}} --- Έξοδος:
-    \texttt{\en{data/\allowbreak{}raw/\allowbreak{}\{train,\allowbreak{}test,\allowbreak{}nodes,\allowbreak{}sample\_\allowbreak{}submission\}.*}}
-  \item \texttt{\en{python -m scripts.\allowbreak{}data.\allowbreak{}compute\_\allowbreak{}structural}} --- Σημαίες:
-    \texttt{\en{--nrows N}}, \texttt{\en{--skip-n2v}}. Έξοδος:
-    \texttt{\en{structural\_\allowbreak{}\{train,\allowbreak{}test\}.csv}}, \texttt{\en{node2vec.kv}}
-  \item \texttt{\en{python -m scripts.\allowbreak{}data.\allowbreak{}compute\_\allowbreak{}semantic}} --- Σημαίες:
-    \texttt{\en{--nrows N}}, \texttt{\en{--model NAME}}, \texttt{\en{--skip-st}}, \texttt{\en{--skip-pos}}.
-    Έξοδος: \texttt{\en{tfidf\_\allowbreak{}\{train,\allowbreak{}test\}.csv}}, \texttt{\en{sentence\_\allowbreak{}emb\_\allowbreak{}\{train,\allowbreak{}test\}.csv}},
-    \texttt{\en{pos\_\allowbreak{}\{train,\allowbreak{}test\}.npy}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.download\_data}} --- Έξοδος:
+    \texttt{\en{data\slash{}raw\slash{}\{train,\allowbreak{}test,\allowbreak{}nodes,\allowbreak{}sample\_submission\}.*}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_structural}} --- Σημαίες:
+    \texttt{\en{--nrows N}}, \texttt{\en{--skip-\allowbreak{}n2v}}. Έξοδος:
+    \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{node2vec.kv}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_semantic}} --- Σημαίες:
+    \texttt{\en{--nrows N}}, \texttt{\en{--model NAME}}, \texttt{\en{--skip-\allowbreak{}st}}, \texttt{\en{--skip-\allowbreak{}pos}}.
+    Έξοδος: \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}},
+    \texttt{\en{pos\_\{train,\allowbreak{}test\}.npy}}
 \end{itemize}
 
 \textit{Εκπαίδευση /\allowbreak{} Αξιολόγηση} (\en{Hydra}, \texttt{\en{key=value}} \en{overrides})
 
 \begin{itemize}
-  \item \texttt{\en{python -m scripts.\allowbreak{}train model=<name>}} --- Σημαίες:
-    \texttt{\en{model=\{structural,\allowbreak{}tfidf,\allowbreak{}pos,\allowbreak{}embedding,\allowbreak{}svm,\allowbreak{}cascade\}}}, \texttt{\en{model.tier1\_\allowbreak{}threshold=}},
-    \texttt{\en{model.tier2\_\allowbreak{}threshold=}}, \texttt{\en{training.no\_\allowbreak{}n2v=false +tag=n2v}}. Έξοδος:
-    \texttt{\en{outputs/\allowbreak{}checkpoints/\allowbreak{}<name>.joblib}}, \texttt{\en{cascade\_\allowbreak{}val\_\allowbreak{}tiers.csv}} (μόνο \en{cascade})
-  \item \texttt{\en{python -m scripts.\allowbreak{}evaluate model=<name>}} --- Σημαίες: ίδιες \en{overrides}. Έξοδος:
-    \texttt{\en{<name>\_\allowbreak{}submission.csv}}, \texttt{\en{cascade\_\allowbreak{}test\_\allowbreak{}tiers.csv}} (μόνο \en{cascade})
+  \item \texttt{\en{python -\allowbreak{}m scripts.train model=<name>}} --- Σημαίες:
+    \texttt{\en{model=\{structural,\allowbreak{}tfidf,\allowbreak{}pos,\allowbreak{}embedding,\allowbreak{}svm,\allowbreak{}cascade\}}}, \texttt{\en{model.tier1\_threshold=}},
+    \texttt{\en{model.tier2\_threshold=}}, \texttt{\en{training.no\_n2v=false +tag=n2v}}. Έξοδος:
+    \texttt{\en{outputs\slash{}checkpoints\slash{}<name>.joblib}}, \texttt{\en{cascade\_val\_tiers.csv}} (μόνο \en{cascade})
+  \item \texttt{\en{python -\allowbreak{}m scripts.evaluate model=<name>}} --- Σημαίες: ίδιες \en{overrides}. Έξοδος:
+    \texttt{\en{<name>\_submission.csv}}, \texttt{\en{cascade\_test\_tiers.csv}} (μόνο \en{cascade})
 \end{itemize}
 
 \textit{Ανάλυση}
 
 \begin{itemize}
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}audit\_\allowbreak{}leakage}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_leakage}} --- Σημαίες:
     \texttt{\en{--train PATH}}, \texttt{\en{--test PATH}}. Έξοδος: αναφορά διαρροής
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}analyze\_\allowbreak{}dataset}} --- Σημαίες:
-    \texttt{\en{--cn-threshold X}}, \texttt{\en{--tfidf-threshold X}}, \texttt{\en{--fpr X}} (προεπ.\ 0{,}01).
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_dataset}} --- Σημαίες:
+    \texttt{\en{--cn-\allowbreak{}threshold X}}, \texttt{\en{--tfidf-\allowbreak{}threshold X}}, \texttt{\en{--fpr X}} (προεπ.\ 0{,}01).
     Έξοδος: στατιστικά τετριμμένων ζευγών
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}analyze\_\allowbreak{}cascade}} --- Έξοδος: ανάλυση ανά επίπεδο/\allowbreak{}δυσκολία
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}ablate\_\allowbreak{}node2vec}} --- Έξοδος: \en{ablation} \en{Node2Vec} + κάλυψη
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}ablate\_\allowbreak{}cascade\_\allowbreak{}thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}analyze\_\allowbreak{}hard\_\allowbreak{}residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
-  \item \texttt{\en{python -m scripts.\allowbreak{}analysis.\allowbreak{}benchmark\_\allowbreak{}throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_cascade}} --- Έξοδος: ανάλυση ανά επίπεδο/\allowbreak{}δυσκολία
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_node2vec}} --- Έξοδος: \en{ablation} \en{Node2Vec} + κάλυψη
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_cascade\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.benchmark\_throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
 \end{itemize}
 
 \textit{Παραγωγή Υλικού Διατριβής}
 
 \begin{itemize}
-  \item \texttt{\en{python -m scripts.\allowbreak{}paper.\allowbreak{}compute\_\allowbreak{}summary\_\allowbreak{}stats}} --- Έξοδος:
-    \texttt{\en{outputs/\allowbreak{}stats/\allowbreak{}summary\_\allowbreak{}stats.json}}
-  \item \texttt{\en{python -m scripts.\allowbreak{}paper.\allowbreak{}generate\_\allowbreak{}macros}} --- Έξοδος:
-    \texttt{\en{latex/\allowbreak{}shared/\allowbreak{}generated\_\allowbreak{}macros.tex}}
-  \item \texttt{\en{python -m scripts.\allowbreak{}paper.\allowbreak{}generate\_\allowbreak{}figures}} --- Έξοδος: \texttt{\en{outputs/\allowbreak{}figures/\allowbreak{}*}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.paper.compute\_summary\_stats}} --- Έξοδος:
+    \texttt{\en{outputs\slash{}stats\slash{}summary\_stats.json}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_macros}} --- Έξοδος:
+    \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_figures}} --- Έξοδος: \texttt{\en{outputs\slash{}figures\slash{}*}}
 \end{itemize}
 
 
@@ -173,13 +173,13 @@
     \toprule
     \textbf{Αρχείο} & \textbf{Στήλες} & \textbf{Σημειώσεις} \\
     \midrule
-    \texttt{\en{train.csv}} & \texttt{\en{id, id1, id2, label}} & \texttt{\en{id}} ευρετήριο ζεύγους, \texttt{\en{label}} $\in \{0,\allowbreak{}1\}$ \\
-    \texttt{\en{test.csv}} & \texttt{\en{id, id1, id2}} & χωρίς στήλη ετικέτας \\
-    \texttt{\en{sample\_\allowbreak{}submission.csv}} & \texttt{\en{id, label}} & μορφή αναμενόμενη από το \en{Kaggle leaderboard} \\
-    \texttt{\en{nodes.tsv}} & \texttt{\en{id}}\,\en{(tab)}\,\texttt{\en{text}} & ακατέργαστο κείμενο \en{MediaWiki markup}, \GraphNodesTotal{} άρθρα συνολικά· αρχείο μεγάλου μεγέθους, διαβάζεται σε τμήματα από την \texttt{\en{load\_\allowbreak{}nodes\_\allowbreak{}for\_\allowbreak{}ids()}} \\
+    \texttt{\en{train.csv}} & \texttt{\en{id,\allowbreak{} id1,\allowbreak{} id2,\allowbreak{} label}} & \texttt{\en{id}} ευρετήριο ζεύγους, \texttt{\en{label}} $\in \{0,\allowbreak{}1\}$ \\
+    \texttt{\en{test.csv}} & \texttt{\en{id,\allowbreak{} id1,\allowbreak{} id2}} & χωρίς στήλη ετικέτας \\
+    \texttt{\en{sample\_submission.csv}} & \texttt{\en{id,\allowbreak{} label}} & μορφή αναμενόμενη από το \en{Kaggle leaderboard} \\
+    \texttt{\en{nodes.tsv}} & \texttt{\en{id}}\,\en{(tab)}\,\texttt{\en{text}} & ακατέργαστο κείμενο \en{MediaWiki markup}, \GraphNodesTotal{} άρθρα συνολικά· αρχείο μεγάλου μεγέθους, διαβάζεται σε τμήματα από την \texttt{\en{load\_nodes\_for\_ids()}} \\
     \bottomrule
   \end{tabular}
-  \caption{Σχήματα των ακατέργαστων αρχείων εισόδου (\texttt{\en{data/\allowbreak{}raw/\allowbreak{}}}).}
+  \caption{Σχήματα των ακατέργαστων αρχείων εισόδου (\texttt{\en{data\slash{}raw\slash{}}}).}
   \label{tab:raw-schemas}
 \end{table}
 
@@ -190,15 +190,15 @@
     \toprule
     \textbf{Αρχείο} & \textbf{Στήλες /\allowbreak{} Σχήμα} & \textbf{Διάσταση} \\
     \midrule
-    \texttt{\en{structural\_\allowbreak{}\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{cn, jaccard, adamic\_\allowbreak{}adar, pref\_\allowbreak{}attach}} & 4 \\
+    \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{cn,\allowbreak{} jaccard,\allowbreak{} adamic\_adar,\allowbreak{} pref\_attach}} & 4 \\
     \texttt{\en{node2vec.kv}} & \en{gensim} \texttt{\en{KeyedVectors}}, ένα διάνυσμα ανά κόμβο & 64 \\
-    \texttt{\en{n2v\_\allowbreak{}\{train,\allowbreak{}test\}.npy}} & πίνακας \en{Hadamard} χαρακτηριστικών ανά ζεύγος & (n\_\allowbreak{}ζεύγη, 64) \\
-    \texttt{\en{tfidf\_\allowbreak{}\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{tfidf\_\allowbreak{}score}} & 1 \\
-    \texttt{\en{sentence\_\allowbreak{}emb\_\allowbreak{}\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{st\_\allowbreak{}score}} & 1 \\
-    \texttt{\en{pos\_\allowbreak{}\{train,\allowbreak{}test\}.npy}} & συνένωση δύο ιστογραμμάτων \en{POS} 36 διαστάσεων & (n\_\allowbreak{}ζεύγη, 72) \\
+    \texttt{\en{n2v\_\{train,\allowbreak{}test\}.npy}} & πίνακας \en{Hadamard} χαρακτηριστικών ανά ζεύγος & (n\_\allowbreak{}ζεύγη, 64) \\
+    \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{tfidf\_score}} & 1 \\
+    \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{st\_score}} & 1 \\
+    \texttt{\en{pos\_\{train,\allowbreak{}test\}.npy}} & συνένωση δύο ιστογραμμάτων \en{POS} 36 διαστάσεων & (n\_\allowbreak{}ζεύγη, 72) \\
     \bottomrule
   \end{tabular}
-  \caption{Σχήματα των παραγόμενων ενδιάμεσων αρχείων χαρακτηριστικών (\texttt{\en{data/\allowbreak{}interim/\allowbreak{}}}).}
+  \caption{Σχήματα των παραγόμενων ενδιάμεσων αρχείων χαρακτηριστικών (\texttt{\en{data\slash{}interim\slash{}}}).}
   \label{tab:interim-schemas}
 \end{table}
 
@@ -206,44 +206,47 @@
 \section{Περιβάλλον Εκτέλεσης και Αναπαραγωγιμότητα}
 \label{sec:reproducibility}
 
-Το περιβάλλον \en{conda} \texttt{\en{link-prediction}} ορίζεται πλήρως στο
+Το περιβάλλον \en{conda} \texttt{\en{link-\allowbreak{}prediction}} ορίζεται πλήρως στο
 \texttt{\en{environment.yml}}: \en{Python}~3.10, \en{PyTorch} μόνο για \en{CPU},
 \en{scikit-learn}, \en{NetworkX}, \en{NLTK}, και μέσω \en{pip}
-\texttt{\en{sentence-transformers\allowbreak{}>=3.0}}, \texttt{\en{transformers\allowbreak{}>=4.40}},
-\texttt{\en{hydra-core}}, \texttt{\en{kagglehub}}/\allowbreak{}\texttt{\en{kagglesdk}} (\S\ref{sec:kaggle-submit})
-και \texttt{\en{python-dotenv}} (φόρτωση του αρχείου \texttt{.env}). Οι στόχοι
-\texttt{\en{make env}} και \texttt{\en{make env-update}} δημιουργούν ή ενημερώνουν αντίστοιχα
+\texttt{\en{sentence-\allowbreak{}transformers>=\allowbreak{}3.0}}, \texttt{\en{transformers>=\allowbreak{}4.40}},
+\texttt{\en{hydra-\allowbreak{}core}}, \texttt{\en{kagglehub}}/\allowbreak{}\texttt{\en{kagglesdk}} (\S\ref{sec:kaggle-submit})
+και \texttt{\en{python-\allowbreak{}dotenv}} (φόρτωση του αρχείου \texttt{.env}). Οι στόχοι
+\texttt{\en{make env}} και \texttt{\en{make env-\allowbreak{}update}} δημιουργούν ή ενημερώνουν αντίστοιχα
 το περιβάλλον από αυτό το αρχείο.
 
-Οι ρυθμίσεις εκπαίδευσης διαχειρίζονται μέσω \en{Hydra}. Το \texttt{\en{configs/\allowbreak{}config.yaml}}
-ορίζει τον καθολικό σπόρο τυχαιότητας (\texttt{\en{seed: 42}}) και τις προεπιλεγμένες διαδρομές
-εισόδου/\allowbreak{}εξόδου· το \texttt{\en{configs/\allowbreak{}training/\allowbreak{}default.yaml}} ορίζει το μέγεθος επικύρωσης
-(\texttt{\en{val\_\allowbreak{}size: 0.2}}, βλ.\ \TrainSplitSize{}/\allowbreak{}\ValSplitSize{} στον
+Οι ρυθμίσεις εκπαίδευσης διαχειρίζονται μέσω \en{Hydra}. Το \texttt{\en{configs\slash{}config.yaml}}
+ορίζει τον καθολικό σπόρο τυχαιότητας (\texttt{\en{seed: \Seed{}}}) και τις προεπιλεγμένες διαδρομές
+εισόδου/\allowbreak{}εξόδου· το \texttt{\en{configs\slash{}training\slash{}default.yaml}} ορίζει το μέγεθος επικύρωσης
+(\texttt{\en{val\_size: 0.2}}, βλ.\ \TrainSplitSize{}/\allowbreak{}\ValSplitSize{} στον
 πίνακα~\ref{tab:dataset-stats} για το πραγματικό μέγεθος διαχωρισμού), τα όρια
 $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\en{null}} από προεπιλογή, οπότε
-υπολογίζονται αυτόματα μέσω \texttt{\en{pick\_\allowbreak{}thresholds}}), και τη σημαία
-\texttt{\en{no\_\allowbreak{}n2v}} (\texttt{\en{true}} από προεπιλογή --- το \en{CascadeLP} που αναφέρει η
-διατριβή είναι η παραλλαγή μόνο με ευρετικά)· και το \texttt{\en{configs/\allowbreak{}model/\allowbreak{}*.yaml}} περιέχει
-από ένα αρχείο ανά μοντέλο, του οποίου οι αριθμητικές τιμές έχουν ήδη καταγραφεί στους
-πίνακες~\ref{tab:hyperparam-classifiers} και~\ref{tab:hyperparam-features}.
+υπολογίζονται αυτόματα μέσω \texttt{\en{pick\_thresholds}}), και τη σημαία
+\texttt{\en{no\_n2v}} (\texttt{\en{true}} από προεπιλογή --- το \en{CascadeLP} που αναφέρει η
+διατριβή είναι η παραλλαγή μόνο με ευρετικά)· το \texttt{\en{configs\slash{}model\slash{}*.yaml}} περιέχει
+από ένα αρχείο ανά μοντέλο· και το \texttt{\en{configs\slash{}features\slash{}default.yaml}} ορίζει τις
+υπερπαραμέτρους των \en{pipeline} εξαγωγής χαρακτηριστικών (\en{TF-IDF}, \en{sentence-transformer},
+\en{Node2Vec}). Οι αριθμητικές τιμές όλων αυτών έχουν ήδη καταγραφεί στους
+πίνακες~\ref{tab:hyperparam-classifiers} και~\ref{tab:hyperparam-features} ως \en{macros}, ώστε να
+παραμένουν αυτόματα συγχρονισμένες με τα ίδια τα αρχεία \en{YAML}.
 
 Η σειρά αναπαραγωγής ολόκληρου του \en{pipeline} από ένα καθαρό \en{checkout}, όπως
 τεκμηριώνεται στην κεφαλίδα σχολίων του ίδιου του \texttt{\en{Makefile}}, είναι:
 
 \begin{enumerate}
-  \item \texttt{\en{make data-download}}
-  \item \texttt{\en{make features-structural}}, \texttt{\en{make features-semantic}}
-  \item \texttt{\en{make analyze-leakage}}, \texttt{\en{make analyze-dataset}}
+  \item \texttt{\en{make data-\allowbreak{}download}}
+  \item \texttt{\en{make features-\allowbreak{}structural}}, \texttt{\en{make features-\allowbreak{}semantic}}
+  \item \texttt{\en{make analyze-\allowbreak{}leakage}}, \texttt{\en{make analyze-\allowbreak{}dataset}}
   \item \texttt{\en{make train MODEL=<structural|tfidf|pos|embedding|svm|cascade>}} (το \en{cascade}
         εκπαιδεύεται από προεπιλογή στην αναπαράξιμη παραλλαγή μόνο με ευρετικά· η παραλλαγή
         \en{ablation} με \en{Node2Vec} απαιτεί απευθείας κλήση με
-        \texttt{\en{training.no\_\allowbreak{}n2v=false +tag=n2v}})
+        \texttt{\en{training.no\_n2v=false +tag=n2v}})
   \item \texttt{\en{make evaluate MODEL=<...>}} για καθένα από τα έξι μοντέλα
   \item \texttt{\en{make analyze}} (εκτελεί όλους τους υπόλοιπους στόχους ανάλυσης: \en{ablate-thresholds},
         \en{analyze-node2vec}, \en{analyze-hard-residual}, \en{benchmark-throughput})
-  \item \texttt{\en{make compute-stats}}
-  \item \texttt{\en{make thesis-assets}} (= \texttt{\en{thesis-macros}} + \texttt{\en{thesis-figures}})
-  \item \texttt{\en{make thesis-compile}}
+  \item \texttt{\en{make compute-\allowbreak{}stats}}
+  \item \texttt{\en{make thesis-\allowbreak{}assets}} (= \texttt{\en{thesis-\allowbreak{}macros}} + \texttt{\en{thesis-\allowbreak{}figures}})
+  \item \texttt{\en{make thesis-\allowbreak{}compile}}
 \end{enumerate}
 
 Ο στόχος \texttt{\en{make test}} εκτελεί τη σουίτα \en{unit} ελέγχων χωρίς να απαιτεί κανένα από

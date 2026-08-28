@@ -119,7 +119,7 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 εξαγωγή χαρακτηριστικών να μπορεί να τρέξει και να αποθηκευτεί ανεξάρτητα από την
 εκπαίδευση ταξινομητών.
 
-Η ροή ξεκινά από το \texttt{\en{src/data/loader.py}}.
+Η ροή ξεκινά από το \texttt{\en{src\slash{}data\slash{}loader.py}}.
 Η συνάρτηση \texttt{\en{load\_edges()}} διαβάζει τα \texttt{\en{train.csv}}/\texttt{\en{test.csv}} απευθείας σε
 μνήμη, αφού πρόκειται για μερικές εκατοντάδες χιλιάδες γραμμές· το \texttt{\en{nodes.tsv}}
 όμως ζυγίζει 641\en{MB} και περιέχει το πλήρες κείμενο \en{Wikipedia} 837.855 άρθρων, οπότε
@@ -130,9 +130,9 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 κατευθυνόμενο γράφημα \en{NetworkX} από τα θετικά ζεύγη του συνόλου εκπαίδευσης· αυτό το
 γράφημα τροφοδοτεί τόσο τα δομικά χαρακτηριστικά όσο και τη μάσκα \en{cold-start}.
 
-Τρία αρχεία στο \texttt{\en{src/features/}} μετατρέπουν ζεύγη κόμβων σε αριθμητικά
+Τρία αρχεία στο \texttt{\en{src\slash{}features\slash{}}} μετατρέπουν ζεύγη κόμβων σε αριθμητικά
 διανύσματα. Το \texttt{\en{structural.py}} υπολογίζει τους τέσσερις ευρετικούς δείκτες μέσω
-της \texttt{\en{compute\_heuristics(G, pairs)}} — με το γράφημα πάντα ως πρώτο όρισμα, αντιστροφή
+της \texttt{\en{compute\_heuristics(G,\allowbreak{} pairs)}} — με το γράφημα πάντα ως πρώτο όρισμα, αντιστροφή
 που αποτυγχάνει σιωπηλά επειδή η \en{NetworkX} ερμηνεύει τότε το \en{DataFrame} ως πίνακα
 γειτνίασης — και προσθέτει προαιρετικά τις 64-διάστατες ενσωματώσεις \en{Node2Vec} μέσω
 \texttt{\en{train\_node2vec()}} και \texttt{\en{node2vec\_hadamard\_features()}}. Το \texttt{\en{embeddings.py}} υλοποιεί
@@ -142,37 +142,37 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 ανά ζεύγος) και \texttt{\en{compute\_embedding\_scores()}}. Το \texttt{\en{linguistic.py}} παράγει το
 72-διάστατο διάνυσμα συχνοτήτων μερών του λόγου μέσω \texttt{\en{compute\_pos\_features()}},
 συνενώνοντας τα 36-διάστατα ιστογράμματα (\texttt{\en{pos\_frequency\_vector()}}) των δύο τελικών
-κόμβων. Τα \texttt{\en{scripts/data/compute\_structural.py}} και \texttt{\en{compute\_semantic.py}} είναι τα σημεία
+κόμβων. Τα \texttt{\en{scripts\slash{}data\slash{}compute\_structural.py}} και \texttt{\en{compute\_semantic.py}} είναι τα σημεία
 εισόδου \en{CLI} που καλούν αυτές τις συναρτήσεις και αποθηκεύουν το αποτέλεσμα ως
-\en{CSV} στο \texttt{\en{data/interim/}}, ώστε να υπολογίζονται μία φορά και να επαναχρησιμοποιούνται
+\en{CSV} στο \texttt{\en{data\slash{}interim\slash{}}}, ώστε να υπολογίζονται μία φορά και να επαναχρησιμοποιούνται
 σε κάθε πείραμα εκπαίδευσης.
 
-Το \texttt{\en{src/models/svm.py}} περιέχει τους πέντε ταξινομητές του \en{sklearn}
+Το \texttt{\en{src\slash{}models\slash{}svm.py}} περιέχει τους πέντε ταξινομητές του \en{sklearn}
 (\texttt{\en{StructuralClassifier}}, \texttt{\en{TfidfClassifier}}, \texttt{\en{PosClassifier}},
 \texttt{\en{EmbeddingClassifier}}, \texttt{\en{SvmClassifier}}), οι οποίοι μοιράζονται την ίδια διεπαφή
 \texttt{\en{.fit()}}/\texttt{\en{.predict\_proba()}}/\texttt{\en{.save()}}/\texttt{\en{.load()}} — σχεδιαστική επιλογή που επιτρέπει
-στο \texttt{\en{src/models/cascade.py}} να τους χειρίζεται εναλλάξιμα. Η κλάση \texttt{\en{CascadeLP}}
+στο \texttt{\en{src\slash{}models\slash{}cascade.py}} να τους χειρίζεται εναλλάξιμα. Η κλάση \texttt{\en{CascadeLP}}
 κρατά τα Επίπεδα~1--3 ως τρία στιγμιότυπα αυτών των ταξινομητών· η
 \texttt{\en{.fit()}} τα εκπαιδεύει το καθένα ανεξάρτητα στο πλήρες σύνολο εκπαίδευσης (χωρίς
 αυτοβρόχους, που αφαιρούνται μέσω μάσκας), ενώ η \texttt{\en{.predict()}} επιστρέφει ζεύγος
-\texttt{\en{(predictions, tier\_used)}} — το δεύτερο διάνυσμα καταγράφει ποιο επίπεδο απάντησε σε
+\texttt{\en{(predictions,\allowbreak{} tier\_used)}} — το δεύτερο διάνυσμα καταγράφει ποιο επίπεδο απάντησε σε
 κάθε ζεύγος και είναι αυτό που καθιστά δυνατή την ανάλυση κόστους του
 Κεφαλαίου~\ref{ch:experiments}. Η \texttt{\en{.tier\_stats()}} συνοψίζει τα ποσοστά κλήσης ανά
 επίπεδο, και η \texttt{\en{.save()}}/\texttt{\en{.load()}} σειριοποιούν ολόκληρο το αντικείμενο μέσω
-\texttt{\en{joblib}} στο \texttt{\en{outputs/checkpoints/}}.
+\texttt{\en{joblib}} στο \texttt{\en{outputs\slash{}checkpoints\slash{}}}.
 
-Το \texttt{\en{scripts/train.py}} συνδέει τα παραπάνω σε ένα πείραμα: φορτώνει τα
-προϋπολογισμένα χαρακτηριστικά από το \texttt{\en{data/interim/}}, διαχωρίζει σε υποσύνολα
+Το \texttt{\en{scripts\slash{}train.py}} συνδέει τα παραπάνω σε ένα πείραμα: φορτώνει τα
+προϋπολογισμένα χαρακτηριστικά από το \texttt{\en{data\slash{}interim\slash{}}}, διαχωρίζει σε υποσύνολα
 εκπαίδευσης/επικύρωσης με στρωματοποίηση ως προς την ετικέτα
-(\texttt{\en{train\_test\_split(..., stratify=y)}}), και εφαρμόζει το ίδιο κλείσιμο \texttt{\en{sub()}} σε
+(\texttt{\en{train\_test\_split(...,\allowbreak{} stratify=y)}}), και εφαρμόζει το ίδιο κλείσιμο \texttt{\en{sub()}} σε
 κάθε πίνακα χαρακτηριστικών ώστε όλα τα μοντέλα —συμπεριλαμβανομένου του
 \en{CascadeLP}— να εκπαιδεύονται αποκλειστικά στους δείκτες \texttt{\en{tr}} και να αξιολογούνται
-στους \texttt{\en{val}}. Μετά την πρόβλεψη, το \texttt{\en{scripts/train.py}} διασταυρώνει το
-\texttt{\en{tier\_used}} με την ετικέτα δυσκολίας από το \texttt{\en{src/utils/difficulty.py}}
+στους \texttt{\en{val}}. Μετά την πρόβλεψη, το \texttt{\en{scripts\slash{}train.py}} διασταυρώνει το
+\texttt{\en{tier\_used}} με την ετικέτα δυσκολίας από το \texttt{\en{src\slash{}utils\slash{}difficulty.py}}
 (\texttt{\en{label\_difficulty()}}) μέσω της \texttt{\en{tier\_difficulty\_breakdown()}} του
-\texttt{\en{src/utils/metrics.py}}, και εξάγει ανά-ζεύγος στήλες
-\texttt{\en{(tier\_used, difficulty, y\_pred)}} στο \texttt{\en{outputs/predictions/cascade\_val\_tiers.csv}}. Το
-\texttt{\en{scripts/evaluate.py}} επαναλαμβάνει την ίδια διασταύρωση στο σύνολο ελέγχου,
+\texttt{\en{src\slash{}utils\slash{}metrics.py}}, και εξάγει ανά-ζεύγος στήλες
+\texttt{\en{(tier\_used,\allowbreak{} difficulty,\allowbreak{} y\_pred)}} στο \texttt{\en{outputs\slash{}predictions\slash{}cascade\_val\_tiers.csv}}. Το
+\texttt{\en{scripts\slash{}evaluate.py}} επαναλαμβάνει την ίδια διασταύρωση στο σύνολο ελέγχου,
 παράγοντας το αντίστοιχο \texttt{\en{cascade\_test\_tiers.csv}}. Αυτά τα δύο αρχεία \en{CSV} είναι η
 πηγή αλήθειας για κάθε αριθμητικό ισχυρισμό ανά επίπεδο/δυσκολία στα Κεφάλαια~4
 και~5 — καμία τιμή δεν αναφέρεται χωρίς να ανιχνεύεται σε συγκεκριμένη γραμμή ενός
@@ -406,18 +406,18 @@ Attachment} (Εξίσωση \ref{eq:pa}).
 ισοδύναμα ομοιόμορφοι τυχαίοι περίπατοι· τους παράγουμε απευθείας (χωρίς τον
 προ-υπολογισμό πινάκων μεταβατικών πιθανοτήτων που απαιτεί η γενική, μεροληπτική
 εκδοχή του \en{Node2Vec}) και τους τροφοδοτούμε σε ένα μοντέλο \en{Word2Vec}
-τύπου \en{skip-gram}, με μήκος περιπάτου 30 βημάτων και μέγεθος παραθύρου 10.
+τύπου \en{skip-gram}, με μήκος περιπάτου \NTwoVWalkLength{} βημάτων και μέγεθος παραθύρου \NTwoVWindow{}.
 Ο
-αριθμός περιπάτων ανά κόμβο μειώθηκε από 200 σε 10 στην τρέχουσα διαμόρφωση,
+αριθμός περιπάτων ανά κόμβο μειώθηκε από 200 σε \NTwoVNumWalks{} στην τρέχουσα διαμόρφωση,
 καθώς το δομικό γράφημα (\GraphNodes{} κόμβοι) καθιστά τον πλήρη περίπατο αυτού
 του μεγέθους υπολογιστικά ασύμφορο για ένα χαρακτηριστικό που, όπως δείχνεται
 παρακάτω, προσφέρει μόνο οριακή αξία.
 Οι προκύπτουσες ενσωματώσεις κόμβων είναι
-$d$-διάστατα διανύσματα (με $d = 64$ στα πειράματά μας), και η ενσωμάτωση
+$d$-διάστατα διανύσματα (με $d = \NTwoVDimensions{}$ στα πειράματά μας), και η ενσωμάτωση
 ζεύγους σχηματίζεται ως το γινόμενο \en{Hadamard} (στοιχειακό) των δύο
 ενσωματώσεων τελικών κόμβων.
-Αυτά τα 64 χαρακτηριστικά προσαρτώνται στα
-τέσσερα ευρετικά χαρακτηριστικά, δίνοντας ένα 68-διάστατο διάνυσμα
+Αυτά τα \NTwoVDimensions{} χαρακτηριστικά προσαρτώνται στα
+τέσσερα ευρετικά χαρακτηριστικά, δίνοντας ένα \NTwoVDim{}-διάστατο διάνυσμα
 χαρακτηριστικών όταν το \en{Node2Vec} είναι ενεργοποιημένο.
 
 Ο Αλγόριθμος~\ref{alg:deepwalk} περιγράφει την παραγωγή των τυχαίων περιπάτων.
@@ -531,7 +531,7 @@ p_1)$ και η κλιμάκωση σταματά.
 η συνένωση των δύο διανυσμάτων τελικών κόμβων: $\mathbf{f}_{\text{POS}}(u,
 v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in \mathbb{R}^{72}$.
 
-Ο \en{PosClassifier} είναι \en{Random Forest} με 200 δέντρα και στάθμιση κλάσεων
+Ο \en{PosClassifier} είναι \en{Random Forest} με \PosNEstimators{} δέντρα και στάθμιση κλάσεων
 \en{«balanced»} (αντίστροφη προς τη συχνότητα κάθε κλάσης, ώστε να αντισταθμίζεται η
 ανισορροπία \TrainPosPct\%/\TrainNegPct\% θετικών/αρνητικών ζευγών), με τις λοιπές υπερπαραμέτρους στις
 προεπιλεγμένες τιμές του \en{scikit-learn}~\cite{pedregosa2011scikit}.
@@ -565,7 +565,7 @@ v) = [\mathbf{p}_u \,\|\, \mathbf{p}_v] \in \mathbb{R}^{72}$.
 Παλινδρόμησης στην ομοιότητα συνημίτονου μεταξύ των δύο ενσωματώσεων τελικών κόμβων.
 
 Το μοντέλο \en{Sentence-Transformer} που χρησιμοποιείται είναι το
-\texttt{\en{all-MiniLM-L6-v2}}, ένα ελαφρύ μοντέλο προσαρμοσμένο από αρχιτεκτονική
+\texttt{\en{\EmbeddingModelName{}}}, ένα ελαφρύ μοντέλο προσαρμοσμένο από αρχιτεκτονική
 \en{MiniLM} σε μεγάλη συλλογή εργασιών ομοιότητας προτάσεων χρησιμοποιώντας
 \en{contrastive learning}.
 Παράγει 384-διάστατες ενσωματώσεις προτάσεων και εκτελείται
@@ -818,10 +818,10 @@ $O(n^2)$--$O(n^3)$ ως προς τον αριθμό ζευγών εκπαίδε
     \State $(s', y') \gets (s, y)$
 \Else
     \State $(s', y') \gets$ στρωματοποιημένο τυχαίο δείγμα $k$ ζευγών από $(s, y)$
-        \Comment{κατά ετικέτα, \en{seed}$=42$}
+        \Comment{κατά ετικέτα, \en{seed}$=$\Seed{}}
 \EndIf
 \State $s' \gets \text{\en{StandardScaler}}(s')$ \Comment{τυποποίηση μηδενικού μέσου}
-\State $M \gets \text{\en{SVC}}(\text{kernel}=\text{\en{rbf}}, C=1, \gamma=\text{\en{scale}})$
+\State $M \gets \text{\en{SVC}}(\text{kernel}=\text{\en{rbf}}, C=\SvmC{}, \gamma=\text{\en{\SvmGamma{}}})$
 \State $M.\text{fit}(s', y')$
 \State \Return $M$
 \end{algorithmic}

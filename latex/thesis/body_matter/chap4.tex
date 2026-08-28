@@ -93,7 +93,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
         \draw[flow] (raw) -- (noloop);
         \draw[flow] (noloop) -- (split938);
         \draw[flow] (split938.south) -- ++(0,-0.5) -| node[pos=0.25, above]{στρωματοπ.} (tr.north);
-        \draw[flow] (split938.south) -- ++(0,-0.5) -| node[pos=0.25, above]{\en{seed=42}} (val.north);
+        \draw[flow] (split938.south) -- ++(0,-0.5) -| node[pos=0.25, above]{\en{seed=}\Seed{}} (val.north);
         \draw[flow, dashed] (raw.east) -- (graph.west);
         \draw[flow] (test) -- (kaggle);
     \end{tikzpicture}
@@ -121,7 +121,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 (\en{Cold-start F1}, χρησιμοποιώντας τη \texttt{\en{cold\_start\_mask}} --- μηδενικοί
 κοινοί γείτονες μεταξύ $u$ και $v$) και τον χρόνο συμπερασμού ανά ζεύγος.
 Οι
-υπολογισμοί αυτών των μετρικών (\texttt{\en{src/utils/metrics.py}}) είναι κοινοί σε
+υπολογισμοί αυτών των μετρικών (\texttt{\en{src\slash{}utils\slash{}metrics.py}}) είναι κοινοί σε
 όλα τα μοντέλα αυτού του κεφαλαίου, ώστε οι συγκρίσεις να είναι άμεσα συγκρίσιμες.
 Ο \textbf{Αλγόριθμος~\ref{alg:eval-protocol}} περιγράφει το κοινό πρωτόκολλο
 αξιολόγησης που εφαρμόζεται σε κάθε μοντέλο αναφοράς και στο \en{CascadeLP}.
@@ -135,7 +135,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 \Ensure Μετρικές αξιολόγησης στο σύνολο επικύρωσης
 \State $D \gets D \setminus \{(u,v) \in D : u = v\}$ \Comment{εξαίρεση αυτοβρόχων}
 \State $(D_{\text{tr}}, D_{\text{val}}) \gets \text{StratifiedSplit}(D, y,
-    \text{test\_size}=0{,}2, \text{seed}=42)$
+    \text{test\_size}=\ValSizeFrac{}, \text{seed}=\Seed{})$
 \State $X_{\text{tr}} \gets \varphi(D_{\text{tr}})$;\quad
     $X_{\text{val}} \gets \varphi(D_{\text{val}})$
     \Comment{$\varphi$ προ-υπολογισμένο στο πλήρες $D$ όταν αφορά το δομικό γράφημα}
@@ -169,7 +169,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 ενσωματώσεων \en{sentence-transformer}).
 Προσθέτουμε τον \texttt{\en{SvmClassifier}}
 (\en{SVC} πυρήνα ακτινικής βάσης στην ίδια ομοιότητα \en{TF-IDF}, με
-$C=1$, $\gamma=$\en{«scale»}, υποδείγμα \SvmSampleSize{} ζευγών) ως ιστορικό σημείο αναφοράς
+$C=\SvmC{}$, $\gamma=$\en{«\SvmGamma{}»}, υποδείγμα \SvmSampleSize{} ζευγών) ως ιστορικό σημείο αναφοράς
 κλασικής μηχανικής μάθησης, ακολουθώντας το προηγούμενο των \textcite{alhasan2006link} (\S\ref{sec:svm-baseline}).
 Η σύγκριση \en{CascadeLP} έναντι
 \en{SVM} αναλύεται στην \S\ref{sec:svm-results}.
@@ -178,7 +178,7 @@ $C=1$, $\gamma=$\en{«scale»}, υποδείγμα \SvmSampleSize{} ζευγών
 \label{subsec:implementation-details}
 
 Ολόκληρη η αλυσίδα επεξεργασίας υλοποιείται σε \en{Python 3.10} μέσα σε
-απομονωμένο περιβάλλον \en{conda} (\texttt{\en{link-prediction}}), με \en{PyTorch}~\cite{paszke2019pytorch} σε
+απομονωμένο περιβάλλον \en{conda} (\texttt{\en{link-\allowbreak{}prediction}}), με \en{PyTorch}~\cite{paszke2019pytorch} σε
 διαμόρφωση μόνο \en{CPU}.
 Οι ταξινομητές Λογιστικής Παλινδρόμησης, Τυχαίου Δάσους
 και \en{SVC} χρησιμοποιούν το \en{scikit-learn}· το γράφημα και οι δομικοί
@@ -186,12 +186,12 @@ $C=1$, $\gamma=$\en{«scale»}, υποδείγμα \SvmSampleSize{} ζευγών
 χρησιμοποιεί το \en{NLTK} (\texttt{\en{punkt}} και
 \texttt{\en{averaged\_perceptron\_tagger}}, \S\ref{sec:cascade-routing}); οι
 ενσωματώσεις κειμένου παράγονται με το μοντέλο \en{sentence-transformer}
-\texttt{\en{all-MiniLM-L6-v2}}· και οι ενσωματώσεις \en{Node2Vec} εκπαιδεύονται με
+\texttt{\en{\EmbeddingModelName{}}}· και οι ενσωματώσεις \en{Node2Vec} εκπαιδεύονται με
 μια προσαρμοσμένη, ασφαλή ως προς τη μνήμη υλοποίηση τυχαίου περιπάτου σε
 \en{gensim Word2Vec} (\S\ref{sec:cascade-routing}), αντί της βιβλιοθήκης \en{eliorc
 node2vec} που αποδείχθηκε ανέφικτη σε αυτή την κλίμακα γραφήματος.
 Ο σπόρος τυχαιότητας
-$42$ διατηρείται σταθερός σε όλες τις διαιρέσεις δεδομένων και σε όλα τα μοντέλα,
+\Seed{} διατηρείται σταθερός σε όλες τις διαιρέσεις δεδομένων και σε όλα τα μοντέλα,
 ώστε τα πειράματα να είναι αναπαραγώγιμα.
 Ο πλήρης πηγαίος κώδικας είναι δημόσια
 διαθέσιμος (Κεφάλαιο~\ref{ch:introduction}).
@@ -387,7 +387,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 ο διαγωνισμός διατηρεί ενεργό πίνακα κατάταξης στο \en{Kaggle} που βαθμολογεί
 υποβληθείσες προβλέψεις.
 Υποβάλλοντας τις προβλέψεις του \en{CascadeLP} στο σύνολο
-ελέγχου (\texttt{\en{outputs/predictions/cascade\_submission.csv}}) λάβαμε δημόσια
+ελέγχου (\texttt{\en{outputs\slash{}predictions\slash{}cascade\_submission.csv}}) λάβαμε δημόσια
 βαθμολογία \en{Macro F1} = \KaggleBaselinePublic{}, ανεξάρτητη επιβεβαίωση που συμφωνεί στενά με τη
 βαθμολογία του σύνολου επικύρωσης (\CascadeValFone{}) και υποστηρίζει ότι η σχεδόν τέλεια
 απόδοση αντικατοπτρίζει γνήσια ιδιότητα διαχωρισιμότητας του συνόλου δεδομένων και δεν

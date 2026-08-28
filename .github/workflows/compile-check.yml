@@ -44,6 +44,14 @@ jobs:
           xelatex -interaction=nonstopmode ${{ matrix.main }}.tex
           xelatex -interaction=nonstopmode ${{ matrix.main }}.tex
 
+      - name: Check for margin overflows
+        run: |
+          cd ${{ matrix.dir }}
+          if grep -E "Overfull \\\\hbox \([0-9]{2,}" ${{ matrix.main }}.log; then
+            echo "::error::Overfull hbox of 10pt+ found — content is spilling past the page margin. See lines above for the paragraph/line range in the .log."
+            exit 1
+          fi
+
       - name: Upload PDF preview
         uses: actions/upload-artifact@v4
         with:

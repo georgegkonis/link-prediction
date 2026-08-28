@@ -356,11 +356,13 @@ def fig_threshold_ablation(figs: dict) -> None:
         return
 
     tau1s = sorted({row['tau1'] for row in grid})
-    tau2s = sorted({row['tau2'] for row in grid})
+    # Panel A stays readable with the original (moderate) τ₂ values only — the
+    # extended near-1.0 values are visualized in panel C instead.
+    tau2s_legend = sorted({row['tau2'] for row in grid if row['tau2'] <= 0.9})
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(15.5, 4))
 
-    for i, t2 in enumerate(tau2s):
+    for i, t2 in enumerate(tau2s_legend):
         rows = sorted((row for row in grid if row['tau2'] == t2), key=lambda r: r['tau1'])
         axes[0].plot([r['tau1'] for r in rows], [r['macro_f1'] for r in rows], marker='o',
                      color=PALETTE['colors'][i % len(PALETTE['colors'])], label=f'$\\tau_2$={t2}')
@@ -374,6 +376,20 @@ def fig_threshold_ablation(figs: dict) -> None:
     axes[1].set_xlabel('$\\tau_2$')
     axes[1].set_ylabel('Ποσοστό κλήσεων Επιπέδου 3 (%)')
     axes[1].set_title('Ρυθμός Κλήσης Επιπέδου 3 vs. $\\tau_2$ ($\\tau_1$=0.8)')
+
+    # Panel C — forced-escalation scenario: as τ₂→1 routes an ever-larger,
+    # ever-harder-selected population to Tier 3, how does Tier 3's own Macro F1
+    # (and the overall cascade Macro F1) respond? This is the "what if more
+    # pairs reached Tier 3" question directly, read off the same τ₁=0.8 rows.
+    t3_rate = [r['tier3_pct'] for r in t1_08]
+    t3_f1   = [r['tier3_f1'] for r in t1_08]
+    overall_f1 = [r['macro_f1'] for r in t1_08]
+    axes[2].plot(t3_rate, t3_f1, marker='o', color=PALETTE['pos'], label='Tier-3 F1 (μόνο υποσύνολο)')
+    axes[2].plot(t3_rate, overall_f1, marker='s', color=PALETTE['colors'][2], label='Συνολικό Macro F1')
+    axes[2].set_xlabel('Ποσοστό κλήσεων Επιπέδου 3 (%)')
+    axes[2].set_ylabel('Macro F1')
+    axes[2].set_title('Επίδοση vs. Όγκος Επιπέδου 3 ($\\tau_1$=0.8)')
+    axes[2].legend(fontsize=8)
 
     fig.tight_layout()
     _save(fig, 'threshold_ablation.png')

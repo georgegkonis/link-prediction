@@ -27,6 +27,8 @@ Reads:
   outputs/predictions/node2vec_ablation.json           — Node2Vec with/without ablation + coverage
   outputs/predictions/hard_residual_analysis.json      — Tier-3 hard-residual / nodes.tsv join
   outputs/predictions/throughput_benchmark.json        — CPU inference throughput
+  outputs/predictions/tier2_confidence_saturation.json — Tier-2 RandomForest confidence ceiling
+  outputs/predictions/embedding_val_metrics.json       — standalone EmbeddingClassifier baseline
 
 Writes:
   outputs/stats/summary_stats.json
@@ -40,6 +42,7 @@ import pathlib
 
 import numpy as np
 import pandas as pd
+import yaml
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
 
@@ -48,19 +51,30 @@ from src.utils.log_utils import setup_logging
 
 log = setup_logging('compute_summary_stats')
 
-# ---------------------------------------------------------------------------
-# Intentional literals — hyperparameter defaults, not measured statistics
-# (see CLAUDE.md "No magic numbers in LaTeX" carve-out)
-# ---------------------------------------------------------------------------
-_SVM_SAMPLE_SIZE  = 20_000
-_N2V_DIM          = 68
-_TAU_ONE_DEFAULT  = 0.8
-_TAU_TWO_DEFAULT  = 0.7
-
 INTERIM     = pathlib.Path('data/interim')
 RAW         = pathlib.Path('data/raw')
 PREDICTIONS = pathlib.Path('outputs/predictions')
 STATS       = pathlib.Path('outputs/stats')
+CONFIGS     = pathlib.Path('configs')
+
+_MODEL_NAMES = ('structural', 'tfidf', 'pos', 'embedding', 'svm', 'cascade')
+
+
+def _load_configs() -> dict:
+    """
+    Read configs/*.yaml directly (plain YAML, no Hydra runtime needed here — we
+    only need the resolved literal values). This is the single source of truth
+    for every hyperparameter/reproducibility macro below; nothing here should
+    ever be a hardcoded Python literal that could drift from configs/.
+    """
+    cfg = yaml.safe_load((CONFIGS / 'config.yaml').read_text())
+    cfg['training'] = yaml.safe_load((CONFIGS / 'training/default.yaml').read_text())
+    cfg['features'] = yaml.safe_load((CONFIGS / 'features/default.yaml').read_text())
+    cfg['model'] = {
+        name: yaml.safe_load((CONFIGS / f'model/{name}.yaml').read_text())
+        for name in _MODEL_NAMES
+    }
+    return cfg
 
 _MISSING = '---'
 
@@ -119,6 +133,8 @@ def _load() -> dict:
     log.info('Loading CSVs...')
     d: dict = {}
 
+    d['cfg'] = _load_configs()
+
     d['train'] = pd.read_csv(RAW / 'train.csv')
     d['test']  = pd.read_csv(RAW / 'test.csv')
 
@@ -153,6 +169,11 @@ def _load() -> dict:
     d['throughput'] = _load_json_optional(
         PREDICTIONS / 'throughput_benchmark.json',
         'run python -m scripts.analysis.benchmark_throughput first')
+    d['tier2_saturation'] = _load_json_optional(
+        PREDICTIONS / 'tier2_confidence_saturation.json',
+        'run python -m scripts.analysis.ablate_cascade_thresholds first')
+    d['embedding'] = _load_json_optional(
+        PREDICTIONS / 'embedding_val_metrics.json', 'run make train MODEL=embedding first')
     d['n2v_test_tiers'] = _load_csv_optional(
         PREDICTIONS / 'cascade_n2v_test_tiers.csv',
         'run python -m scripts.evaluate model=cascade training.no_n2v=false +tag=n2v first')
@@ -171,6 +192,10 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     m: dict[str, str] = {}
     shared: dict = {}
 
+    cfg = d['cfg']
+    seed     = cfg['seed']
+    val_size = cfg['training']['val_size']
+
     # ---- Dataset sizes ----
     n_train_raw   = len(d['train'])
     n_test        = len(d['test'])
@@ -180,7 +205,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
 
     y = d['train']['label'].values
     not_self_idx = np.where(~self_loop_mask.values)[0]
-    tr, val = train_test_split(not_self_idx, test_size=0.2, stratify=y[not_self_idx], random_state=42)
+    tr, val = train_test_split(not_self_idx, test_size=val_size, stratify=y[not_self_idx], random_state=seed)
     n_tr, n_val = len(tr), len(val)
 
     # Graph stats — live, from the built positive-edge graph and a fast nodes.tsv line count
@@ -199,10 +224,48 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     m['TrainSplitSize']   = gint(n_tr)
     m['ValSplitSize']     = gint(n_val)
     m['TestPairs']        = gint(n_test)
-    m['SvmSampleSize']    = gint(_SVM_SAMPLE_SIZE)
     m['GraphNodes']       = gint(graph_nodes_structural)
     m['GraphMeanDegree']  = gfloat(graph_mean_degree, 2)
     m['GraphNodesTotal']  = gint(graph_nodes_total)
+
+    # ---- Reproducibility & hyperparameters (sourced from configs/, single source of truth) ----
+    m['Seed']       = str(seed)
+    m['ValSizeFrac'] = gfloat(val_size, 1)
+    m['ValSizePct'] = gpct(100 * val_size, 1)
+
+    struct_cfg, tfidf_cfg, pos_cfg = cfg['model']['structural'], cfg['model']['tfidf'], cfg['model']['pos']
+    emb_cfg, svm_cfg, cascade_cfg  = cfg['model']['embedding'], cfg['model']['svm'], cfg['model']['cascade']
+
+    m['StructuralC']       = gfloat(struct_cfg['C'], 1)
+    m['StructuralMaxIter'] = gint(struct_cfg['max_iter'])
+    m['TfidfClfC']         = gfloat(tfidf_cfg['C'], 1)
+    m['TfidfClfMaxIter']   = gint(tfidf_cfg['max_iter'])
+    m['PosNEstimators']    = gint(pos_cfg['n_estimators'])
+    m['PosClassWeight']    = str(pos_cfg['class_weight'])
+    m['EmbeddingC']        = gfloat(emb_cfg['C'], 1)
+    m['EmbeddingMaxIter']  = gint(emb_cfg['max_iter'])
+    m['SvmC']              = gfloat(svm_cfg['C'], 1)
+    m['SvmGamma']          = str(svm_cfg['gamma'])
+    m['SvmSampleSize']     = gint(svm_cfg['subsample_size'])
+    m['TauOneDefault']     = gfloat(cascade_cfg['tier1_threshold'], 1)
+    m['TauTwoDefault']     = gfloat(cascade_cfg['tier2_threshold'], 1)
+
+    tfidf_feat_cfg = cfg['features']['tfidf']
+    m['TfidfMaxFeatures'] = gint(tfidf_feat_cfg['max_features'])
+    m['TfidfSublinearTf'] = str(tfidf_feat_cfg['sublinear_tf'])
+    m['TfidfMinDf']       = gint(tfidf_feat_cfg['min_df'])
+    m['EmbeddingModelName'] = str(cfg['features']['embedding']['model_name'])
+
+    n2v_cfg = cfg['features']['node2vec']
+    m['NTwoVDimensions'] = gint(n2v_cfg['dimensions'])
+    m['NTwoVWalkLength'] = gint(n2v_cfg['walk_length'])
+    m['NTwoVNumWalks']   = gint(n2v_cfg['num_walks'])
+    m['NTwoVWindow']     = gint(n2v_cfg['window'])
+    m['NTwoVP']          = str(int(n2v_cfg['p']))
+    m['NTwoVQ']          = str(int(n2v_cfg['q']))
+    # Tier-1 feature vector width when Node2Vec is enabled: 4 structural heuristics
+    # concatenated with the Node2Vec Hadamard embedding — derived, not duplicated.
+    m['NTwoVDim']       = gint(n2v_cfg['dimensions'] + 4)
 
     # Class balance (full train.csv including self-loops)
     n_train_pos = int((d['train']['label'] == 1).sum())
@@ -301,11 +364,6 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     m['TestDiffHighTextsimPct'] = gpct(_tdiff_pct('trivial_high_textsim'))
     m['TestDiffHardN']          = gint(_tdiff_n('hard'))
     m['TestDiffHardPct']        = gpct(_tdiff_pct('hard'))
-
-    # ---- Cascade default thresholds (config literals, not measured stats) ----
-    m['TauOneDefault'] = gfloat(_TAU_ONE_DEFAULT, 1)
-    m['TauTwoDefault'] = gfloat(_TAU_TWO_DEFAULT, 1)
-    m['NTwoVDim']      = str(_N2V_DIM)
 
     # ---- Cascade validation results ----
     vt = d['val_tiers']
@@ -445,7 +503,11 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['ThroughputLatency'] = _MISSING
 
     abl = d['ablation']
-    m['TierThreeCallRateMax'] = gpct(abl['tier3_pct'].max(), 3)
+    # Scoped to the moderate/deployment-realistic τ₂ range (≤0.9) — the extended
+    # near-1.0 τ₂ values exist only to drive the forced-escalation scenario
+    # below (§5.1.2) and would make "even at the most permissive point" in the
+    # §5.4.2 efficiency narrative misleading if mixed in here.
+    m['TierThreeCallRateMax'] = gpct(abl[abl['tau2'] <= 0.9]['tier3_pct'].max(), 3)
 
     # ---- Error analysis ----
     total_errors = (vt['y_true'] != vt['y_pred']).sum()
@@ -550,34 +612,97 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['NTwoVTestTierOnePct'] = _MISSING
 
     # ---- Ablation grid ----
-    # τ₁∈{0.6,0.7} rows (low Tier-1 threshold → high call rate at Tier 1)
-    low_t1 = abl[abl['tau1'].isin([0.6, 0.7])]
-    # τ₁≥0.8, τ₂=0.5 (best F1 grid points)
-    best_rows = abl[(abl['tau1'] >= 0.8) & (abl['tau2'] == 0.5)]
-    default_row = abl[(abl['tau1'] == _TAU_ONE_DEFAULT) & (abl['tau2'] == _TAU_TWO_DEFAULT)].iloc[0]
-    # τ₁∈{0.9,0.95} (higher break point)
-    high_t1 = abl[abl['tau1'].isin([0.9, 0.95])]
+    # Scoped to the original moderate τ₂ range (≤0.9) — §5.1's opening grid
+    # description of "the grid"; the extended τ₂ values (0.95-0.9999) feed only
+    # the forced-escalation scenario macros below and get their own count
+    # (AblForceExtraPoints/AblForceGridPoints), so they must not silently widen
+    # min/max/best-row selections meant to summarize the moderate grid.
+    moderate_abl  = abl[abl['tau2'] <= 0.9]
 
-    abl_grid_pts  = len(abl)
+    # τ₁∈{0.6,0.7} rows (low Tier-1 threshold → high call rate at Tier 1)
+    low_t1 = moderate_abl[moderate_abl['tau1'].isin([0.6, 0.7])]
+    # τ₁≥0.8, τ₂=0.5 (best F1 grid points)
+    best_rows = moderate_abl[(moderate_abl['tau1'] >= 0.8) & (moderate_abl['tau2'] == 0.5)]
+    default_row = moderate_abl[(moderate_abl['tau1'] == cascade_cfg['tier1_threshold']) & (moderate_abl['tau2'] == cascade_cfg['tier2_threshold'])].iloc[0]
+    # τ₁∈{0.9,0.95} (higher break point)
+    high_t1 = moderate_abl[moderate_abl['tau1'].isin([0.9, 0.95])]
+
+    abl_grid_pts  = len(moderate_abl)
     m['AblGridPoints']         = str(abl_grid_pts)
+    m['AblForceExtraPoints']   = str(len(abl) - abl_grid_pts)
+    m['AblForceGridPoints']    = str(len(abl))
     m['AblTierOneLowFone']       = gfloat(low_t1['macro_f1'].min(), 4)
     m['AblTierOneHighFone']      = gfloat(low_t1['macro_f1'].max(), 4)
     m['AblTierOneLowPct']      = gpct(low_t1['tier1_pct'].iloc[0])
-    m['AblTierOneBreakPct']    = gpct(abl[abl['tau1'] == _TAU_ONE_DEFAULT]['tier1_pct'].iloc[0])
+    m['AblTierOneBreakPct']    = gpct(moderate_abl[moderate_abl['tau1'] == cascade_cfg['tier1_threshold']]['tier1_pct'].iloc[0])
     m['AblTierOneBreakPctHigh'] = gpct(high_t1['tier1_pct'].iloc[0])
     m['AblBestFone']             = gfloat(best_rows['macro_f1'].max(), 4)
     m['AblDefaultFone']          = gfloat(default_row['macro_f1'], 4)
     # τ₁≥0.8 overall Macro F1 range (low end; high end coincides with AblBestFone)
-    high_break_t1 = abl[abl['tau1'] >= 0.8]
+    high_break_t1 = moderate_abl[moderate_abl['tau1'] >= 0.8]
     m['AblHighTauOneLowFone']        = gfloat(high_break_t1['macro_f1'].min(), 4)
-    # max Tier-3 rate at τ₁=0.8 (across τ₂ sweep)
-    t1_08 = abl[abl['tau1'] == _TAU_ONE_DEFAULT]
+    # max Tier-3 rate at τ₁=0.8 (across the moderate τ₂ sweep)
+    t1_08 = moderate_abl[moderate_abl['tau1'] == cascade_cfg['tier1_threshold']]
     m['AblTauTwoMaxTierThreePct']  = gpct(t1_08['tier3_pct'].max(), 2)
     # Tier-3 call rates for the τ₂ table (τ₁=0.8 fixed); use letter names (no digits/underscores in TeX)
-    _tau2_names = {0.5: 'ZeroFive', 0.6: 'ZeroSix', 0.7: 'ZeroSeven', 0.8: 'ZeroEight', 0.9: 'ZeroNine'}
+    _tau2_names = {0.5: 'ZeroFive', 0.6: 'ZeroSix', 0.7: 'ZeroSeven', 0.8: 'ZeroEight', 0.9: 'ZeroNine',
+                   0.95: 'ZeroNineFive', 0.99: 'ZeroNineNine', 0.999: 'ZeroNineNineNine',
+                   0.9999: 'ZeroNineNineNineNine'}
     for _, row in t1_08.sort_values('tau2').iterrows():
-        letter = _tau2_names.get(round(row['tau2'], 1), str(row['tau2']).replace('.', 'p'))
-        m[f'AblTThreeRate{letter}'] = gpct(row['tier3_pct'], 3)
+        tau2 = round(row['tau2'], 4)
+        if tau2 not in _tau2_names:
+            raise ValueError(f'No TeX-safe macro name mapped for tau2={tau2} — add one to _tau2_names')
+        m[f'AblTThreeRate{_tau2_names[tau2]}'] = gpct(row['tier3_pct'], 3)
+
+    # τ₁=0.8 row across the FULL extended grid — feeds the forced-escalation
+    # scenario macros below (needs the near-1.0 τ₂ values that moderate_abl excludes).
+    t1_08_full = abl[abl['tau1'] == cascade_cfg['tier1_threshold']]
+
+    # ---- Forced-escalation scenario (thesis §5.1.1): push τ₂ towards 1.0 at the
+    # deployed τ₁ to see how far the Tier-3 call rate can be driven, and what that
+    # costs/buys in accuracy. Uses per-tier F1 columns added alongside the τ₂ grid
+    # extension (0.9999 max) in ablate_cascade_thresholds.py.
+    moderate_row = t1_08_full[np.isclose(t1_08_full['tau2'], 0.99)].iloc[0]
+    plateau_row  = t1_08_full[np.isclose(t1_08_full['tau2'], 0.999)].iloc[0]
+
+    m['AblForceModerateTierThreePct']  = gpct(moderate_row['tier3_pct'], 2)
+    m['AblForceModerateFone']          = gfloat(moderate_row['macro_f1'], 4)
+    m['AblForceModerateTierThreeFone'] = gfloat(moderate_row['tier3_f1'], 4)
+
+    m['AblForcePlateauTierThreePct']  = gpct(plateau_row['tier3_pct'], 2)
+    m['AblForcePlateauFone']          = gfloat(plateau_row['macro_f1'], 4)
+    m['AblForcePlateauTierThreeFone'] = gfloat(plateau_row['tier3_f1'], 4)
+    m['AblForcePlateauTierTwoPct']    = gpct(plateau_row['tier2_pct'], 2)
+
+    m['AblForceFoneDrop'] = gfloat(default_row['macro_f1'] - plateau_row['macro_f1'], 4)
+    # Tier-3's own accuracy at its smallest (default) vs. largest (forced) population
+    m['AblForceTierThreeFoneGain'] = gfloat(plateau_row['tier3_f1'] - t3_f1, 4)
+
+    # ---- Tier-2 confidence ceiling (explains the plateau above: a RandomForest
+    # vote fraction is quantized to n_estimators steps, so a proba==1.0 pair
+    # cannot be escalated by raising τ₂ no matter how close to 1.0 it gets) ----
+    sat = d['tier2_saturation']
+    if sat:
+        m['TierTwoSatEligibleN']       = gint(sat['n_tier2_eligible'])
+        m['TierTwoSatEligiblePct']     = gpct(100 * sat['n_tier2_eligible'] / n_val, 2)
+        m['TierTwoSatCeilingPct']      = gpct(sat['pct_conf_eq_1.0'], 2)
+        m['TierTwoSatNonSaturatedPct'] = gpct(100 - sat['pct_conf_eq_1.0'], 2)
+        m['TierTwoSatNEstimators']     = str(sat['n_estimators'])
+    else:
+        for k in ('TierTwoSatEligibleN', 'TierTwoSatEligiblePct', 'TierTwoSatCeilingPct',
+                  'TierTwoSatNonSaturatedPct', 'TierTwoSatNEstimators'):
+            m[k] = _MISSING
+
+    # ---- Standalone EmbeddingClassifier baseline (100%-to-Tier-3 reference point) ----
+    if d['embedding']:
+        emb = d['embedding']
+        m['EmbeddingFone']   = gfloat(emb['macro_f1'], 4)
+        m['EmbeddingAuc']    = gfloat(emb['auc_roc'], 4)
+        m['EmbeddingCsFone'] = gfloat(emb['cold_start_f1'], 4)
+    else:
+        m['EmbeddingFone']   = _MISSING
+        m['EmbeddingAuc']    = _MISSING
+        m['EmbeddingCsFone'] = _MISSING
 
     # ---- Kaggle scores ----
     kg = d['kaggle']
@@ -632,7 +757,7 @@ def _compute_figures(d: dict, shared: dict) -> dict:
     cn = d['struct_train']['cn'].values[mask]
     tfidf_s = d['tfidf_train']['tfidf_score'].values[mask]
 
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(d['cfg']['seed'])
     idx = rng.choice(len(labels), min(100_000, len(labels)), replace=False)
     labels, cn, tfidf_s = labels[idx], cn[idx], tfidf_s[idx]
     pos_mask, neg_mask = labels == 1, labels == 0

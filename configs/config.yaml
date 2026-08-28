@@ -1,6 +1,7 @@
 defaults:
   - model: cascade
   - training: default
+  - features: default
   - _self_
 
 paths:
@@ -14,6 +15,12 @@ kaggle:
   competition: dsaa-2023-competition
 
 seed: 42
+
+dev:
+  nrows: null
+  skip_n2v: false
+  skip_st: false
+  skip_pos: false
 
 hydra:
   run:

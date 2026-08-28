@@ -1,0 +1,16 @@
+node2vec:
+  dimensions: 64
+  walk_length: 30
+  num_walks: 10
+  workers: 4
+  p: 1.0
+  q: 1.0
+  window: 10
+
+tfidf:
+  max_features: 50000
+  sublinear_tf: true
+  min_df: 2
+
+embedding:
+  model_name: all-MiniLM-L6-v2

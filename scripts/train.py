@@ -109,7 +109,8 @@ def main(cfg: DictConfig):
     log.info(f'Train: {len(tr):,}  |  Val: {len(val):,}')
 
     if model_name == 'structural':
-        model = StructuralClassifier(C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000))
+        model = StructuralClassifier(
+            C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000), random_state=cfg.seed)
         tr_X, val_X = sub(data['structural'])
         tr_n2v = val_n2v = None
         if 'n2v' in data:
@@ -120,7 +121,8 @@ def main(cfg: DictConfig):
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
     elif model_name == 'tfidf':
-        model = TfidfClassifier(C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000))
+        model = TfidfClassifier(
+            C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000), random_state=cfg.seed)
         tr_X, val_X = sub(data['tfidf_scores'])
         model.fit(tr_X, y[tr])
         with timer() as t:
@@ -128,7 +130,10 @@ def main(cfg: DictConfig):
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
     elif model_name == 'pos':
-        model = PosClassifier(n_estimators=cfg.model.get('n_estimators', 200))
+        model = PosClassifier(
+            n_estimators=cfg.model.get('n_estimators', 200),
+            class_weight=cfg.model.get('class_weight', 'balanced'),
+            random_state=cfg.seed)
         tr_X, val_X = sub(data['pos_features'])
         model.fit(tr_X, y[tr])
         with timer() as t:
@@ -136,7 +141,8 @@ def main(cfg: DictConfig):
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
     elif model_name == 'embedding':
-        model = EmbeddingClassifier(C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000))
+        model = EmbeddingClassifier(
+            C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000), random_state=cfg.seed)
         tr_X, val_X = sub(data['st_scores'])
         model.fit(tr_X, y[tr])
         with timer() as t:

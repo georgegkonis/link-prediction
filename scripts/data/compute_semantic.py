@@ -11,10 +11,11 @@ Outputs:
     data/interim/pos_test.npy           — POS feature matrix, test pairs
 
 Usage:
-    python -m scripts.compute_semantic [--nrows N] [--model MODEL] [--skip-st] [--skip-pos]
+    python -m scripts.data.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]
 """
 
-import argparse
+import hydra
+from omegaconf import DictConfig
 
 import numpy as np
 import pandas as pd
@@ -33,11 +34,12 @@ from src.utils.log_utils import setup_logging
 INTERIM = 'data/interim'
 
 
-def main(nrows: int | None, model_name: str, skip_st: bool, skip_pos: bool):
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+def main(cfg: DictConfig):
     log = setup_logging('compute_semantic')
     log.info('Loading edges...')
-    train = load_edges('data/raw/train.csv', nrows=nrows)
-    test  = load_edges('data/raw/test.csv',  nrows=nrows)
+    train = load_edges('data/raw/train.csv', nrows=cfg.dev.nrows)
+    test  = load_edges('data/raw/test.csv',  nrows=cfg.dev.nrows)
 
     all_pairs = pd.concat([train, test])
     unique_ids = set(pd.unique(all_pairs[['id1', 'id2']].values.ravel()).tolist())
@@ -50,7 +52,7 @@ def main(nrows: int | None, model_name: str, skip_st: bool, skip_pos: bool):
     # ── TF-IDF ───────────────────────────────────────────────────────────────
     log.info('Building TF-IDF vectorizer...')
     texts = [clean_wiki_text(nodes.loc[i, 'text']) for i in unique_ids if i in nodes.index]
-    vectorizer = build_tfidf(texts)
+    vectorizer = build_tfidf(texts, **cfg.features.tfidf)
 
     log.info('Computing TF-IDF scores for train pairs...')
     tfidf_train = compute_tfidf_scores(vectorizer, nodes, train)
@@ -62,7 +64,8 @@ def main(nrows: int | None, model_name: str, skip_st: bool, skip_pos: bool):
     log.info('  Saved → %s/tfidf_{train,test}.csv', INTERIM)
 
     # ── Sentence Transformers ─────────────────────────────────────────────────
-    if not skip_st:
+    if not cfg.dev.skip_st:
+        model_name = cfg.features.embedding.model_name
         log.info('Encoding nodes with %s...', model_name)
         embeddings = encode_nodes(nodes, unique_ids, model_name=model_name)
 
@@ -76,7 +79,7 @@ def main(nrows: int | None, model_name: str, skip_st: bool, skip_pos: bool):
         log.info('  Saved → %s/sentence_emb_{train,test}.csv', INTERIM)
 
     # ── POS features ──────────────────────────────────────────────────────────
-    if not skip_pos:
+    if not cfg.dev.skip_pos:
         log.info('Computing POS features for train pairs...')
         pos_train = compute_pos_features(nodes, train)
         np.save(f'{INTERIM}/pos_train.npy', pos_train)
@@ -90,10 +93,4 @@ def main(nrows: int | None, model_name: str, skip_st: bool, skip_pos: bool):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--nrows',    type=int, default=None)
-    parser.add_argument('--model',    default='all-MiniLM-L6-v2', help='Sentence-Transformer model name')
-    parser.add_argument('--skip-st',  action='store_true', help='Skip sentence transformer encoding')
-    parser.add_argument('--skip-pos', action='store_true', help='Skip POS feature computation')
-    args = parser.parse_args()
-    main(args.nrows, args.model, args.skip_st, args.skip_pos)
+    main()

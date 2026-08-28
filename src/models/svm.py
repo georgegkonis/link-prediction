@@ -17,9 +17,9 @@ class StructuralClassifier:
 
     FEATURES = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
 
-    def __init__(self, C: float = 1.0, max_iter: int = 1000):
+    def __init__(self, C: float = 1.0, max_iter: int = 1000, random_state: int = 42):
         self.scaler = StandardScaler()
-        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=42, n_jobs=-1)
+        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=random_state, n_jobs=-1)
 
     def _X(self, structural: pd.DataFrame, n2v: np.ndarray | None = None) -> np.ndarray:
         X = structural[self.FEATURES].fillna(0).values
@@ -46,9 +46,9 @@ class StructuralClassifier:
 class TfidfClassifier:
     """Logistic Regression on TF-IDF cosine similarity score."""
 
-    def __init__(self, C: float = 1.0, max_iter: int = 1000):
+    def __init__(self, C: float = 1.0, max_iter: int = 1000, random_state: int = 42):
         self.scaler = StandardScaler()
-        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=42)
+        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=random_state)
 
     def fit(self, scores: np.ndarray, y: np.ndarray):
         self.clf.fit(self.scaler.fit_transform(scores.reshape(-1, 1)), y)
@@ -69,10 +69,11 @@ class TfidfClassifier:
 class PosClassifier:
     """Random Forest on concatenated POS frequency features (72-dim)."""
 
-    def __init__(self, n_estimators: int = 200, n_jobs: int = -1):
+    def __init__(self, n_estimators: int = 200, n_jobs: int = -1,
+                 class_weight: str = 'balanced', random_state: int = 42):
         self.clf = RandomForestClassifier(
             n_estimators=n_estimators, n_jobs=n_jobs,
-            random_state=42, class_weight='balanced',
+            random_state=random_state, class_weight=class_weight,
         )
 
     def fit(self, pos_features: np.ndarray, y: np.ndarray):
@@ -132,9 +133,9 @@ class SvmClassifier:
 class EmbeddingClassifier:
     """Logistic Regression on sentence-transformer cosine similarity score."""
 
-    def __init__(self, C: float = 1.0, max_iter: int = 1000):
+    def __init__(self, C: float = 1.0, max_iter: int = 1000, random_state: int = 42):
         self.scaler = StandardScaler()
-        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=42)
+        self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=random_state)
 
     def fit(self, scores: np.ndarray, y: np.ndarray):
         self.clf.fit(self.scaler.fit_transform(scores.reshape(-1, 1)), y)

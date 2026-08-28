@@ -27,8 +27,13 @@ def clean_wiki_text(text: str) -> str:
 
 # ── TF-IDF ───────────────────────────────────────────────────────────────────
 
-def build_tfidf(texts: list[str], max_features: int = 50_000) -> TfidfVectorizer:
-    vectorizer = TfidfVectorizer(max_features=max_features, sublinear_tf=True, min_df=2)
+def build_tfidf(
+    texts: list[str],
+    max_features: int = 50_000,
+    sublinear_tf: bool = True,
+    min_df: int = 2,
+) -> TfidfVectorizer:
+    vectorizer = TfidfVectorizer(max_features=max_features, sublinear_tf=sublinear_tf, min_df=min_df)
     vectorizer.fit(texts)
     return vectorizer
 

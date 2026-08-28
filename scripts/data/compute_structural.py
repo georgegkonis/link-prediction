@@ -9,13 +9,13 @@ Outputs:
     data/interim/n2v_test.npy           — 64-dim Node2Vec Hadamard features for test pairs
 
 Usage:
-    python -m scripts.compute_structural [--nrows N] [--skip-n2v]
+    python -m scripts.data.compute_structural [dev.nrows=N] [dev.skip_n2v=true]
 """
 
-import argparse
+import hydra
+from omegaconf import DictConfig
 
 import numpy as np
-import pandas as pd
 
 from src.data.loader import build_graph, load_edges
 from src.features.structural import compute_heuristics, node2vec_hadamard_features, train_node2vec
@@ -24,11 +24,12 @@ from src.utils.log_utils import setup_logging
 INTERIM = 'data/interim'
 
 
-def main(nrows: int | None, skip_n2v: bool):
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
+def main(cfg: DictConfig):
     log = setup_logging('compute_structural')
     log.info('Loading edges...')
-    train = load_edges('data/raw/train.csv', nrows=nrows)
-    test  = load_edges('data/raw/test.csv',  nrows=nrows)
+    train = load_edges('data/raw/train.csv', nrows=cfg.dev.nrows)
+    test  = load_edges('data/raw/test.csv',  nrows=cfg.dev.nrows)
 
     log.info('Building graph from positive training edges...')
     G = build_graph(train)
@@ -44,9 +45,9 @@ def main(nrows: int | None, skip_n2v: bool):
     h_test.to_csv(f'{INTERIM}/structural_test.csv')
     log.info('  Saved → %s/structural_test.csv', INTERIM)
 
-    if not skip_n2v:
+    if not cfg.dev.skip_n2v:
         log.info('Training Node2Vec...')
-        wv = train_node2vec(G)
+        wv = train_node2vec(G, seed=cfg.seed, **cfg.features.node2vec)
         wv.save(f'{INTERIM}/node2vec.kv')
         log.info('  Saved → %s/node2vec.kv', INTERIM)
 
@@ -62,8 +63,4 @@ def main(nrows: int | None, skip_n2v: bool):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--nrows', type=int, default=None, help='Limit rows for fast dev iteration')
-    parser.add_argument('--skip-n2v', action='store_true', help='Skip Node2Vec (heuristics only)')
-    args = parser.parse_args()
-    main(args.nrows, args.skip_n2v)
+    main()

@@ -1,12 +1,12 @@
-"""Tests for the pure Greek-number formatters in scripts/paper/generate_macros.py.
+"""Tests for the pure Greek-number formatters in scripts/paper/compute_summary_stats.py.
 
-Only the formatters are exercised — `_load`, `_compute` and `_emit_tex` read
-`data/` and overwrite `latex/shared/generated_macros.tex`, so they are out of scope here.
+Only the formatters are exercised — `_load`, `_compute_macros` and `_compute_figures` read
+`data/`/`outputs/predictions/`, so they are out of scope here.
 """
 
 import pytest
 
-from scripts.paper.generate_macros import gfloat, gint, gpct
+from scripts.paper.compute_summary_stats import gfloat, gint, gpct
 
 
 @pytest.mark.parametrize('n, expected', [
@@ -74,7 +74,7 @@ def test_gpct_does_not_add_thousands_separator():
     reason='BUG: gfloat() drops the minus sign for values in (-1, 0]. '
            "f'{-0.5:.4f}' -> '-0.5000'; splitting on '.' gives i='-0', and "
            "int('-0') == 0, so the sign is lost. "
-           'See scripts/paper/generate_macros.py:70-73.',
+           'See scripts/paper/compute_summary_stats.py:93-98.',
 )
 def test_gfloat_preserves_sign_of_small_negatives():
     assert gfloat(-0.5, 4) == '-0{,}5000'

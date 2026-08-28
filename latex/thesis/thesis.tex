@@ -32,6 +32,11 @@
 \renewcommand{\baselinestretch}{1.2}
 \setlength{\parskip}{4pt plus 2pt minus 1pt}
 
+% Give the line breaker more room to avoid overfull boxes in paragraphs dense
+% with long inline code identifiers, before falling back to an overfull line.
+\tolerance=2000
+\emergencystretch=2em
+
 % Convenience commands
 \newcommand{\en}[1]{\foreignlanguage{english}{#1}}
 \newcommand{\src}[1]{\texttt{\en{#1}}}

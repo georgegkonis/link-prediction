@@ -97,7 +97,7 @@
 		\vspace{5pt}
         \end{minipage}
 
-        \begin{minipage}{15cm}
+        \begin{minipage}{\dimexpr\textwidth-2.5cm\relax}
         \begin{center}
             \textsc{
             \Large{\@institution} \\

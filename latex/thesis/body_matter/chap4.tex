@@ -78,6 +78,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
             minimum height=1.1cm, align=center, fill=black!5, font=\small},
         flow/.style={-{Stealth}, thick},
     }
+    \resizebox{\linewidth}{!}{%
     \begin{tikzpicture}[node distance=1.0cm and 1.6cm]
         \node[box] (raw) {\texttt{\en{train.csv}}\\\TrainPairs{} ζεύγη};
         \node[box, below=of raw] (noloop) {Εξαίρεση αυτοβρόχων\\($-$\SelfLoopsTrain{})};
@@ -96,7 +97,8 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
         \draw[flow] (split938.south) -- ++(0,-0.5) -| node[pos=0.25, above]{\en{seed=}\Seed{}} (val.north);
         \draw[flow, dashed] (raw.east) -- (graph.west);
         \draw[flow] (test) -- (kaggle);
-    \end{tikzpicture}
+    \end{tikzpicture}%
+    }
     \caption{Διαίρεση δεδομένων: το δομικό γράφημα και οι ενσωματώσεις \en{Node2Vec}
     υπολογίζονται στο πλήρες \texttt{\en{train.csv}} πριν από τον διαχωρισμό
     (διακεκομμένο βέλος), ενώ κάθε ταξινομητής εκπαιδεύεται αποκλειστικά στο 80\%

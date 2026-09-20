@@ -67,29 +67,57 @@ def main():
     y = pairs['label'].to_numpy()
     log.info('Train: %s  Val: %s', f'{len(tr):,}', f'{len(val):,}')
 
-    log.info('Building training-partition graph and target-edge-masked structural heuristics...')
-    graph = build_graph(pairs.iloc[tr])
-    structural = compute_heuristics(graph, pairs, exclude_target_edge=True)
+    struct_path, tfidf_path, pos_path, st_path = (
+        directory / 'structural.csv', directory / 'tfidf.csv',
+        directory / 'pos.npy', directory / 'sentence_emb.csv')
+
+    if struct_path.exists():
+        log.info('Loading cached structural features')
+        structural = pd.read_csv(struct_path, index_col='id')
+        graph = build_graph(pairs.iloc[tr])
+    else:
+        log.info('Building training-partition graph and target-edge-masked structural heuristics...')
+        graph = build_graph(pairs.iloc[tr])
+        structural = compute_heuristics(graph, pairs, exclude_target_edge=True)
+        structural.to_csv(struct_path)
     log.info('Graph: %s nodes, %s edges, mean degree %.1f', f'{graph.number_of_nodes():,}',
              f'{graph.number_of_edges():,}', 2 * graph.number_of_edges() / max(graph.number_of_nodes(), 1))
 
     unique_ids = set(pd.unique(pairs[['id1', 'id2']].values.ravel()).tolist())
-    nodes = load_nodes_for_ids(args.nodes, unique_ids)
-    log.info('Loaded %s node texts', f'{len(nodes):,}')
 
-    log.info('Fitting TF-IDF and scoring pairs...')
-    texts = [clean_wiki_text(nodes.loc[i, 'text']) for i in unique_ids if i in nodes.index]
-    vectorizer = build_tfidf(texts)
-    tfidf_scores = compute_tfidf_scores(vectorizer, nodes, pairs)
+    if tfidf_path.exists():
+        log.info('Loading cached TF-IDF scores')
+        tfidf_scores = pd.read_csv(tfidf_path, index_col='id')['tfidf_score'].to_numpy()
+    else:
+        nodes = load_nodes_for_ids(args.nodes, unique_ids)
+        log.info('Fitting TF-IDF and scoring pairs...')
+        texts = [clean_wiki_text(nodes.loc[i, 'text']) for i in unique_ids if i in nodes.index]
+        vectorizer = build_tfidf(texts)
+        tfidf_scores = compute_tfidf_scores(vectorizer, nodes, pairs)
+        pd.Series(tfidf_scores, index=pairs.index, name='tfidf_score').to_csv(tfidf_path)
 
-    log.info('Computing POS features...')
-    pos_features = compute_pos_features(nodes, pairs)
+    if pos_path.exists():
+        log.info('Loading cached POS features')
+        pos_features = np.load(pos_path)
+    else:
+        if 'nodes' not in dir():
+            nodes = load_nodes_for_ids(args.nodes, unique_ids)
+        log.info('Computing POS features...')
+        pos_features = compute_pos_features(nodes, pairs)
+        np.save(pos_path, pos_features)
 
-    log.info('Encoding nodes with Sentence-Transformer...')
-    embeddings = encode_nodes(nodes, list(unique_ids))
-    st_scores = compute_embedding_scores(embeddings, pairs)
+    if st_path.exists():
+        log.info('Loading cached Sentence-Transformer scores')
+        st_scores = pd.read_csv(st_path, index_col='id')['st_score'].to_numpy()
+    else:
+        if 'nodes' not in dir():
+            nodes = load_nodes_for_ids(args.nodes, unique_ids)
+        log.info('Encoding nodes with Sentence-Transformer...')
+        embeddings = encode_nodes(nodes, list(unique_ids))
+        st_scores = compute_embedding_scores(embeddings, pairs)
+        pd.Series(st_scores, index=pairs.index, name='st_score').to_csv(st_path)
 
-    log.info('Feature computation done in %.1f min', (time.time() - t0) / 60)
+    log.info('Feature computation done (or loaded from cache) at %.1f min', (time.time() - t0) / 60)
 
     def sub(v, idx):
         return v.iloc[idx] if isinstance(v, pd.DataFrame) else v[idx]
@@ -129,7 +157,7 @@ def main():
     results['svm'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
 
     log.info('Training CascadeLP (original, unmodified architecture)...')
-    m = CascadeLP(random_state=args.seed)
+    m = CascadeLP()
     m.fit(sub(structural, tr), sub(pos_features, tr), sub(st_scores, tr), y[tr], pairs.iloc[tr])
     y_pred, tier_used, scores = m.predict(sub(structural, val), sub(pos_features, val), sub(st_scores, val), pairs.iloc[val])
     results['cascade'] = evaluate(y[val], y_pred, scores)

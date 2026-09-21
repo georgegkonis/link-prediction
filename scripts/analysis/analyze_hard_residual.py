@@ -1,11 +1,10 @@
 """
-Programmatic analysis of CascadeLP's "hard residual" — the pairs that reach
-Tier 3 (EmbeddingClassifier) and are still labelled 'hard' (thesis Ch.5 §5.2).
-Replaces the previously hand-transcribed constants in generate_macros.py with
-a real join against nodes.tsv, checking whether missing/empty node text
-explains Tier 3's collapse on this subset.
+Analyze the hard residual cases in predictions.
 
-Outputs:
+Reads:
+    data/raw/dsaa/nodes.tsv
+    outputs/predictions/dsaa/cascade_val_tiers.csv
+Writes:
     outputs/predictions/dsaa/hard_residual_analysis.json
 
 Usage:

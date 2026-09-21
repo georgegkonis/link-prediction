@@ -1,10 +1,11 @@
 """
 Download the DSAA 2023 competition dataset from Kaggle and place files in data/raw/.
 
-Requires KAGGLE_USERNAME and KAGGLE_KEY in .env (or already exported in the shell).
+Writes:
+    data/raw/dsaa/
 
 Usage:
-    python -m scripts.download_data
+    python -m scripts.data.download_data
 """
 
 import os

@@ -1,15 +1,14 @@
 """
-Turn the crawled real-edge graph (build_from_wikidump.py) into a labeled pair
-set: every positive is a genuine hyperlink; negatives are sampled uniformly at
-random from the same 8,000-node pool, excluding any real edge. Unlike DSAA
-2023, this dataset has no negative-sampling artifact by construction — there
-is nothing to correct afterward.
+Turn the crawled real-edge graph into a labeled pair set.
 
-Reads:  <output>/positive_edges.csv, <output>/nodes.tsv
-Writes: <output>/train.csv   (id, id1, id2, label — same schema as data/raw/dsaa/train.csv)
+Reads:
+    <output>/positive_edges.csv
+    <output>/nodes.tsv
+Writes:
+    <output>/train.csv
 
 Usage:
-    python -m scripts.data.build_wikipedia_dataset --output data/raw/wiki_cs_8k
+    python -m scripts.data.build_wiki_cs_8k_dataset --output data/raw/wiki_cs_8k
 """
 import argparse
 import pathlib
@@ -19,7 +18,7 @@ import pandas as pd
 
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('build_wikipedia_dataset')
+log = setup_logging('build_wiki_cs_8k_dataset')
 
 
 def main():

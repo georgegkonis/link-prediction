@@ -1,16 +1,5 @@
 """
-Node2Vec ablation for CascadeLP Tier 1 (thesis Ch.5 SS5.1): compare the
-StructuralClassifier's held-out validation performance with vs. without the
-64-dim Node2Vec Hadamard-product features appended to the 4 structural
-heuristics (per chap3.tex SS3.2 "Node2Vec Embeddings"), holding the split,
-threshold, and heuristic features identical. Also measures how much of
-test.csv's id1/id2 population is actually covered by the trained Node2Vec
-vocabulary, since node2vec.kv only embeds nodes touched by a positive
-training edge (transductive) — this is the root cause of the Kaggle
-public-score collapse documented in chap5.tex SS5.1.
-
-Outputs:
-    outputs/predictions/dsaa/node2vec_ablation.json
+Ablate node2vec embeddings to evaluate their impact.
 
 Usage:
     python -m scripts.analysis.ablate_node2vec

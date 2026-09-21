@@ -1,37 +1,31 @@
 """
-Compute every statistic, metric, and aggregate needed by generate_macros.py and
-generate_figures.py, and persist them to outputs/stats/summary_stats.json.
-
-This is the ONLY script in the paper-asset pipeline that touches data/raw/dsaa/, data/interim/dsaa/, or the
-per-pair CSVs in outputs/predictions/dsaa/ — all of which are large, regenerable pipeline artifacts and
-stay .gitignore'd. Everything downstream (generate_macros.py, generate_figures.py) reads only the
-small committed summary_stats.json, so figures/macros can be regenerated from a clean checkout
-without re-running the data/feature/train pipeline.
+Compute statistics, metrics, and aggregates for figures and macros.
 
 Reads:
-  data/raw/dsaa/train.csv, test.csv, nodes.tsv              — dataset sizes, graph stats
-  data/interim/dsaa/difficulty_train.csv                    — difficulty breakdown (train)
-  data/interim/dsaa/difficulty_test.csv                     — difficulty breakdown (test)
-  data/interim/dsaa/difficulty_thresholds.json              — CN / TF-IDF thresholds
-  data/interim/dsaa/leakage_pairs.csv                       — leakage audit
-  data/interim/dsaa/structural_train.csv                    — CN / graph coverage
-  data/interim/dsaa/tfidf_train.csv                         — TF-IDF separability
-  outputs/predictions/dsaa/cascade_val_tiers.csv            — per-pair val predictions (+ scores)
-  outputs/predictions/dsaa/cascade_test_tiers.csv           — per-pair test predictions
-  outputs/predictions/dsaa/cascade_n2v_test_tiers.csv       — per-pair test predictions (n2v variant)
-  outputs/predictions/dsaa/cascade_threshold_ablation.csv   — threshold sweep
-  outputs/predictions/dsaa/cascade_val_metrics.json         — cascade scalar val metrics
-  outputs/predictions/dsaa/kaggle_scores.csv                — Kaggle leaderboard scores
-  outputs/predictions/dsaa/svm_val_metrics.json             — SVM scalar metrics
-  outputs/predictions/dsaa/svm_val_errors.csv               — SVM per-pair val errors by difficulty
-  outputs/predictions/dsaa/node2vec_ablation.json           — Node2Vec with/without ablation + coverage
-  outputs/predictions/dsaa/hard_residual_analysis.json      — Tier-3 hard-residual / nodes.tsv join
-  outputs/predictions/dsaa/throughput_benchmark.json        — CPU inference throughput
-  outputs/predictions/dsaa/tier2_confidence_saturation.json — Tier-2 RandomForest confidence ceiling
-  outputs/predictions/dsaa/embedding_val_metrics.json       — standalone EmbeddingClassifier baseline
-
+    data/raw/dsaa/train.csv
+    data/raw/dsaa/test.csv
+    data/raw/dsaa/nodes.tsv
+    data/interim/dsaa/difficulty_train.csv
+    data/interim/dsaa/difficulty_test.csv
+    data/interim/dsaa/difficulty_thresholds.json
+    data/interim/dsaa/leakage_pairs.csv
+    data/interim/dsaa/structural_train.csv
+    data/interim/dsaa/tfidf_train.csv
+    outputs/predictions/dsaa/cascade_val_tiers.csv
+    outputs/predictions/dsaa/cascade_test_tiers.csv
+    outputs/predictions/dsaa/cascade_n2v_test_tiers.csv
+    outputs/predictions/dsaa/cascade_threshold_ablation.csv
+    outputs/predictions/dsaa/cascade_val_metrics.json
+    outputs/predictions/dsaa/kaggle_scores.csv
+    outputs/predictions/dsaa/svm_val_metrics.json
+    outputs/predictions/dsaa/svm_val_errors.csv
+    outputs/predictions/dsaa/node2vec_ablation.json
+    outputs/predictions/dsaa/hard_residual_analysis.json
+    outputs/predictions/dsaa/throughput_benchmark.json
+    outputs/predictions/dsaa/tier2_confidence_saturation.json
+    outputs/predictions/dsaa/embedding_val_metrics.json
 Writes:
-  outputs/stats/summary_stats.json
+    outputs/stats/summary_stats.json
 
 Usage:
     python -m scripts.paper.compute_summary_stats
@@ -195,7 +189,7 @@ def _load() -> dict:
         'run python -m scripts.data.build_from_wikidump first')
     d['wikipedia_text'] = _load_json_optional(
         pathlib.Path('data/raw/wiki_cs_8k/text_fetch_stats.json'),
-        'run python -m scripts.data.fetch_wikipedia_text first')
+        'run python -m scripts.data.fetch_wiki_cs_8k_text first')
 
     return d
 

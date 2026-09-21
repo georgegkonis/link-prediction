@@ -1,18 +1,13 @@
 """
-Separability characterization: how much of DSAA 2023 is actually "hard"?
+Compute separability metrics and difficulty categories.
 
-For train (labeled) pairs, computes common-neighbor and TF-IDF cosine
-similarity distributions for positive vs. negative pairs, picks data-driven
-"trivial pair" thresholds, and reports what fraction of train/test falls
-into each difficulty bucket.
-
-Outputs:
+Writes:
     outputs/analyze_dataset-results.txt
-    data/interim/dsaa/difficulty_train.csv   (id, difficulty)
-    data/interim/dsaa/difficulty_test.csv    (id, difficulty)
+    data/interim/dsaa/difficulty_train.csv
+    data/interim/dsaa/difficulty_test.csv
 
 Usage:
-    python -m scripts.analyze_dataset [--cn-threshold F] [--tfidf-threshold F] [--fpr F]
+    python -m scripts.analysis.analyze_dataset
 """
 
 import argparse

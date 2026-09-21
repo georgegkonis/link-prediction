@@ -1,12 +1,15 @@
 """
 Compute structural features for train and test pairs.
 
-Outputs:
-    data/interim/dsaa/structural_train.csv   — heuristic scores for training pairs
-    data/interim/dsaa/structural_test.csv    — heuristic scores for test pairs
-    data/interim/dsaa/node2vec.kv            — trained Node2Vec KeyedVectors
-    data/interim/dsaa/n2v_train.npy          — 64-dim Node2Vec Hadamard features for training pairs
-    data/interim/dsaa/n2v_test.npy           — 64-dim Node2Vec Hadamard features for test pairs
+Reads:
+    data/raw/dsaa/train.csv
+    data/raw/dsaa/test.csv
+Writes:
+    data/interim/dsaa/structural_train.csv
+    data/interim/dsaa/structural_test.csv
+    data/interim/dsaa/node2vec.kv
+    data/interim/dsaa/n2v_train.npy
+    data/interim/dsaa/n2v_test.npy
 
 Usage:
     python -m scripts.data.compute_structural [dev.nrows=N] [dev.skip_n2v=true]

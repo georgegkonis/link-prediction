@@ -1,16 +1,8 @@
 """
-Characterize the negative-sampling artifact in DSAA 2023 train.csv: a small set of
-source-node ("id1") "hubs" accounts for most of the negative rows and is almost
-perfectly label-pure, while every other row is a genuine positive edge. This makes
-a trivial id1-lookup table a near-perfect classifier with zero relational or
-textual information.
+Audit the negative sampling distribution in the dataset.
 
-Reports, at several hub-size thresholds (robustness check, not threshold-cherry-picking):
-  - number of hub id1 values, rows covered, label purity
-  - trivial lookup-table accuracy/macro-F1 on the full non-self-loop train set
-  - hub id1 overlap with test.csv (same shortcut available on the Kaggle leaderboard)
-
-Writes outputs/stats/negative_sampling_audit.json.
+Writes:
+    outputs/stats/negative_sampling_audit.json
 
 Usage:
     python -m scripts.analysis.audit_negative_sampling

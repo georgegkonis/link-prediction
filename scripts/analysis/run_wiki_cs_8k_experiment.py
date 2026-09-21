@@ -1,17 +1,5 @@
 """
-Evaluate the original, unmodified CascadeLP (and all four baselines) on the
-freshly-crawled, artifact-free Wikipedia dataset (scripts/data/build_from_wikidump.py
-+ build_wiki_cs_8k_dataset.py): a real, connected subgraph of Simple English
-Wikipedia, real hyperlinks as positives, honestly-sampled random non-edges as
-negatives. Unlike DSAA 2023, there is no known artifact here to correct — this
-experiment exists to show what CascadeLP does on a dataset that was built
-correctly from the start.
-
-Uses the same grouped, pair-level split and target-edge-masked graph
-construction developed for the DSAA 2023 leakage fix (src/data/protocol.py) —
-that methodology is good practice regardless of which dataset it's applied to,
-and reusing it here avoids reintroducing the exact leak this thesis spent so
-much effort diagnosing.
+Evaluate baselines and models on the wiki dataset.
 
 Usage:
     python -m scripts.analysis.run_wiki_cs_8k_experiment

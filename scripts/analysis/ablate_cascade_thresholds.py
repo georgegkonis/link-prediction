@@ -1,18 +1,5 @@
 """
-Threshold ablation for CascadeLP (thesis Ch.5 SS5.1): sweep tau1/tau2 on the
-already-trained checkpoint (routing thresholds don't affect tier fitting, only
-.predict(), so no retraining is needed) and report overall Macro F1, per-tier
-call rate, and per-tier Macro F1 for each combination.
-
-The tau2 grid extends up to 0.9999 to probe the "force more pairs to Tier 3"
-scenario (thesis §5.1.1): how far can the Tier-3 call rate be pushed by
-tightening tau2 alone, and what happens to overall/Tier-3 accuracy as it grows.
-
-Also profiles Tier 2's (RandomForest) confidence distribution directly, since
-that distribution — not tau2 alone — determines where the Tier-3 call rate
-plateaus: a RandomForest vote fraction is quantized to n_estimators steps, so
-"raise tau2 arbitrarily high" cannot escalate a pair whose forest is unanimous
-(proba == 1.0) no matter how close to 1.0 tau2 gets.
+Ablate cascade thresholds to measure performance changes.
 
 Usage:
     python -m scripts.analysis.ablate_cascade_thresholds

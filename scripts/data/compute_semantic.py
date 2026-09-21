@@ -1,14 +1,17 @@
 """
-Compute semantic features (TF-IDF cosine similarity, Sentence-Transformer
-cosine similarity, POS frequency vectors) for train and test pairs.
+Compute semantic features (TF-IDF cosine similarity, Sentence-Transformer cosine similarity, POS frequency vectors) for train and test pairs.
 
-Outputs:
-    data/interim/dsaa/tfidf_train.csv        — TF-IDF cosine scores, train pairs
-    data/interim/dsaa/tfidf_test.csv         — TF-IDF cosine scores, test pairs
-    data/interim/dsaa/sentence_emb_train.csv — Sentence-Transformer scores, train
-    data/interim/dsaa/sentence_emb_test.csv  — Sentence-Transformer scores, test
-    data/interim/dsaa/pos_train.npy          — POS feature matrix, train pairs
-    data/interim/dsaa/pos_test.npy           — POS feature matrix, test pairs
+Reads:
+    data/raw/dsaa/train.csv
+    data/raw/dsaa/test.csv
+    data/raw/dsaa/nodes.tsv
+Writes:
+    data/interim/dsaa/tfidf_train.csv
+    data/interim/dsaa/tfidf_test.csv
+    data/interim/dsaa/sentence_emb_train.csv
+    data/interim/dsaa/sentence_emb_test.csv
+    data/interim/dsaa/pos_train.npy
+    data/interim/dsaa/pos_test.npy
 
 Usage:
     python -m scripts.data.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]

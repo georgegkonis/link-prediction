@@ -1,28 +1,10 @@
 """
-Generate thesis figures from outputs/stats/summary_stats.json and save to outputs/figures/.
+Generate figures from outputs/stats/summary_stats.json and save to outputs/figures/.
 
-All computation lives in scripts/paper/compute_summary_stats.py — this script only plots
-pre-aggregated histograms/tables/curves. It never touches data/raw/dsaa/, data/interim/dsaa/, or
-outputs/predictions/dsaa/, so it runs from a clean checkout as long as summary_stats.json (committed)
-is present.
-
-Produces:
-  separability_distributions.png  — CN and TF-IDF distributions for pos vs. neg pairs
-  difficulty_breakdown.png        — difficulty-category bar chart (train set)
-  svm_metrics.png                 — SVM baseline performance bar chart
-  tier_routing.png                 — CascadeLP tier routing breakdown (n / % per tier)
-  tier_difficulty_heatmap.png      — accuracy heatmap, tier x difficulty
-  tier_confusion_matrices.png      — per-tier confusion matrices
-  roc_curve.png                    — ROC curve, CascadeLP vs. SVM baseline
-  tier_confidence_distribution.png — per-tier confidence-score distribution
-  threshold_ablation.png           — Macro F1 vs. tau1/tau2, Tier-3 call rate vs. tau2
-  node2vec_ablation.png            — with/without Node2Vec comparison
-  throughput_comparison.png        — CascadeLP vs. SVM inference latency
-  coldstart_comparison.png         — cold-start Macro F1, CascadeLP vs. SVM
-  error_by_difficulty_comparison.png — error rate by difficulty, CascadeLP vs. SVM
-  graph_degree_distribution.png    — positive-edge graph degree histogram
-  dataset_composition.png          — train class balance + difficulty composition
-  dsaa_leaderboard_comparison.png  — Macro F1 vs. other DSAA 2023 competition entries
+Reads:
+    outputs/stats/summary_stats.json
+Writes:
+    outputs/figures/
 
 Usage:
     python -m scripts.paper.generate_figures

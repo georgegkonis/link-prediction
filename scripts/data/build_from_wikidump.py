@@ -1,23 +1,14 @@
 """
-Build a real, connected Wikipedia subgraph from official MediaWiki SQL dumps
-(page/linktarget/pagelinks tables) instead of the live API — the live API is
-rate-limited too hard on this environment's IP to crawl at any useful scale.
+Build a real, connected Wikipedia subgraph from official MediaWiki SQL dumps.
 
-Every edge here is a genuine hyperlink extracted from a real dump; there is no
-negative-sampling artifact to correct because we construct labels ourselves in
-build_wiki_cs_8k_dataset.py from these real edges.
-
-Requires (download once, e.g. from https://dumps.wikimedia.org/simplewiki/latest/):
+Reads:
     <dump-dir>/simplewiki-latest-page.sql.gz
     <dump-dir>/simplewiki-latest-linktarget.sql.gz
     <dump-dir>/simplewiki-latest-pagelinks.sql.gz
-
 Writes:
-    <output>/titles.json         — page_id -> title mapping (crawled subgraph only)
-    <output>/positive_edges.csv  — id1, id2 (real hyperlinks, undirected, deduped,
-                                   ids are page_id from the dump)
-    <output>/crawl_stats.json    — dump/crawl provenance counts, for thesis macros
-                                   (no magic numbers — see compute_summary_stats.py)
+    <output>/titles.json
+    <output>/positive_edges.csv
+    <output>/crawl_stats.json
 
 Usage:
     python -m scripts.data.build_from_wikidump --dump-dir /tmp --seed "Computer_science" --target 8000

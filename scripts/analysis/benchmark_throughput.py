@@ -1,10 +1,7 @@
 """
-CPU inference throughput benchmark for CascadeLP (thesis Ch.5 §5.4
-"Σύγκριση Αποτελεσματικότητας"): times a single `.predict()` pass over the
-held-out validation split using the deployed heuristics-only checkpoint
-(`outputs/checkpoints/dsaa/cascade.joblib`, trained with `training.no_n2v=true`).
+Benchmark CPU inference throughput.
 
-Outputs:
+Writes:
     outputs/predictions/dsaa/throughput_benchmark.json
 
 Usage:

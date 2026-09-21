@@ -1,16 +1,9 @@
 """
-Show the id1-hub negative-sampling artifact (audit_negative_sampling.py) "in
-action" against the thesis's own existing, unmodified CascadeLP validation
-predictions (outputs/predictions/dsaa/cascade_val_tiers.csv, from `make train
-MODEL=cascade` on the original protocol) — no rerun, no protocol change.
-
-Quantifies how much of the reported near-perfect Macro F1 is attributable to
-a trivial 65-value id1 lookup versus how the same model does elsewhere.
+Audit the effect of hub nodes on predictions.
 
 Reads:
     data/raw/dsaa/train.csv
     outputs/predictions/dsaa/cascade_val_tiers.csv
-
 Writes:
     outputs/stats/hub_in_predictions_audit.json
 

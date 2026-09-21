@@ -1,19 +1,12 @@
 """
-Dataset forensics: train/test leakage audit.
+Audit train/test data leakage.
 
-Checks:
-    - exact (id1, id2) overlap between train and test
-    - reversed (id2, id1) overlap between train and test
-    - self-loop count and label distribution in train/test
-    - intra-train duplicate undirected pairs (a subtler leakage channel via
-      row-based train/val splitting)
-
-Outputs:
-    outputs/leakage_audit-results.txt   — plain-text summary
-    data/interim/dsaa/leakage_pairs.csv      — the overlapping rows (exact + reversed)
+Writes:
+    outputs/leakage_audit-results.txt
+    data/interim/dsaa/leakage_pairs.csv
 
 Usage:
-    python -m scripts.audit_leakage
+    python -m scripts.analysis.audit_leakage
 """
 
 import argparse

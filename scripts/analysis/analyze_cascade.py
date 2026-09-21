@@ -1,18 +1,11 @@
 """
-Post-hoc analysis of CascadeLP validation results for the thesis (Ch.4 §4.4, Ch.5).
+Analyze Cascade model performance and tier statistics.
 
-Reads outputs/predictions/dsaa/cascade_val_tiers.csv (written by scripts/run_dsaa_train.py) plus
-the structural features, and prints:
-  - overall macro-F1 / accuracy on the validation split
-  - per-tier n / call-rate / accuracy / macro-F1
-  - per-difficulty n / accuracy / macro-F1
-  - tier x difficulty cross-tab
-  - cold-start (zero common neighbours) per-tier accuracy / macro-F1
-  - the "hard residual" reaching Tier 3 and still labelled 'hard'
-  - a small sample of Tier-3 hard misclassifications
+Reads:
+    outputs/predictions/dsaa/cascade_val_tiers.csv
 
 Usage:
-    python -m scripts.analyze_cascade
+    python -m scripts.analysis.analyze_cascade
 """
 
 import numpy as np

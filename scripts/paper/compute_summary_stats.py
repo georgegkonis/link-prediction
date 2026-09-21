@@ -308,9 +308,9 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     n_dup_groups = (dup_groups > 1).sum()
 
     m['LeakageExact']          = str(exact)
-    m['LeakageExactPct']       = gfloat(100 * exact / n_test, 4)
+    m['LeakageExactPct']       = gfloat(100 * exact / n_test, 2)
     m['LeakageReversed']       = gint(reversed_)
-    m['LeakageReversedPct']    = gfloat(100 * reversed_ / n_test, 4)
+    m['LeakageReversedPct']    = gfloat(100 * reversed_ / n_test, 2)
     m['SelfLoopsTrain']        = gint(n_self_loops)
     m['SelfLoopsTrainPos']     = gint(self_pos)
     m['SelfLoopsTrainNeg']     = str(int(self_neg))
@@ -460,7 +460,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     cs_pct    = 100 * cs_count / n_vt
     non_cs    = n_vt - cs_count
     m['ColdStartCount']    = gint(cs_count)
-    m['ColdStartPct']      = gfloat(cs_pct, 4)
+    m['ColdStartPct']      = gfloat(cs_pct, 2)
     m['ColdStartNonCount'] = gint(non_cs)
 
     # ---- Hard residual (Tier 3 ∩ hard) ----
@@ -730,9 +730,9 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['HubUniqueSourceCount'] = gint(ref['n_unique_id1'])
         m['HubRowCount']    = gint(ref['hub_row_count'])
         m['HubRowPct']      = gfloat(ref['hub_row_pct'], 2)
-        m['HubPurityPct']   = gfloat(100 * ref['hub_purity_fraction'], 4)
+        m['HubPurityPct']   = gfloat(100 * ref['hub_purity_fraction'], 2)
         m['NonHubRowCount'] = gint(ref['non_hub_row_count'])
-        m['NonHubPosPct']   = gfloat(100 * ref['non_hub_positive_rate'], 4)
+        m['NonHubPosPct']   = gfloat(100 * ref['non_hub_positive_rate'], 2)
         m['HubLookupFone']  = gfloat(ref['trivial_lookup_macro_f1'], 6)
         m['HubLookupAcc']   = gfloat(ref['trivial_lookup_accuracy'], 6)
         m['HubTestOverlap'] = gint(audit['test_hub_id1_overlap'])

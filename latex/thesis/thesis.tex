@@ -1,6 +1,7 @@
 \documentclass[11pt,a4paper,english,greek,twoside]{ceid-thesis}
-\let\cleardoublepage\clearpage
+\renewcommand{\cleardoublepage}{\clearpage}
 
+\usepackage{textcomp}
 \usepackage{graphicx}
 \graphicspath{{../../outputs/figures/}}
 \usepackage{microtype}
@@ -45,7 +46,7 @@
 % Allow line breaks after underscores in inline code/identifiers (\slash already
 % does this for "/" in base LaTeX) so long src/ paths and function names in
 % \texttt{\en{...}} don't overflow the margin.
-\let\LPunderscore\_
+\newcommand{\LPunderscore}{\textunderscore}
 \renewcommand{\_}{\LPunderscore\allowbreak}
 
 % Auto-generated experiment macros (regenerate with: make generate-macros)

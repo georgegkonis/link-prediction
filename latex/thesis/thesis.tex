@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper,english,greek,twoside]{ceid-thesis}
+\documentclass[11pt,a4paper,english,greek,oneside]{ceid-thesis}
 \renewcommand{\cleardoublepage}{\clearpage}
 
 \usepackage{textcomp}
@@ -34,13 +34,20 @@
 \renewcommand{\baselinestretch}{1.2}
 \setlength{\parskip}{4pt plus 2pt minus 1pt}
 
+% More breathing room around floats than book.cls's defaults (textfloatsep
+% 20pt, intextsep/floatsep 12pt) - text was reading as cramped against
+% tables/figures.
+\setlength{\textfloatsep}{30pt plus 4pt minus 6pt}
+\setlength{\intextsep}{18pt plus 4pt minus 4pt}
+\setlength{\floatsep}{16pt plus 4pt minus 4pt}
+
 % Give the line breaker more room to avoid overfull boxes in paragraphs dense
 % with long inline code identifiers, before falling back to an overfull line.
 \tolerance=2000
 \emergencystretch=2em
 
-% Convenience commands
-\newcommand{\en}[1]{\foreignlanguage{english}{#1}}
+% Convenience commands (\en is defined in ceid-thesis.cls, alongside the
+% polyglossia setup it wraps)
 \newcommand{\src}[1]{\texttt{\en{#1}}}
 
 % Allow line breaks after underscores in inline code/identifiers (\slash already

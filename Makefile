@@ -41,7 +41,7 @@ kaggle-check:
 	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --check
 
 latex-compile:
-	cd latex/$(DOC) && xelatex $(DOC).tex && (biber $(DOC) || true) && xelatex $(DOC).tex && xelatex $(DOC).tex
+	cd latex/$(DOC) && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex && (biber $(DOC) || true) && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex
 
 latex-clean:
 	cd latex/$(DOC) && rm -f *.aux *.log *.bbl *.blg *.bcf *.run.xml *.out *.toc *.lof *.lot *.idx *.ilg *.ind \

@@ -149,9 +149,11 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 \en{Macro F1} καταρρέει σε τιμή κοντά στο 0{,}50, ακριβώς λόγω ανισορροπίας κλάσεων
 που η ακρίβεια αδυνατεί να συλλάβει.
 Ως δευτερεύουσες μετρικές αναφέρουμε το
-\en{AUC-ROC}, το \en{Macro F1} περιορισμένο στο υποσύνολο \en{cold-start}
-(\en{Cold-start F1}, χρησιμοποιώντας τη \texttt{\en{cold\_start\_mask}} --- μηδενικοί
-κοινοί γείτονες μεταξύ $u$ και $v$) και τον χρόνο συμπερασμού ανά ζεύγος.
+\en{AUC-ROC}, το \en{Macro F1} περιορισμένο στο διαγνωστικό υποσύνολο μηδενικού
+\en{CN} (η ιστορικά ονομασμένη \texttt{\en{cold\_start\_mask}} --- μηδενικοί
+κοινοί γείτονες μεταξύ $u$ και $v$) και τον χρόνο συμπερασμού ανά ζεύγος. Η
+μάσκα αυτή είναι ευρύτερη από το λειτουργικό \en{cold-start} της δρομολόγησης,
+το οποίο απαιτεί απουσία τουλάχιστον ενός άκρου από το γράφημα.
 Οι
 υπολογισμοί αυτών των μετρικών (\texttt{\en{src\slash{}utils\slash{}metrics.py}}) είναι κοινοί σε
 όλα τα μοντέλα αυτού του κεφαλαίου, ώστε οι συγκρίσεις να είναι άμεσα συγκρίσιμες.
@@ -170,11 +172,12 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
     \text{test\_size}=\ValSizeFrac{}, \text{seed}=\Seed{})$
 \State $X_{\text{tr}} \gets \varphi(D_{\text{tr}})$;\quad
     $X_{\text{val}} \gets \varphi(D_{\text{val}})$
-    \Comment{$\varphi$ προ-υπολογισμένο στο πλήρες $D$ όταν αφορά το δομικό γράφημα}
+    \Comment{η κατασκευή του γραφήματος καθορίζεται από το εκάστοτε πρωτόκολλο}
 \State $M.\text{fit}(X_{\text{tr}}, y_{\text{tr}})$
-\State $\hat{y}_{\text{val}} \gets M.\text{predict}(X_{\text{val}})$
+\State $s_{\text{val}} \gets M.\text{predict\_proba}(X_{\text{val}})[:,1]$
+\State $\hat{y}_{\text{val}} \gets \mathbb{I}[s_{\text{val}} \geq 0{,}5]$
 \State $\text{macroF1} \gets \text{F1}(y_{\text{val}}, \hat{y}_{\text{val}}, \text{average}=\text{macro})$
-\State $\text{auc} \gets \text{AUC-ROC}(y_{\text{val}}, \hat{y}_{\text{val}})$
+\State $\text{auc} \gets \text{AUC-ROC}(y_{\text{val}}, s_{\text{val}})$
 \State $\text{csF1} \gets \text{F1}\big(y_{\text{val}}[\texttt{cold\_start\_mask}],\;
     \hat{y}_{\text{val}}[\texttt{cold\_start\_mask}]\big)$
 \If{$M$ είναι \en{CascadeLP}}
@@ -322,12 +325,16 @@ $\theta_{\mathrm{TF\text{-}IDF}} > \TfidfThreshold$ (1\% FPR στην αρνητ
 $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισθησία ως προς αυτή την επιλογή),
 το μοντέλο επιτυγχάνει \en{Macro F1} = \CascadeValFone{} και \en{AUC-ROC} = \CascadeValAuc{} στο σύνολο
 επικύρωσης.
+Η αυτόνομη βασική γραμμή \en{POS} πετυχαίνει ελαφρώς υψηλότερο \en{Macro F1}
+(0{,}9988 έναντι 0{,}9986). Επομένως το αποτέλεσμα του \en{DSAA} δεν δείχνει
+βελτίωση του \en{CascadeLP} έναντι κάθε επιμέρους μοντέλου· δείχνει κυρίως ότι
+πολλές διαφορετικές μέθοδοι κορεστούν στο ίδιο προβληματικό πεδίο αξιολόγησης.
 
 \begin{table}[h!]
   \centering
   \begin{tabular}{lrrcc}
     \toprule
-    \textbf{Επίπεδο} & \textbf{n} & \textbf{Ποσοστό Κλήσεων} & \textbf{Ακρίβεια} & \textbf{\en{Macro F1}} \\
+    \textbf{Επίπεδο} & \textbf{n} & \textbf{Δρομολόγηση} & \textbf{Ακρίβεια} & \textbf{\en{Macro F1}} \\
     \midrule
     Επίπεδο~0 (αυτοβρόχος)      & 0       & 0{,}00\%  & --     & --     \\
     Επίπεδο~1 (\en{Structural}) & \TierOneCount{} & \TierOnePct\% & \TierOneAcc{} & \TierOneFone{} \\
@@ -335,7 +342,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
     Επίπεδο~3 (\en{Embedding})  & \TierThreeCount{} & \TierThreePct\% & \TierThreeAcc{} & \TierThreeFone{} \\
     \bottomrule
   \end{tabular}
-  \caption{Ποσοστό κλήσεων και απόδοση ανά επίπεδο στο σύνολο επικύρωσης (n=\ValSplitSize{}).}
+  \caption{Ποσοστό δρομολόγησης και απόδοση ανά επίπεδο στο σύνολο επικύρωσης (n=\ValSplitSize{}).}
   \label{tab:cascade-tier-results}
 \end{table}
 
@@ -412,7 +419,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 Τα ζεύγη ελέγχου είναι δηλαδή δομικά πιο «ψυχρά» από τα ζεύγη επικύρωσης, το
 Επίπεδο~1 στερείται σήματος γι' αυτά και η δρομολόγηση κλιμακώνει σχεδόν αυτόματα στο
 Επίπεδο~2.
-Η ανάλυση της απόδοσης ειδικά στο υποσύνολο \en{cold-start}
+Η ανάλυση της απόδοσης ειδικά στο υποσύνολο μηδενικού \en{CN}
 αναλαμβάνεται στη \S\ref{sec:cold-start-results}.
 
 Παρότι το \en{DSAA 2023} δεν δημοσιεύει τις πραγματικές ετικέτες του συνόλου ελέγχου,
@@ -482,7 +489,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
     \midrule
     \en{Macro F1-score} & \SvmFone{} \\
     \en{AUC-ROC} & \SvmAuc{} \\
-    \en{Cold-start F1} & \SvmCsFone{} \\
+    \en{Macro F1} μηδενικού \en{CN} & \SvmCsFone{} \\
     Καθυστέρηση & \SvmLatency{} ms/ζεύγος \\
     \bottomrule
   \end{tabular}

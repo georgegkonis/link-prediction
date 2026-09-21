@@ -13,6 +13,10 @@ help:
 	@echo "  make kaggle-check                     Check recent Kaggle scores"
 	@echo "  make latex-compile DOC=thesis         Compile thesis/paper/presentation PDF"
 	@echo "  make latex-clean DOC=thesis           Clean LaTeX aux files"
+	@echo "  make pipeline-dsaa                    Run entire DSAA pipeline"
+	@echo "  make pipeline-wiki                    Run entire Wiki pipeline"
+	@echo "  make pipeline-paper                   Build stats, figures, and thesis PDF"
+	@echo "  make pipeline-all                     Run EVERYTHING end-to-end"
 	@echo "  make test                             Run tests"
 
 env:
@@ -48,3 +52,35 @@ test:
 
 jupyter:
 	$(RUN) jupyter lab
+
+# Full Automation Pipelines
+pipeline-dsaa:
+	@echo "--- Running Full DSAA Pipeline ---"
+	$(RUN) python -m scripts.data.download_data
+	$(RUN) python -m scripts.data.compute_structural
+	$(RUN) python -m scripts.data.compute_semantic
+	$(RUN) python -m scripts.analysis.audit_leakage
+	$(RUN) python -m scripts.analysis.analyze_dataset
+	$(RUN) python -m scripts.analysis.run_dsaa_train model=cascade
+	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=cascade
+	$(RUN) python -m scripts.analysis.analyze_cascade
+	$(RUN) python -m scripts.analysis.ablate_node2vec
+	$(RUN) python -m scripts.analysis.analyze_hard_residual
+	$(RUN) python -m scripts.analysis.benchmark_throughput
+	$(RUN) python -m scripts.analysis.ablate_cascade_thresholds
+
+pipeline-wiki:
+	@echo "--- Running Full Wiki-CS-8k Pipeline ---"
+	$(RUN) python -m scripts.data.build_from_wikidump
+	$(RUN) python -m scripts.data.fetch_wiki_cs_8k_text
+	$(RUN) python -m scripts.data.build_wiki_cs_8k_dataset
+	$(RUN) python -m scripts.analysis.run_wiki_cs_8k_experiment
+
+pipeline-paper:
+	@echo "--- Compiling Thesis Assets & PDF ---"
+	$(RUN) python -m scripts.paper.compute_summary_stats
+	$(RUN) python -m scripts.paper.generate_macros
+	$(RUN) python -m scripts.paper.generate_figures
+	$(MAKE) latex-compile DOC=thesis
+
+pipeline-all: pipeline-dsaa pipeline-wiki pipeline-paper

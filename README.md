@@ -71,7 +71,6 @@ secret (it clones this repo). See [docs/commands.md](docs/commands.md#running-on
 ## Troubleshooting
 
 - **Kaggle download fails:** Check `~/.kaggle/kaggle.json` or set `KAGGLE_USERNAME`/`KAGGLE_KEY` in `.env`
-- **Node2Vec is slow:** Use `--skip-n2v` dev flag (see [docs/commands.md](docs/commands.md))
 - **Sentence-Transformer hangs:** Use `--skip-st` dev flag
 - **LaTeX build fails:** Run `make paper-clean` and retry; check `paper/main.log`
 

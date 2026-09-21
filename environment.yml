@@ -39,7 +39,6 @@ dependencies:
       - sentence-transformers>=3.0
       - datasets
       - torch-geometric
-      - node2vec
       - kagglehub
       - kagglesdk
       - python-dotenv

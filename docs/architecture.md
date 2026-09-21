@@ -42,7 +42,7 @@
 
 | File            | Purpose                   | Key symbols                                                                                                                     |
 |-----------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `structural.py` | Graph topology heuristics | `compute_heuristics(G, pairs)` → CN/Jaccard/AA/PA DataFrame; `train_node2vec()`; `node2vec_scores()`                            |
+| `structural.py` | Graph topology heuristics | `compute_heuristics(G, pairs)` → CN/Jaccard/AA/PA DataFrame                            |
 | `embeddings.py` | Text similarity features  | `clean_wiki_text()`; `build_tfidf()`; `compute_tfidf_scores()`; `encode_nodes()` (single-pass ST); `compute_embedding_scores()` |
 | `linguistic.py` | NLP features              | `pos_frequency_vector()` → per-node POS vector; `compute_pos_features()` → concatenated (id1 ∥ id2)                             |
 

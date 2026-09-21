@@ -69,13 +69,6 @@
                 & \texttt{\en{min\_df}} & \TfidfMinDf{} \\
     \midrule
     \en{Sentence-Transformer} & μοντέλο & \texttt{\en{\EmbeddingModelName{}}} \\
-    \midrule
-    \en{Node2Vec} & \texttt{\en{dimensions}} & \NTwoVDimensions{} \\
-                  & \texttt{\en{walk\_length}} & \NTwoVWalkLength{} \\
-                  & \texttt{\en{num\_walks}} & \NTwoVNumWalks{} \\
-                  & \texttt{\en{window}} & \NTwoVWindow{} \\
-                  & $p$ & \NTwoVP{} (αμερόληπτο \en{DeepWalk}) \\
-                  & $q$ & \NTwoVQ{} (αμερόληπτο \en{DeepWalk}) \\
     \bottomrule
   \end{tabular}
   \caption{Υπερπαράμετροι pipeline εξαγωγής χαρακτηριστικών.}
@@ -189,7 +182,7 @@
 Σε ένα τόσο αραιό γράφημα, η συντριπτική πλειονότητα των ζευγών στερείται κοινών γειτόνων,
 γεγονός που εξηγεί γιατί το \ColdStartPct\% των ζευγών επικύρωσης ανήκει στο υποσύνολο μηδενικού \en{CN}
 (\S\ref{sec:cold-start-results}) και γιατί τα ευρετικά χαρακτηριστικά δομής αποτυγχάνουν
-στην πλειονότητα των ζευγών χωρίς \en{Node2Vec}.
+στην πλειονότητα των ζευγών.
 
 
 \section{Σύνολο Ζευγών Ανάλυσης}

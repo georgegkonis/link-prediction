@@ -11,8 +11,7 @@ from sklearn.svm import SVC
 
 class StructuralClassifier:
     """
-    Logistic Regression on structural heuristic features (CN, Jaccard, AA, PA),
-    optionally augmented with 64-dim Node2Vec Hadamard-product features.
+    Logistic Regression on structural heuristic features (CN, Jaccard, AA, PA).
     """
 
     FEATURES = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
@@ -21,21 +20,19 @@ class StructuralClassifier:
         self.scaler = StandardScaler()
         self.clf = LogisticRegression(C=C, max_iter=max_iter, random_state=random_state, n_jobs=-1)
 
-    def _X(self, structural: pd.DataFrame, n2v: np.ndarray | None = None) -> np.ndarray:
+    def _X(self, structural: pd.DataFrame) -> np.ndarray:
         X = structural[self.FEATURES].fillna(0).values
-        if n2v is not None:
-            X = np.hstack([X, n2v])
         return X
 
-    def fit(self, structural: pd.DataFrame, y: np.ndarray, n2v: np.ndarray | None = None):
-        self.clf.fit(self.scaler.fit_transform(self._X(structural, n2v)), y)
+    def fit(self, structural: pd.DataFrame, y: np.ndarray):
+        self.clf.fit(self.scaler.fit_transform(self._X(structural)), y)
         return self
 
-    def predict_proba(self, structural: pd.DataFrame, n2v: np.ndarray | None = None) -> np.ndarray:
-        return self.clf.predict_proba(self.scaler.transform(self._X(structural, n2v)))
+    def predict_proba(self, structural: pd.DataFrame) -> np.ndarray:
+        return self.clf.predict_proba(self.scaler.transform(self._X(structural)))
 
-    def predict(self, structural: pd.DataFrame, n2v: np.ndarray | None = None) -> np.ndarray:
-        return self.predict_proba(structural, n2v).argmax(axis=1)
+    def predict(self, structural: pd.DataFrame) -> np.ndarray:
+        return self.predict_proba(structural).argmax(axis=1)
 
     def save(self, path: str): joblib.dump(self, path)
 

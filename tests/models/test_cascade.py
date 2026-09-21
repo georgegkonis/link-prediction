@@ -29,11 +29,11 @@ class _StubTier1:
     def __init__(self):
         self.calls = []
 
-    def fit(self, structural, y, n2v=None):
-        self.calls.append(('fit', len(structural), None if n2v is None else len(n2v)))
+    def fit(self, structural, y):
+        self.calls.append(('fit', len(structural)))
         return self
 
-    def predict_proba(self, structural, n2v=None):
+    def predict_proba(self, structural):
         self.calls.append(('predict', list(structural.index)))
         return _proba_from_p(structural['p'].values)
 
@@ -290,17 +290,10 @@ def test_fit_excludes_self_loops_from_every_tier():
 
     m = _stubbed()
     assert m.fit(structural, pos, st, y, pairs) is m
-    assert m.tier1.calls[0] == ('fit', 2, None)
+    assert m.tier1.calls[0] == ('fit', 2)
     assert m.tier2.calls[0] == ('fit', 2)
     assert m.tier3.calls[0] == ('fit', 2)
 
-
-def test_fit_masks_the_node2vec_block_too():
-    pairs = pd.DataFrame({'id1': [1, 7, 2], 'id2': [2, 7, 3]})
-    m = _stubbed()
-    m.fit(pd.DataFrame({'p': [0.1, 0.2, 0.3]}), np.zeros((3, 3)), np.zeros(3),
-          np.array([0, 1, 1]), pairs, n2v=np.zeros((3, 4)))
-    assert m.tier1.calls[0] == ('fit', 2, 2)
 
 
 def test_fit_all_self_loops_yields_empty_training_sets():
@@ -308,7 +301,7 @@ def test_fit_all_self_loops_yields_empty_training_sets():
     m = _stubbed()
     m.fit(pd.DataFrame({'p': [0.1, 0.2]}), np.zeros((2, 3)), np.zeros(2),
           np.array([1, 1]), pairs)
-    assert m.tier1.calls[0] == ('fit', 0, None)
+    assert m.tier1.calls[0] == ('fit', 0)
 
 
 # ── save / load ──────────────────────────────────────────────────────────────
@@ -449,8 +442,7 @@ def test_explicit_cold_start_mask_overrides_derivation():
     # Heuristics say warm, but the caller declares it cold.
     structural = _cs_frame([0.95], [(3.0, 0.5, 1.2, 8.0)])
     m = _stubbed()
-    _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs,
-                           None, np.array([True]))
+    _, tier, _ = m.predict(structural, np.full((1, 3), 0.9), np.zeros(1), pairs, cold_start=np.array([True]))
     assert tier.tolist() == [2]
     assert m.tier1.calls == []
 
@@ -460,8 +452,7 @@ def test_explicit_cold_start_mask_of_wrong_length_raises():
     structural = _cs_frame([0.95, 0.95], [(3.0, 0.5, 1.2, 8.0)] * 2)
     m = _stubbed()
     with pytest.raises(ValueError, match='length 1, expected 2'):
-        m.predict(structural, np.full((2, 3), 0.9), np.zeros(2), pairs,
-                  None, np.array([True]))
+        m.predict(structural, np.full((2, 3), 0.9), np.zeros(2), pairs, cold_start=np.array([True]))
 
 
 def test_frame_without_heuristic_columns_derives_no_cold_start():

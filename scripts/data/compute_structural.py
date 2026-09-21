@@ -7,12 +7,9 @@ Reads:
 Writes:
     data/interim/dsaa/structural_train.csv
     data/interim/dsaa/structural_test.csv
-    data/interim/dsaa/node2vec.kv
-    data/interim/dsaa/n2v_train.npy
-    data/interim/dsaa/n2v_test.npy
 
 Usage:
-    python -m scripts.data.compute_structural [dev.nrows=N] [dev.skip_n2v=true]
+    python -m scripts.data.compute_structural [dev.nrows=N]
 """
 
 import hydra
@@ -21,7 +18,7 @@ from omegaconf import DictConfig
 import numpy as np
 
 from src.data.loader import build_graph, load_edges
-from src.features.structural import compute_heuristics, node2vec_hadamard_features, train_node2vec
+from src.features.structural import compute_heuristics
 from src.utils.log_utils import setup_logging
 
 INTERIM = 'data/interim/dsaa'
@@ -48,19 +45,6 @@ def main(cfg: DictConfig):
     h_test.to_csv(f'{INTERIM}/structural_test.csv')
     log.info('  Saved → %s/structural_test.csv', INTERIM)
 
-    if not cfg.dev.skip_n2v:
-        log.info('Training Node2Vec...')
-        wv = train_node2vec(G, seed=cfg.seed, **cfg.features.node2vec)
-        wv.save(f'{INTERIM}/node2vec.kv')
-        log.info('  Saved → %s/node2vec.kv', INTERIM)
-
-        log.info('Computing Node2Vec Hadamard features for train pairs...')
-        np.save(f'{INTERIM}/n2v_train.npy', node2vec_hadamard_features(wv, train))
-        log.info('  Saved → %s/n2v_train.npy', INTERIM)
-
-        log.info('Computing Node2Vec Hadamard features for test pairs...')
-        np.save(f'{INTERIM}/n2v_test.npy', node2vec_hadamard_features(wv, test))
-        log.info('  Saved → %s/n2v_test.npy', INTERIM)
 
     log.info('Done.')
 

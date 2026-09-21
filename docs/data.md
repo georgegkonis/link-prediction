@@ -17,7 +17,6 @@ The table below describes the files for a given dataset (substitute `{dataset}` 
 | `data/raw/{dataset}/nodes.tsv`                       | Node text (id, markup)                         |
 | `data/interim/{dataset}/pp_nodes.csv`                | Preprocessed node text (id, text)              |
 | `data/interim/{dataset}/structural_{train,test}.csv` | CN, Jaccard, AA, PageRank per pair             |
-| `data/interim/{dataset}/node2vec.kv`                 | Trained KeyedVectors (Node2Vec embeddings)     |
 | `data/interim/{dataset}/tfidf_{train,test}.csv`      | TF-IDF cosine similarity                       |
 | `data/interim/{dataset}/sentence_emb_{train,test}.csv`| Sentence-Transformer cosine similarity         |
 | `data/interim/{dataset}/{pos,tfidf}_train.npy / test.npy` | POS frequency features                         |

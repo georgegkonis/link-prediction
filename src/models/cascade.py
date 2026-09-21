@@ -61,13 +61,12 @@ class CascadeLP:
         st_scores: np.ndarray,
         y: np.ndarray,
         pairs: pd.DataFrame,
-        n2v: np.ndarray | None = None,
     ):
         """Fit all three tiers independently on the training set (self-loops excluded)."""
         mask = (pairs['id1'].values != pairs['id2'].values)
 
         print('  Fitting Tier 1 (Structural)...')
-        self.tier1.fit(structural[mask], y[mask], n2v[mask] if n2v is not None else None)
+        self.tier1.fit(structural[mask], y[mask])
 
         print('  Fitting Tier 2 (POS + RF)...')
         self.tier2.fit(pos_features[mask], y[mask])
@@ -83,7 +82,6 @@ class CascadeLP:
         pos_features: np.ndarray,
         st_scores: np.ndarray,
         pairs: pd.DataFrame,
-        n2v: np.ndarray | None = None,
         cold_start: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -134,7 +132,7 @@ class CascadeLP:
         # Tier 1 — structural (cold-start pairs bypass it: all-zero features)
         idx = np.where(remaining & ~cold_start)[0]
         if len(idx):
-            proba1    = self.tier1.predict_proba(structural.iloc[idx], n2v[idx] if n2v is not None else None)
+            proba1    = self.tier1.predict_proba(structural.iloc[idx])
             idx       = _route(idx, proba1, self.tier1_threshold, 1)
 
         # Cold-start pairs enter the cascade here, alongside Tier-1 escalations.

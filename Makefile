@@ -64,7 +64,6 @@ pipeline-dsaa:
 	$(RUN) python -m scripts.analysis.run_dsaa_train model=cascade
 	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=cascade
 	$(RUN) python -m scripts.analysis.analyze_cascade
-	$(RUN) python -m scripts.analysis.ablate_node2vec
 	$(RUN) python -m scripts.analysis.analyze_hard_residual
 	$(RUN) python -m scripts.analysis.benchmark_throughput
 	$(RUN) python -m scripts.analysis.ablate_cascade_thresholds

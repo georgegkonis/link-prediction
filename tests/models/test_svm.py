@@ -59,21 +59,6 @@ def test_structural_fills_nan_features_with_zero(separable_structural):
     np.testing.assert_allclose(proba[0], clf.predict_proba(zeroed)[0])
 
 
-def test_structural_accepts_node2vec_block(separable_structural):
-    X, y = separable_structural
-    n2v = np.repeat(y.reshape(-1, 1).astype(float), 4, axis=1)
-    clf = StructuralClassifier().fit(X, y, n2v=n2v)
-    proba = clf.predict_proba(X, n2v=n2v)
-    _assert_proba_matrix(proba, len(y))
-    assert (clf.predict(X, n2v=n2v) == y).mean() > 0.95
-
-
-def test_structural_n2v_shape_mismatch_raises(separable_structural):
-    X, y = separable_structural
-    clf = StructuralClassifier().fit(X, y)
-    with pytest.raises(ValueError):
-        clf.predict_proba(X, n2v=np.zeros((len(X), 4)))   # trained without n2v
-
 
 def test_structural_save_load_round_trip(tmp_path, separable_structural):
     X, y = separable_structural

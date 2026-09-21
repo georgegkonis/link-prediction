@@ -37,9 +37,6 @@ Tier 0.
 **Three independent tiers**
 Each tier is trained on the full training set; no cascading labels between tiers.
 
-**Node2Vec excluded from cascade**
-Fully integrated and Kaggle-tested, but excluded because it uses transductive embeddings — unseen test nodes cause
-scores to collapse dramatically.
 
 **`compute_heuristics(G, pairs)` argument order**
 Graph is the first argument. Reversed args silently KeyError because networkx treats the dataframe as an adjacency

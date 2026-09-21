@@ -19,7 +19,6 @@ Reads:
     outputs/predictions/dsaa/kaggle_scores.csv
     outputs/predictions/dsaa/svm_val_metrics.json
     outputs/predictions/dsaa/svm_val_errors.csv
-    outputs/predictions/dsaa/node2vec_ablation.json
     outputs/predictions/dsaa/hard_residual_analysis.json
     outputs/predictions/dsaa/throughput_benchmark.json
     outputs/predictions/dsaa/tier2_confidence_saturation.json
@@ -155,8 +154,7 @@ def _load() -> dict:
         PREDICTIONS / 'svm_val_metrics.json', 'run make train MODEL=svm first')
     d['svm_errors'] = _load_csv_optional(
         PREDICTIONS / 'svm_val_errors.csv', 'run make train MODEL=svm first (writes per-pair errors too)')
-    d['n2v_ablation'] = _load_json_optional(
-        PREDICTIONS / 'node2vec_ablation.json', 'run python -m scripts.analysis.ablate_node2vec first')
+    d['n2v_ablation'] = None
     d['hard_residual'] = _load_json_optional(
         PREDICTIONS / 'hard_residual_analysis.json',
         'run python -m scripts.analysis.analyze_hard_residual first')
@@ -267,17 +265,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     m['TfidfMinDf']       = gint(tfidf_feat_cfg['min_df'])
     m['EmbeddingModelName'] = str(cfg['features']['embedding']['model_name'])
 
-    n2v_cfg = cfg['features']['node2vec']
-    m['NTwoVDimensions'] = gint(n2v_cfg['dimensions'])
-    m['NTwoVWalkLength'] = gint(n2v_cfg['walk_length'])
-    m['NTwoVNumWalks']   = gint(n2v_cfg['num_walks'])
-    m['NTwoVWindow']     = gint(n2v_cfg['window'])
-    m['NTwoVP']          = str(int(n2v_cfg['p']))
-    m['NTwoVQ']          = str(int(n2v_cfg['q']))
-    # Tier-1 feature vector width when Node2Vec is enabled: 4 structural heuristics
-    # concatenated with the Node2Vec Hadamard embedding — derived, not duplicated.
-    m['NTwoVDim']       = gint(n2v_cfg['dimensions'] + 4)
-
+    
     # Class balance (full train.csv including self-loops)
     n_train_pos = int((d['train']['label'] == 1).sum())
     n_train_neg = int((d['train']['label'] == 0).sum())
@@ -481,23 +469,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
 
     # ---- Test-set tier distribution ----
-    # Live for all three tiers once cascade_test_tiers.csv comes from the
-    # heuristics-only (training.no_n2v=true) checkpoint — see plan.md's
-    # "Code↔thesis mismatch" item. If the on-disk file still looks Node2Vec-
-    # contaminated (implausibly high Tier-1 share), warn instead of silently
-    # emitting a misleading number.
-    tt = d['test_tiers']
-    n_tt = len(tt)
-    tt0_n = (tt['tier_used'] == 0).sum()
-    tt1_n = (tt['tier_used'] == 1).sum()
-    tt2_n = (tt['tier_used'] == 2).sum()
-    tt1_pct = 100 * tt1_n / n_tt
-    if tt1_pct > 50:
-        log.warning('cascade_test_tiers.csv Tier-1 share is %.1f%% — this looks like the '
-                    'Node2Vec-contaminated checkpoint, not the heuristics-only config. '
-                    'Regenerate with training.no_n2v=true before trusting TestTierOne*/TestTierTwoPct.',
-                    tt1_pct)
-    m['TestTierOneCount'] = gint(tt1_n)
+        m['TestTierOneCount'] = gint(tt1_n)
     m['TestTierOnePct']   = gpct(tt1_pct, 1)
     m['TestTierZeroPct']  = gpct(100 * tt0_n / n_tt, 1)
     m['TestTierTwoPct']   = gpct(100 * tt2_n / n_tt, 1)
@@ -594,27 +566,6 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['SvmCsFone']  = _MISSING
         m['SvmLatency'] = _MISSING
 
-    # ---- Node2Vec ablation (from node2vec_ablation.json) ----
-    n2v = d['n2v_ablation']
-    if n2v:
-        without, with_n2v, coverage = n2v['without'], n2v['with'], n2v['coverage']
-        m['NTwoVWithCallPct']   = gpct(with_n2v['tier1_call_rate_%'], 2)
-        m['NTwoVWithCallN']     = gint(with_n2v['tier1_call_n'])
-        m['NTwoVWithOverallFone'] = gfloat(with_n2v['macro_f1'], 4)
-        m['NTwoVWithConfFone']    = gfloat(with_n2v['macro_f1_confident'], 4)
-        m['NTwoVNoOverallFone']   = gfloat(without['macro_f1'], 4)
-        m['NTwoVNoConfFone']      = gfloat(without['macro_f1_confident'], 4)
-        m['NTwoVNoAccOverall']    = gfloat(without['accuracy'], 4)
-        m['NTwoVWithAccOverall']  = gfloat(with_n2v['accuracy'], 4)
-        m['NTwoVIdOneCoverage'] = gpct(coverage['id1_coverage_pct'], 1)
-        m['NTwoVIdTwoCoverage'] = gpct(coverage['id2_coverage_pct'], 1)
-        m['NTwoVZeroVecPct']    = gpct(coverage['zero_vec_pct'], 1)
-        m['NTwoVZeroVecN']      = gint(coverage['zero_vec_n'])
-    else:
-        for k in ('NTwoVWithCallPct', 'NTwoVWithCallN', 'NTwoVWithOverallFone', 'NTwoVWithConfFone',
-                  'NTwoVNoOverallFone', 'NTwoVNoConfFone', 'NTwoVNoAccOverall', 'NTwoVWithAccOverall',
-                  'NTwoVIdOneCoverage', 'NTwoVIdTwoCoverage', 'NTwoVZeroVecPct', 'NTwoVZeroVecN'):
-            m[k] = _MISSING
 
     n2v_tt = d['n2v_test_tiers']
     if n2v_tt is not None:
@@ -815,8 +766,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     # ---- Kaggle scores ----
     kg = d['kaggle']
     # Reference (structural-only) cascade — highest public score
-    ref_rows = kg[~kg['description'].str.contains('Node2Vec', na=False)]
-    n2v_rows = kg[kg['description'].str.contains('Node2Vec', na=False)]
+    ref_rows = kg
 
     kaggle_our_private = None
     if not ref_rows.empty:
@@ -970,9 +920,6 @@ def _compute_figures(d: dict, shared: dict) -> dict:
 
     # ---- threshold ablation grid (already a small aggregate CSV) ----
     figs['ablation_grid'] = d['ablation'].to_dict(orient='records')
-
-    # ---- node2vec ablation (already a small aggregate dict) ----
-    figs['node2vec_ablation'] = d['n2v_ablation']
 
     # ---- throughput comparison ----
     thr = d['throughput']

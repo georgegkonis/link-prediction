@@ -33,8 +33,6 @@ make jupyter                           # Start JupyterLab
 For fast iteration without running full feature computation:
 
 ```bash
-# Skip Node2Vec (slow graph embedding training)
-conda run -n link-prediction python -m scripts.data.compute_structural --nrows 500 --skip-n2v
 
 # Skip Sentence-Transformer (slow model download + inference)
 conda run -n link-prediction python -m scripts.data.compute_semantic --nrows 300 --skip-st

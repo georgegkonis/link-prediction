@@ -60,7 +60,7 @@
     \midrule
     \multicolumn{2}{l}{\texttt{\en{src\slash{}features\slash{}}}} \\
     \midrule
-    \texttt{\en{structural.py}} & \texttt{\en{compute\_heuristics()}}, \texttt{\en{train\_node2vec()}}, \texttt{\en{node2vec\_hadamard\_features()}} \\
+    \texttt{\en{structural.py}} & \texttt{\en{compute\_heuristics()}} \\
     \texttt{\en{embeddings.py}} & \texttt{\en{clean\_wiki\_text()}}, \texttt{\en{build\_tfidf()}}, \texttt{\en{compute\_tfidf\_scores()}}, \texttt{\en{encode\_nodes()}}, \texttt{\en{compute\_embedding\_scores()}} \\
     \texttt{\en{linguistic.py}} & \texttt{\en{pos\_frequency\_vector()}}, \texttt{\en{compute\_pos\_features()}} \\
     \midrule
@@ -78,7 +78,7 @@
     \multicolumn{2}{l}{\texttt{\en{scripts\slash{}data\slash{}}}} \\
     \midrule
     \texttt{\en{download\_data.py}} & λήψη του συνόλου δεδομένων του διαγωνισμού από το \en{Kaggle} \\
-    \texttt{\en{compute\_structural.py}} & \en{CLI} για \texttt{\en{compute\_heuristics}}/\allowbreak{}\texttt{\en{train\_node2vec}} \\
+    \texttt{\en{compute\_structural.py}} & \en{CLI} για \texttt{\en{compute\_heuristics}} \\
     \texttt{\en{compute\_semantic.py}} & \en{CLI} για \en{TF-IDF}/\allowbreak{}\en{Sentence-Transformer}/\allowbreak{}\en{POS} χαρακτηριστικά \\
     \texttt{\en{build\_from\_wikidump.py}} & εξαγωγή κόμβων και πραγματικών υπερσυνδέσμων από αρχεία \en{SQL dump} \\
     \texttt{\en{build\_wiki\_fresh\_dataset.py}} & δειγματοληψία τυχαίων μη ακμών και δημιουργία του νέου \texttt{\en{train.csv}} \\
@@ -92,7 +92,6 @@
     \texttt{\en{audit\_hub\_in\_predictions.py}} & σύγκριση του κανόνα αναζήτησης με τις προβλέψεις \en{CascadeLP} \\
     \texttt{\en{analyze\_dataset.py}} & χαρακτηρισμός διαχωρισιμότητας και ορίων $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ \\
     \texttt{\en{analyze\_cascade.py}} & ανάλυση \en{CascadeLP} ανά επίπεδο και δυσκολία \\
-    \texttt{\en{ablate\_node2vec.py}} & \en{ablation} \en{Node2Vec} και μέτρηση κάλυψης στο σύνολο ελέγχου \\
     \texttt{\en{ablate\_cascade\_thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
     \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
     \texttt{\en{benchmark\_throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
@@ -130,7 +129,7 @@
     \texttt{\en{data\slash{}raw\slash{}\{train,\allowbreak{}test,\allowbreak{}nodes,\allowbreak{}sample\_submission\}.*}}
   \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_structural}} --- Σημαίες:
     \texttt{\en{--nrows N}}, \texttt{\en{--skip-\allowbreak{}n2v}}. Έξοδος:
-    \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{node2vec.kv}}
+    \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}}
   \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_semantic}} --- Σημαίες:
     \texttt{\en{--nrows N}}, \texttt{\en{--model NAME}}, \texttt{\en{--skip-\allowbreak{}st}}, \texttt{\en{--skip-\allowbreak{}pos}}.
     Έξοδος: \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}},
@@ -171,7 +170,6 @@
     \texttt{\en{--cn-\allowbreak{}threshold X}}, \texttt{\en{--tfidf-\allowbreak{}threshold X}}, \texttt{\en{--fpr X}} (προεπ.\ 0{,}01).
     Έξοδος: στατιστικά τετριμμένων ζευγών
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_cascade}} --- Έξοδος: ανάλυση ανά επίπεδο/\allowbreak{}δυσκολία
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_node2vec}} --- Έξοδος: \en{ablation} \en{Node2Vec} + κάλυψη
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_cascade\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.benchmark\_throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
@@ -232,7 +230,6 @@
     \textbf{Αρχείο} & \textbf{Στήλες /\allowbreak{} Σχήμα} & \textbf{Διάσταση} \\
     \midrule
     \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{cn,\allowbreak{} jaccard,\allowbreak{} adamic\_adar,\allowbreak{} pref\_attach}} & 4 \\
-    \texttt{\en{node2vec.kv}} & \en{gensim} \texttt{\en{KeyedVectors}}, ένα διάνυσμα ανά κόμβο & 64 \\
     \texttt{\en{n2v\_\{train,\allowbreak{}test\}.npy}} & πίνακας \en{Hadamard} χαρακτηριστικών ανά ζεύγος & (n\_\allowbreak{}ζεύγη, 64) \\
     \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{tfidf\_score}} & 1 \\
     \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}} & \texttt{\en{id}} (ευρετήριο), \texttt{\en{st\_score}} & 1 \\
@@ -262,12 +259,9 @@
 (\texttt{\en{val\_size: 0.2}}, βλ.\ \TrainSplitSize{}/\allowbreak{}\ValSplitSize{} στον
 πίνακα~\ref{tab:dataset-stats} για το πραγματικό μέγεθος διαχωρισμού), τα όρια
 $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\en{null}} από προεπιλογή, οπότε
-υπολογίζονται αυτόματα μέσω \texttt{\en{pick\_thresholds}}), και τη σημαία
-\texttt{\en{no\_n2v}} (\texttt{\en{true}} από προεπιλογή --- το \en{CascadeLP} που αναφέρει η
-διατριβή είναι η παραλλαγή μόνο με ευρετικά)· το \texttt{\en{configs\slash{}model\slash{}*.yaml}} περιέχει
+υπολογίζονται αυτόματα μέσω \texttt{\en{pick\_thresholds}})· το \texttt{\en{configs\slash{}model\slash{}*.yaml}} περιέχει
 από ένα αρχείο ανά μοντέλο· και το \texttt{\en{configs\slash{}features\slash{}default.yaml}} ορίζει τις
-υπερπαραμέτρους των \en{pipeline} εξαγωγής χαρακτηριστικών (\en{TF-IDF}, \en{sentence-transformer},
-\en{Node2Vec}). Οι αριθμητικές τιμές όλων αυτών έχουν ήδη καταγραφεί στους
+υπερπαραμέτρους των \en{pipeline} εξαγωγής χαρακτηριστικών (\en{TF-IDF}, \en{sentence-transformer}). Οι αριθμητικές τιμές όλων αυτών έχουν ήδη καταγραφεί στους
 πίνακες~\ref{tab:hyperparam-classifiers} και~\ref{tab:hyperparam-features} ως \en{macros}, ώστε να
 παραμένουν αυτόματα συγχρονισμένες με τα ίδια τα αρχεία \en{YAML}.
 
@@ -278,13 +272,10 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
   \item \texttt{\en{make data-\allowbreak{}download}}
   \item \texttt{\en{make features-\allowbreak{}structural}}, \texttt{\en{make features-\allowbreak{}semantic}}
   \item \texttt{\en{make analyze-\allowbreak{}leakage}}, \texttt{\en{make analyze-\allowbreak{}dataset}}
-  \item \texttt{\en{make train MODEL=<structural|tfidf|pos|embedding|svm|cascade>}} (το \en{cascade}
-        εκπαιδεύεται από προεπιλογή στην αναπαράξιμη παραλλαγή μόνο με ευρετικά· η παραλλαγή
-        \en{ablation} με \en{Node2Vec} απαιτεί απευθείας κλήση με
-        \texttt{\en{training.no\_n2v=false +tag=n2v}})
+  \item \texttt{\en{make train MODEL=<structural|tfidf|pos|embedding|svm|cascade>}} (το \en{cascade} εκπαιδεύεται με χρήση των δομικών ευρετικών παραμέτρων)
   \item \texttt{\en{make evaluate MODEL=<...>}} για καθένα από τα έξι μοντέλα
   \item \texttt{\en{make analyze}} (εκτελεί όλους τους υπόλοιπους στόχους ανάλυσης: \en{ablate-thresholds},
-        \en{analyze-node2vec}, \en{analyze-hard-residual}, \en{benchmark-throughput})
+        \en{analyze-hard-residual}, \en{benchmark-throughput})
   \item \texttt{\en{make compute-\allowbreak{}stats}}
   \item \texttt{\en{make thesis-\allowbreak{}assets}} (= \texttt{\en{thesis-\allowbreak{}macros}} + \texttt{\en{thesis-\allowbreak{}figures}})
   \item \texttt{\en{make thesis-\allowbreak{}compile}}

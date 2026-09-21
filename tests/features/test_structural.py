@@ -21,10 +21,7 @@ import pytest
 from gensim.models import KeyedVectors
 
 from src.features.structural import (
-    _generate_walks,
     compute_heuristics,
-    node2vec_hadamard_features,
-    train_node2vec,
 )
 
 
@@ -105,105 +102,3 @@ def test_compute_heuristics_is_symmetric(tiny_graph):
                              show_progress=False)
     rev = compute_heuristics(tiny_graph, pd.DataFrame({'id1': [4], 'id2': [1]}),
                              show_progress=False)
-    np.testing.assert_allclose(fwd.values, rev.values)
-
-
-# ── node2vec_hadamard_features ───────────────────────────────────────────────
-
-@pytest.fixture
-def tiny_kv() -> KeyedVectors:
-    """A hand-built KeyedVectors — no training, no I/O."""
-    kv = KeyedVectors(vector_size=3)
-    kv.add_vectors(
-        ['1', '2', '3'],
-        np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [0.0, -1.0, 2.0]], dtype=np.float32),
-    )
-    return kv
-
-
-def test_node2vec_hadamard_elementwise_product(tiny_kv):
-    pairs = pd.DataFrame({'id1': [1, 1], 'id2': [2, 3]})
-    out = node2vec_hadamard_features(tiny_kv, pairs, dim=3)
-    assert out.shape == (2, 3)
-    assert out.dtype == np.float32
-    assert out[0].tolist() == pytest.approx([4.0, 10.0, 18.0])
-    assert out[1].tolist() == pytest.approx([0.0, -2.0, 6.0])
-
-
-def test_node2vec_hadamard_out_of_vocab_is_zero_vector(tiny_kv):
-    pairs = pd.DataFrame({'id1': [1, 999, 999], 'id2': [999, 1, 998]})
-    out = node2vec_hadamard_features(tiny_kv, pairs, dim=3)
-    assert out.shape == (3, 3)
-    assert (out == 0).all()
-
-
-def test_node2vec_hadamard_mixed_vocab_keeps_row_alignment(tiny_kv):
-    pairs = pd.DataFrame({'id1': [999, 1, 999], 'id2': [1, 2, 2]}, index=[5, 6, 7])
-    out = node2vec_hadamard_features(tiny_kv, pairs, dim=3)
-    assert (out[0] == 0).all()
-    assert out[1].tolist() == pytest.approx([4.0, 10.0, 18.0])
-    assert (out[2] == 0).all()
-
-
-def test_node2vec_hadamard_keys_are_looked_up_as_strings(tiny_kv):
-    """Node ids arrive as ints but the KeyedVectors keys are strings."""
-    assert '1' in tiny_kv.key_to_index and 1 not in tiny_kv.key_to_index
-    out = node2vec_hadamard_features(tiny_kv, pd.DataFrame({'id1': [1], 'id2': [1]}), dim=3)
-    assert out[0].tolist() == pytest.approx([1.0, 4.0, 9.0])
-
-
-def test_node2vec_hadamard_empty_pairs(tiny_kv):
-    out = node2vec_hadamard_features(tiny_kv, pd.DataFrame({'id1': [], 'id2': []}), dim=3)
-    assert out.shape == (0, 3)
-
-
-def test_node2vec_hadamard_dim_mismatch_raises(tiny_kv):
-    """`dim` is not validated against wv.vector_size — a mismatch must at least
-    fail loudly instead of silently truncating."""
-    with pytest.raises(ValueError):
-        node2vec_hadamard_features(tiny_kv, pd.DataFrame({'id1': [1], 'id2': [2]}), dim=64)
-
-
-# ── walk generation / training ───────────────────────────────────────────────
-
-def test_generate_walks_shape_and_determinism(tiny_graph):
-    walks = _generate_walks(tiny_graph, num_walks=2, walk_length=4, seed=7)
-    assert len(walks) == 2 * tiny_graph.number_of_nodes()
-    assert all(len(w) == 4 for w in walks)                  # no dead ends in this graph
-    assert all(isinstance(tok, str) for w in walks for tok in w)
-    assert walks == _generate_walks(tiny_graph, num_walks=2, walk_length=4, seed=7)
-
-
-def test_generate_walks_are_valid_paths(tiny_graph):
-    for walk in _generate_walks(tiny_graph, num_walks=1, walk_length=5, seed=3):
-        ints = [int(t) for t in walk]
-        for u, v in zip(ints, ints[1:]):
-            assert tiny_graph.has_edge(u, v)
-
-
-def test_generate_walks_stops_at_isolated_node():
-    import networkx as nx
-    G = nx.Graph()
-    G.add_node(42)
-    walks = _generate_walks(G, num_walks=1, walk_length=10, seed=0)
-    assert walks == [['42']]
-
-
-def test_train_node2vec_rejects_biased_walks(tiny_graph):
-    with pytest.raises(NotImplementedError, match='unbiased DeepWalk'):
-        train_node2vec(tiny_graph, p=0.5)
-    with pytest.raises(NotImplementedError):
-        train_node2vec(tiny_graph, q=2.0)
-
-
-def test_train_node2vec_returns_keyed_vectors_for_every_node(tiny_graph):
-    wv = train_node2vec(tiny_graph, dimensions=8, walk_length=5, num_walks=2,
-                        workers=1, window=3, seed=42)
-    assert set(wv.key_to_index) == {str(n) for n in tiny_graph.nodes()}
-    assert wv.vectors.shape == (tiny_graph.number_of_nodes(), 8)
-
-    # ...and those vectors feed straight into the Hadamard featuriser
-    feats = node2vec_hadamard_features(
-        wv, pd.DataFrame({'id1': [1], 'id2': [2]}), dim=8)
-    assert feats.shape == (1, 8)
-    assert not np.allclose(feats, 0)

@@ -378,36 +378,6 @@ def fig_threshold_ablation(figs: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Figure 10: Node2Vec ablation comparison
-# ---------------------------------------------------------------------------
-
-def fig_node2vec_ablation(figs: dict) -> None:
-    log.info('Generating node2vec_ablation.png ...')
-    n2v = figs.get('node2vec_ablation')
-    if n2v is None:
-        log.warning('SKIP: no node2vec_ablation stats')
-        return
-
-    without, with_n2v = n2v['without'], n2v['with']
-    metrics = ['accuracy', 'macro_f1', 'accuracy_confident', 'macro_f1_confident']
-    labels = ['Ακρίβεια\n(σύνολο)', 'Macro F1\n(σύνολο)', 'Ακρίβεια\n(σίγουρα)', 'Macro F1\n(σίγουρα)']
-
-    x = np.arange(len(metrics))
-    width = 0.35
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.bar(x - width / 2, [without[m] for m in metrics], width, label='Χωρίς Node2Vec', color=PALETTE['colors'][0])
-    ax.bar(x + width / 2, [with_n2v[m] for m in metrics], width, label='Με Node2Vec', color=PALETTE['colors'][1])
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels)
-    ax.set_ylim(0, 1.05)
-    ax.set_ylabel('Τιμή')
-    ax.set_title('Επίδραση Node2Vec στο Επίπεδο 1 (Validation)')
-    ax.legend()
-    fig.tight_layout()
-    _save(fig, 'node2vec_ablation.png')
-
-
-# ---------------------------------------------------------------------------
 # Figure 11: throughput comparison, CascadeLP vs. SVM
 # ---------------------------------------------------------------------------
 
@@ -611,7 +581,6 @@ def main() -> None:
     fig_roc_curve(figs)
     fig_confidence_distribution(figs)
     fig_threshold_ablation(figs)
-    fig_node2vec_ablation(figs)
     fig_throughput_comparison(figs)
     fig_coldstart_comparison(figs)
     fig_error_by_difficulty_comparison(figs)

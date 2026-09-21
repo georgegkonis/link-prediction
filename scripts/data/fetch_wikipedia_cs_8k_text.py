@@ -9,7 +9,7 @@ Writes: <output>/nodes.tsv          (id, text — same schema as data/raw/dsaa/n
         <output>/text_fetch_stats.json (match-rate provenance, for thesis macros)
 
 Usage:
-    python -m scripts.data.fetch_wikipedia_text --output data/raw/wikipedia
+    python -m scripts.data.fetch_wikipedia_text --output data/raw/wikipedia_cs_8k
 """
 import argparse
 import json
@@ -22,7 +22,7 @@ from datasets import load_dataset
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', default='data/raw/wikipedia')
+    parser.add_argument('--output', default='data/raw/wikipedia_cs_8k')
     parser.add_argument('--config', default='20231101.simple')
     args = parser.parse_args()
     out_dir = pathlib.Path(args.output)

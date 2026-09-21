@@ -1,7 +1,7 @@
 """
 Evaluate the original, unmodified CascadeLP (and all four baselines) on the
 freshly-crawled, artifact-free Wikipedia dataset (scripts/data/build_from_wikidump.py
-+ build_wikipedia_dataset.py): a real, connected subgraph of Simple English
++ build_wikipedia_cs_8k_dataset.py): a real, connected subgraph of Simple English
 Wikipedia, real hyperlinks as positives, honestly-sampled random non-edges as
 negatives. Unlike DSAA 2023, there is no known artifact here to correct — this
 experiment exists to show what CascadeLP does on a dataset that was built
@@ -14,7 +14,7 @@ and reusing it here avoids reintroducing the exact leak this thesis spent so
 much effort diagnosing.
 
 Usage:
-    python -m scripts.analysis.run_wikipedia_experiment
+    python -m scripts.analysis.run_wikipedia_cs_8k_experiment
 """
 import argparse
 import json
@@ -34,7 +34,7 @@ from src.models.cascade import CascadeLP
 from src.models.svm import EmbeddingClassifier, PosClassifier, StructuralClassifier, SvmClassifier, TfidfClassifier
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('run_wikipedia_experiment')
+log = setup_logging('run_wikipedia_cs_8k_experiment')
 
 
 def evaluate(y_true, y_pred, y_score) -> dict:
@@ -47,11 +47,11 @@ def evaluate(y_true, y_pred, y_score) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--pairs', default='data/raw/wikipedia/train.csv')
-    parser.add_argument('--directory', default='data/interim/wikipedia')
-    parser.add_argument('--nodes', default='data/raw/wikipedia/nodes.tsv')
-    parser.add_argument('--predictions', default='outputs/predictions/wikipedia')
-    parser.add_argument('--stats', default='outputs/stats/wikipedia_experiment_results.json')
+    parser.add_argument('--pairs', default='data/raw/wikipedia_cs_8k/train.csv')
+    parser.add_argument('--directory', default='data/interim/wikipedia_cs_8k')
+    parser.add_argument('--nodes', default='data/raw/wikipedia_cs_8k/nodes.tsv')
+    parser.add_argument('--predictions', default='outputs/predictions/wikipedia_cs_8k')
+    parser.add_argument('--stats', default='outputs/stats/wikipedia_cs_8k_experiment_results.json')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--val-size', type=float, default=0.2)
     args = parser.parse_args()

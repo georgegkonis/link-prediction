@@ -159,10 +159,10 @@ data/raw/dsaa/*
 data/interim/dsaa/*
 !data/interim/.gitkeep
 # Freshly-crawled Wikipedia dataset — fully regenerable via
-# scripts/data/build_from_wikidump.py + fetch_wikipedia_text.py +
-# build_wikipedia_dataset.py (needs the simplewiki SQL dumps from
+# scripts/data/build_from_wikidump.py + fetch_wikipedia_cs_8k_text.py +
+# build_wikipedia_cs_8k_dataset.py (needs the simplewiki SQL dumps from
 # dumps.wikimedia.org, not committed either)
-data/raw/wikipedia/
+data/raw/wikipedia_cs_8k/
 
 # Hydra runtime artifacts
 .hydra/

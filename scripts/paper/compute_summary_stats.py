@@ -188,13 +188,13 @@ def _load() -> dict:
 
     # ---- Fresh, artifact-free Wikipedia validation dataset ----
     d['wikipedia'] = _load_json_optional(
-        STATS / 'wikipedia_experiment_results.json',
-        'run python -m scripts.analysis.run_wikipedia_experiment first')
+        STATS / 'wikipedia_cs_8k_experiment_results.json',
+        'run python -m scripts.analysis.run_wikipedia_cs_8k_experiment first')
     d['wikipedia_crawl'] = _load_json_optional(
-        pathlib.Path('data/raw/wikipedia/crawl_stats.json'),
+        pathlib.Path('data/raw/wikipedia_cs_8k/crawl_stats.json'),
         'run python -m scripts.data.build_from_wikidump first')
     d['wikipedia_text'] = _load_json_optional(
-        pathlib.Path('data/raw/wikipedia/text_fetch_stats.json'),
+        pathlib.Path('data/raw/wikipedia_cs_8k/text_fetch_stats.json'),
         'run python -m scripts.data.fetch_wikipedia_text first')
 
     return d

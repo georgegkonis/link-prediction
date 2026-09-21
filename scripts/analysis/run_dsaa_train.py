@@ -10,10 +10,10 @@ Available models:
     cascade     — CascadeLP (all three tiers combined)
 
 Usage:
-    python -m scripts.train model=structural
-    python -m scripts.train model=cascade model.tier1_threshold=0.8 model.tier2_threshold=0.7
-    python -m scripts.train model=cascade                                # reproducible heuristics-only checkpoint
-    python -m scripts.train model=cascade training.no_n2v=false +tag=n2v # keeps the n2v-ablation variant
+    python -m scripts.analysis.run_dsaa_train model=structural
+    python -m scripts.analysis.run_dsaa_train model=cascade model.tier1_threshold=0.8 model.tier2_threshold=0.7
+    python -m scripts.analysis.run_dsaa_train model=cascade                                # reproducible heuristics-only checkpoint
+    python -m scripts.analysis.run_dsaa_train model=cascade training.no_n2v=false +tag=n2v # keeps the n2v-ablation variant
                                                                           # alongside it (cascade_n2v.joblib,
                                                                           # cascade_n2v_val_tiers.csv, ...)
 """

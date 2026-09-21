@@ -176,7 +176,7 @@ def _load() -> dict:
         PREDICTIONS / 'embedding_val_metrics.json', 'run make train MODEL=embedding first')
     d['n2v_test_tiers'] = _load_csv_optional(
         PREDICTIONS / 'cascade_n2v_test_tiers.csv',
-        'run python -m scripts.evaluate model=cascade training.no_n2v=false +tag=n2v first')
+        'run python -m scripts.analysis.run_dsaa_evaluate model=cascade training.no_n2v=false +tag=n2v first')
     d['cascade_val_metrics'] = _load_json_optional(
         PREDICTIONS / 'cascade_val_metrics.json', 'run make train MODEL=cascade first')
 

@@ -11,10 +11,10 @@ by Kaggle's submission `ref` (not list position or description, which can be
 blank) so scores stay correctly matched to the file that earned them.
 
 Usage:
-    python -m scripts.submit_kaggle --file outputs/predictions/dsaa/cascade_submission.csv \
+    python -m scripts.analysis.submit_dsaa_kaggle --file outputs/predictions/dsaa/cascade_submission.csv \
         --message "CascadeLP val macro-F1 0.9986" --wait
-    python -m scripts.submit_kaggle --check          # list + log recent submissions
-    python -m scripts.submit_kaggle --check --wait   # block until the newest is scored
+    python -m scripts.analysis.submit_dsaa_kaggle --check          # list + log recent submissions
+    python -m scripts.analysis.submit_dsaa_kaggle --check --wait   # block until the newest is scored
 """
 
 import argparse

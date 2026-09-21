@@ -2,9 +2,9 @@
 Run a trained model on the test set and produce a Kaggle submission CSV.
 
 Usage:
-    python -m scripts.evaluate model=structural
-    python -m scripts.evaluate model=cascade                                    # reproducible heuristics-only run
-    python -m scripts.evaluate model=cascade training.no_n2v=false +tag=n2v     # n2v-ablation variant
+    python -m scripts.analysis.run_dsaa_evaluate model=structural
+    python -m scripts.analysis.run_dsaa_evaluate model=cascade                                    # reproducible heuristics-only run
+    python -m scripts.analysis.run_dsaa_evaluate model=cascade training.no_n2v=false +tag=n2v     # n2v-ablation variant
                                                                                  # (cascade_n2v_submission.csv, ...)
 """
 

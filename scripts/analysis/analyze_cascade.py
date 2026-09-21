@@ -1,7 +1,7 @@
 """
 Post-hoc analysis of CascadeLP validation results for the thesis (Ch.4 §4.4, Ch.5).
 
-Reads outputs/predictions/dsaa/cascade_val_tiers.csv (written by scripts/train.py) plus
+Reads outputs/predictions/dsaa/cascade_val_tiers.csv (written by scripts/run_dsaa_train.py) plus
 the structural features, and prints:
   - overall macro-F1 / accuracy on the validation split
   - per-tier n / call-rate / accuracy / macro-F1

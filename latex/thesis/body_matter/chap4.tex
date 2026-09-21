@@ -128,6 +128,18 @@
 Ο πλήρης πίνακας του ελέγχου διατηρείται στο
 Παράρτημα~\ref{ch:b} για αναπαραγωγιμότητα.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\textwidth]{graph_protocol_leakage}
+  \caption{Ποσοτικοποίηση της διαρροής μέσω κατασκευής γραφήματος στο αρχικό
+  πρωτόκολλο \en{DSAA}. Οι \AuditValPositivesInGraph{} θετικές ακμές
+  επικύρωσης συμμετέχουν ήδη στο πλήρες γράφημα, ενώ
+  \AuditTrainGraphColdPositive{} θετικά ζεύγη θα είχαν τουλάχιστον ένα μη
+  παρατηρημένο άκρο αν το γράφημα κατασκευαζόταν μόνο από το τμήμα
+  εκπαίδευσης.}
+  \label{fig:graph-protocol-leakage}
+\end{figure}
+
 Ο \texttt{\en{SvmClassifier}}
 (\S\ref{sec:svm-baseline}) εκπαιδεύεται σε ένα επιπρόσθετο, στρωματοποιημένο
 δείγμα \SvmSampleSize{} ζευγών από το σύνολο εκπαίδευσης, λόγω του υπολογιστικού κόστους
@@ -547,6 +559,18 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 στο σταθερό σύνολο επικύρωσης· δεν περιλαμβάνει μεταβλητότητα από νέα διάσχιση,
 διαίρεση ή επανεκπαίδευση.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{cross_dataset_performance}
+  \caption{Σύγκριση των ίδιων οικογενειών μοντέλων στο αρχικό πρωτόκολλο
+  \en{DSAA 2023} και στο αυστηρότερο πρωτόκολλο \en{Wiki-CS-8k}. Η αλλαγή
+  κλίμακας και κατάταξης---ιδίως η πτώση του \en{POS} και η ανάδειξη του
+  δομικού μοντέλου---δείχνει πόσο εξαρτάται η ερμηνεία από την κατασκευή του
+  συνόλου δεδομένων. Η γραμμή σφάλματος του \en{CascadeLP} στο
+  \en{Wiki-CS-8k} είναι το ζευγαρωμένο 95\% διάστημα \en{bootstrap}.}
+  \label{fig:cross-dataset-performance}
+\end{figure}
+
 Η δρομολόγηση ακολουθεί
 επίσης τον σχεδιαστικό στόχο: το Επίπεδο~1 επιλύει \WfTierOneCount{} ζεύγη
 (\WfTierOnePct\%), το Επίπεδο~2 \WfTierTwoCount{} (\WfTierTwoPct\%) και το
@@ -554,6 +578,16 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 Τα ποσοστά αυτά μετρούν ποιο
 επίπεδο έλαβε την τελική απόφαση πάνω σε προϋπολογισμένα χαρακτηριστικά· δεν
 αποτελούν μέτρηση ίσης ποσοστιαίας μείωσης του κόστους κωδικοποίησης.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{routing_comparison}
+  \caption{Κατανομή του επιπέδου τελικής απόφασης του \en{CascadeLP} στα δύο
+  σύνολα. Στο \en{Wiki-CS-8k}, όπου το γράφημα εκπαίδευσης παρέχει ουσιαστικό
+  δομικό σήμα, το Επίπεδο~1 επιλύει το \WfTierOnePct\% των ζευγών, έναντι
+  \TierOnePct\% στο αρχικό πρωτόκολλο \en{DSAA}.}
+  \label{fig:routing-comparison}
+\end{figure}
 
 \begin{table}[htbp]
   \centering
@@ -595,6 +629,17 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 επικαλύπτονται και λειτουργούν ως διαγνωστικές τομές, όχι ως ανεξάρτητα
 πειράματα αφαίρεσης.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.84\textwidth]{wiki_diagnostic_subsets}
+  \caption{Απόδοση του \en{CascadeLP} στα διαγνωστικά υποσύνολα του
+  \en{Wiki-CS-8k}. Το πλήθος κάτω από κάθε κατηγορία είναι απαραίτητο για την
+  ερμηνεία: το λειτουργικό \en{cold-start} περιέχει μόνο
+  \WfColdStartCount{} ζεύγη, ενώ το ευρύτερο υποσύνολο μηδενικού \en{CN}
+  περιέχει \WfZeroCnCount{} και αποκαλύπτει σχεδόν μηδενική ανάκληση θετικών.}
+  \label{fig:wiki-diagnostic-subsets}
+\end{figure}
+
 
 \section{Σύγκριση με Μοντέλο Αναφοράς \en{SVM}}
 \label{sec:svm-results}
@@ -628,16 +673,21 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\textwidth]{svm_metrics}
-  \caption{Απόδοση μοντέλου αναφοράς \en{TF-IDF + SVM} σε σύνολο επικύρωσης. Το \en{SVM} επιτυγχάνει \en{Macro F1} = \SvmFone{} και \en{AUC-ROC} = \SvmAuc{}, υποδηλώνοντας την ισχυρή προβλεπτική ικανότητα της κειμενικής ομοιότητας.}
-  \label{fig:svm-metrics}
+  \includegraphics[width=0.72\textwidth]{throughput_comparison}
+  \caption{Μετρούμενος λανθάνων χρόνος συμπερασμού ανά ζεύγος πάνω σε
+  προϋπολογισμένα χαρακτηριστικά. Η λογαριθμική κλίμακα αναδεικνύει τη
+  διαφορά μεταξύ \en{CascadeLP} και \en{TF-IDF + SVM}, χωρίς να περιλαμβάνει
+  το κόστος εξαγωγής των χαρακτηριστικών.}
+  \label{fig:throughput-comparison}
 \end{figure}
 
-Όπως φαίνεται στο Σχήμα~\ref{fig:svm-metrics}, το \en{SVM} επιτυγχάνει υψηλή απόδοση σε όλες τις μετρικές, υπογραμμίζοντας ότι η
+Το \en{SVM} επιτυγχάνει υψηλή απόδοση στις μετρικές του
+Πίνακα~\ref{tab:svm-results}, υπογραμμίζοντας ότι η
 \en{TF-IDF} ομοιότητα του κειμένου είναι ένας ισχυρός μεμονωμένος δείκτης για τη
 πρόβλεψη ακμών σε αυτό το σύνολο δεδομένων.
-Η σύγκριση με το \en{CascadeLP} δείχνει ότι το κλασικό μοντέλο αποτελεί ισχυρή
-αλλά υπολογιστικά ακριβή βασική γραμμή.
+Η σύγκριση χρόνου στο Σχήμα~\ref{fig:throughput-comparison} δείχνει ότι το
+κλασικό μοντέλο αποτελεί ισχυρή αλλά υπολογιστικά ακριβή βασική γραμμή στο
+στάδιο ταξινόμησης.
 Η ερμηνεία της διαφοράς απαιτεί προσοχή,
 επειδή το \en{SVM} χρησιμοποιεί μόνο την ομοιότητα \en{TF-IDF} και εκπαιδεύεται
 σε μικρότερο υποσύνολο, ενώ το \en{CascadeLP} συνδυάζει δομικά, \en{POS} και

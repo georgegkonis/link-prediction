@@ -90,6 +90,9 @@
         \let\footnotesize\small
         \let\footnoterule\relax
         \renewcommand{\thefootnote}{\fnsymbol{footnote}}
+        % The adjacent centred minipages produce a harmless internal box
+        % warning equal to \parindent; their visible content remains in bounds.
+        \hfuzz=18pt
         \new@tpage
         \begin{center}
 

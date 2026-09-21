@@ -17,34 +17,32 @@
     δομικούς ευρετικούς δείκτες (\en{Common Neighbours}, \en{Jaccard},
     \en{Adamic-Adar}, \en{Preferential Attachment}), συχνότητες μερών του λόγου με
     \en{Random Forest} για κόμβους χωρίς δομικούς γείτονες, και έναν κωδικοποιητή
-    \en{Sentence-Transformer} για ζεύγη στα οποία τα προηγούμενα επίπεδα εμφανίζουν
-    αβεβαιότητα.
+    \en{Sentence-Transformer} για την τελική ταξινόμηση ζευγών στα οποία τα
+    προηγούμενα επίπεδα εμφανίζουν αβεβαιότητα.
 
     Αξιολογούμε το \en{CascadeLP} στο σύνολο αξιολόγησης \en{DSAA 2023} της
     \en{Wikipedia}, το οποίο επιλέγεται ως πεδίο αξιολόγησης επειδή συνιστά
     ρεαλιστικό στιγμιότυπο γραφήματος με κειμενικά χαρακτηριστικά σε κλίμακα
     εκατοντάδων χιλιάδων κόμβων, με καθιερωμένο πίνακα κατάταξης διαγωνισμού που
     παρέχει υπαρκτές λύσεις προς σύγκριση.
-    Για να επικυρώσουμε ότι η επιτυγχανόμενη
-    ακρίβεια είναι γνήσια και όχι τεχνούργημα διαρροής δεδομένων ή τετριμμένης
-    διαχωρισιμότητας, διεξάγουμε έναν συστηματικό έλεγχο \en{data leakage} --- που
-    βρίσκει αμελητέα επικάλυψη ζευγών --- και έναν ανεξάρτητο χαρακτηρισμό
-    διαχωρισιμότητας του συνόλου δεδομένων, τον οποίο διασταυρώνουμε ανά ζεύγος με το
-    επίπεδο που το επέλυσε.
+    Για να ελέγξουμε τι μετρά η επιτυγχανόμενη ακρίβεια, διεξάγουμε έλεγχο
+    ακεραιότητας των δεδομένων, ο οποίος βρίσκει αμελητέα επικάλυψη ζευγών αλλά
+    αποκαλύπτει σοβαρό τεχνούργημα στη δειγματοληψία των αρνητικών παραδειγμάτων.
     Το \en{CascadeLP} πετυχαίνει \en{Macro F1} = \CascadeValFone{}
-    σε πλήρως ανεξάρτητο σύνολο επικύρωσης --- επιβεβαιωμένο ανεξάρτητα με
+    σε παρακρατημένο σύνολο επικύρωσης υπό το αρχικό πρωτόκολλο \en{DSAA} και
     \en{Macro F1} = \KaggleBaselinePublic{} στο δημόσιο \en{leaderboard} του
-    διαγωνισμού --- καλώντας τον ακριβό κωδικοποιητή \en{Sentence-Transformer} σε
-    μόλις \TierThreePct\% των ζευγών.
+    διαγωνισμού, με μόλις \TierThreePct\% των ζευγών να δρομολογείται στον
+    ταξινομητή του Επιπέδου~3. Η μέτρηση αυτή αφορά τη δρομολόγηση πάνω σε
+    προϋπολογισμένα χαρακτηριστικά και όχι το συνολικό κόστος κωδικοποίησης.
     Συμπεριλαμβάνουμε επίσης ένα μοντέλο αναφοράς
     \en{TF-IDF + SVM}.
-    Ένας πρόσθετος έλεγχος αποκαλύπτει ότι ένα μικρό σύνολο κόμβων-πηγής
+    Ο ίδιος έλεγχος αποκαλύπτει ότι ένα μικρό σύνολο κόμβων-πηγής
     στο \en{DSAA 2023} καθορίζει σχεδόν πλήρως την ετικέτα ανεξάρτητα από
     το δεύτερο άκρο, αφήνοντας ερμηνευτικά ανοιχτό αν το \en{CascadeLP}
     έμαθε γνήσια σχεσιακή πρόβλεψη.
     Απαντάμε επανεκπαιδεύοντας το ίδιο,
     αναλλοίωτο \en{CascadeLP} σε ένα δεύτερο, ανεξάρτητα κατασκευασμένο
-    σύνολο δεδομένων πραγματικών υπερσυνδέσμων \en{Wikipedia}, όπου
+    σύνολο δεδομένων πραγματικών υπερσυνδέσμων της Απλής Αγγλικής \en{Wikipedia}, όπου
     πετυχαίνει \en{Macro F1} = \WfCascadeFone{} ξεπερνώντας κάθε
     μεμονωμένη οικογένεια χαρακτηριστικών.
 
@@ -61,8 +59,8 @@
         Link prediction in text-attributed graphs (TAGs) is the problem of inferring whether an
         edge exists between two nodes given both the graph topology and the textual content of
         the nodes. Recent work on such graphs has reported near-perfect accuracy with pure
-        semantic approaches based on pre-trained language models, but their quadratic inference
-        cost makes them impractical at scale.
+        semantic approaches based on pre-trained language models, but semantic encoding remains
+        substantially more expensive than local structural heuristics.
 
         This thesis proposes \textbf{CascadeLP}, a four-tier link prediction framework that
         treats inference cost as a first-class design constraint: it routes each node pair
@@ -70,24 +68,23 @@
         only when the cheaper tier is not confident enough. The cascade includes: self-loops,
         structural heuristics (Common Neighbours, Jaccard, Adamic-Adar, Preferential
         Attachment), POS-tag frequency features with a Random Forest for nodes with no
-        structural neighbours, and a Sentence-Transformer encoder for pairs where the earlier
-        tiers remain uncertain.
+        structural neighbours, and a classifier over Sentence-Transformer similarity for pairs
+        where the earlier tiers remain uncertain.
 
         We evaluate CascadeLP on the DSAA 2023 Wikipedia benchmark, selected as our evaluation
         scope because it is a realistic, large-scale text-attributed graph with an established
-        competition leaderboard of existing solutions to benchmark against. To validate that the
-        achieved accuracy is genuine rather than an artifact of data leakage or trivial dataset
-        separability, we run a systematic leakage audit -- which finds negligible pair overlap --
-        and an independent dataset separability characterization, cross-referenced per pair with
-        the tier that resolved it. CascadeLP achieves Macro F1 = \CascadeValFone{} on a fully
-        held-out validation set -- independently confirmed with Macro F1 = \KaggleBaselinePublic{}
-        on the competition's public leaderboard -- while calling the expensive
-        Sentence-Transformer encoder on only \TierThreePct\% of pairs. We also include a TF-IDF
-        + SVM reference baseline. A further check reveals that a small set of source nodes in
+        competition leaderboard of existing solutions to benchmark against. To determine what
+        the achieved accuracy measures, we audit the dataset. The audit finds negligible pair
+        overlap but reveals a severe artifact in the sampling of negative examples. Under the
+        original DSAA protocol, CascadeLP achieves Macro F1 = \CascadeValFone{} on a held-out
+        validation set and Macro F1 = \KaggleBaselinePublic{} on the competition's public
+        leaderboard, while routing only \TierThreePct\% of pairs to the Tier 3 classifier. This
+        rate measures routing over precomputed features rather than total encoding cost. We also
+        include a TF-IDF + SVM reference baseline. The audit further reveals that a small set of source nodes in
         DSAA 2023 determines the label almost entirely, independent of the second endpoint,
         leaving open whether CascadeLP learned genuine relational prediction. We answer this by
         retraining the same, unmodified CascadeLP on a second, independently built dataset of
-        real Wikipedia hyperlinks, where it reaches Macro F1 = \WfCascadeFone{}, outperforming
+        real Simple English Wikipedia hyperlinks, where it reaches Macro F1 = \WfCascadeFone{}, outperforming
         every individual feature family. }
 
     \begin{keywordseng}

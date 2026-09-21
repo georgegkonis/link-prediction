@@ -280,7 +280,7 @@
 }
 
 \approval{
-    Εγκρίθηκε από την τριμελή εξεταστική επιτροπή την \examinationDate.
+    Εγκρίθηκε από την τριμελή εξεταστική επιτροπή τον \examinationDate.
     \begin{tabbing}
     aaaaaaaaaaaaaaaaaaaaaaaaaaa\=aaaaaaaaaaaaaaaaaaaaaaaaaaa\=\kill
     \textit{(Υπογραφή)}\>   \textit{(Υπογραφή)}\>  \textit{(Υπογραφή)}\\\\\\

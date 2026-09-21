@@ -154,9 +154,9 @@ dmypy.json
 cython_debug/
 
 # Data — raw inputs and derived artifacts are not committed
-data/raw/dsaa/*
+data/raw/*
 !data/raw/.gitkeep
-data/interim/dsaa/*
+data/interim/*
 !data/interim/.gitkeep
 # Freshly-crawled Wikipedia dataset — fully regenerable via
 # scripts/data/build_from_wikidump.py + fetch_wiki_cs_8k_text.py +
@@ -171,9 +171,9 @@ data/raw/wiki_cs_8k/
 logs/*.log
 
 # Model outputs
-outputs/predictions/dsaa/*
+outputs/predictions/*
 !outputs/predictions/.gitkeep
-outputs/checkpoints/dsaa/*
+outputs/checkpoints/*
 !outputs/checkpoints/.gitkeep
 
 # outputs/figures/ is committed — every LaTeX project (latex/thesis, latex/presentation,
@@ -205,3 +205,4 @@ outputs/checkpoints/dsaa/*
 *.idx
 *.ilg
 *.ind
+notes/

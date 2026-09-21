@@ -10,7 +10,7 @@ Checks:
 
 Outputs:
     outputs/leakage_audit-results.txt   — plain-text summary
-    data/interim/leakage_pairs.csv      — the overlapping rows (exact + reversed)
+    data/interim/dsaa/leakage_pairs.csv      — the overlapping rows (exact + reversed)
 
 Usage:
     python -m scripts.audit_leakage
@@ -24,7 +24,7 @@ from src.data.loader import load_edges
 from src.utils.log_utils import setup_logging
 
 OUTPUTS = 'outputs'
-INTERIM = 'data/interim'
+INTERIM = 'data/interim/dsaa'
 
 
 def _undirected_key(df: pd.DataFrame) -> pd.Series:
@@ -122,7 +122,7 @@ def main(train_path: str, test_path: str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train', default='data/raw/train.csv')
-    parser.add_argument('--test', default='data/raw/test.csv')
+    parser.add_argument('--train', default='data/raw/dsaa/train.csv')
+    parser.add_argument('--test', default='data/raw/dsaa/test.csv')
     args = parser.parse_args()
     main(args.train, args.test)

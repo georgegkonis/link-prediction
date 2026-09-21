@@ -1,15 +1,15 @@
 """
-Fetch real article text for the crawled wiki_fresh node set from the
+Fetch real article text for the crawled wikipedia node set from the
 wikimedia/wikipedia Hugging Face dataset (simple English config), matching by
 exact title. Streams the dataset so the full ~300MB+ config need not be
 downloaded to disk first.
 
 Reads:  <output>/titles.json        (from build_from_wikidump.py)
-Writes: <output>/nodes.tsv          (id, text — same schema as data/raw/nodes.tsv)
+Writes: <output>/nodes.tsv          (id, text — same schema as data/raw/dsaa/nodes.tsv)
         <output>/text_fetch_stats.json (match-rate provenance, for thesis macros)
 
 Usage:
-    python -m scripts.data.fetch_wiki_fresh_text --output data/wiki_fresh
+    python -m scripts.data.fetch_wikipedia_text --output data/raw/wikipedia
 """
 import argparse
 import json
@@ -22,7 +22,7 @@ from datasets import load_dataset
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', default='data/wiki_fresh')
+    parser.add_argument('--output', default='data/raw/wikipedia')
     parser.add_argument('--config', default='20231101.simple')
     args = parser.parse_args()
     out_dir = pathlib.Path(args.output)

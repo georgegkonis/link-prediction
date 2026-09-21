@@ -2,8 +2,8 @@
 Generate thesis figures from outputs/stats/summary_stats.json and save to outputs/figures/.
 
 All computation lives in scripts/paper/compute_summary_stats.py — this script only plots
-pre-aggregated histograms/tables/curves. It never touches data/raw/, data/interim/, or
-outputs/predictions/, so it runs from a clean checkout as long as summary_stats.json (committed)
+pre-aggregated histograms/tables/curves. It never touches data/raw/dsaa/, data/interim/dsaa/, or
+outputs/predictions/dsaa/, so it runs from a clean checkout as long as summary_stats.json (committed)
 is present.
 
 Produces:

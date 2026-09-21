@@ -6,7 +6,7 @@ a real join against nodes.tsv, checking whether missing/empty node text
 explains Tier 3's collapse on this subset.
 
 Outputs:
-    outputs/predictions/hard_residual_analysis.json
+    outputs/predictions/dsaa/hard_residual_analysis.json
 
 Usage:
     python -m scripts.analysis.analyze_hard_residual
@@ -20,8 +20,8 @@ import pandas as pd
 from src.data.loader import load_nodes_for_ids
 from src.utils.log_utils import setup_logging
 
-RAW = 'data/raw'
-PREDICTIONS = 'outputs/predictions'
+RAW = 'data/raw/dsaa'
+PREDICTIONS = 'outputs/predictions/dsaa'
 
 
 def main():

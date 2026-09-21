@@ -1,7 +1,7 @@
 """Tests for scripts/train.py::_split — the train/val partitioning logic.
 
 Only the pure helper is exercised; `main()` is a hydra entry point that reads
-`data/interim/` and writes checkpoints.
+`data/interim/dsaa/` and writes checkpoints.
 """
 
 import math

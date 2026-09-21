@@ -3,7 +3,7 @@ Generate latex/shared/generated_macros.tex from outputs/stats/summary_stats.json
 
 All computation lives in scripts/paper/compute_summary_stats.py — this script only formats the
 already-computed macros dict into \\newcommand definitions, grouped for readability. It never
-touches data/raw/, data/interim/, or outputs/predictions/, so it runs from a clean checkout as long
+touches data/raw/dsaa/, data/interim/dsaa/, or outputs/predictions/dsaa/, so it runs from a clean checkout as long
 as summary_stats.json (committed) is present.
 
 Reads:

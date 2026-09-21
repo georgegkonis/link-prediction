@@ -2,33 +2,33 @@
 Compute every statistic, metric, and aggregate needed by generate_macros.py and
 generate_figures.py, and persist them to outputs/stats/summary_stats.json.
 
-This is the ONLY script in the paper-asset pipeline that touches data/raw/, data/interim/, or the
-per-pair CSVs in outputs/predictions/ — all of which are large, regenerable pipeline artifacts and
+This is the ONLY script in the paper-asset pipeline that touches data/raw/dsaa/, data/interim/dsaa/, or the
+per-pair CSVs in outputs/predictions/dsaa/ — all of which are large, regenerable pipeline artifacts and
 stay .gitignore'd. Everything downstream (generate_macros.py, generate_figures.py) reads only the
 small committed summary_stats.json, so figures/macros can be regenerated from a clean checkout
 without re-running the data/feature/train pipeline.
 
 Reads:
-  data/raw/train.csv, test.csv, nodes.tsv              — dataset sizes, graph stats
-  data/interim/difficulty_train.csv                    — difficulty breakdown (train)
-  data/interim/difficulty_test.csv                     — difficulty breakdown (test)
-  data/interim/difficulty_thresholds.json              — CN / TF-IDF thresholds
-  data/interim/leakage_pairs.csv                       — leakage audit
-  data/interim/structural_train.csv                    — CN / graph coverage
-  data/interim/tfidf_train.csv                         — TF-IDF separability
-  outputs/predictions/cascade_val_tiers.csv            — per-pair val predictions (+ scores)
-  outputs/predictions/cascade_test_tiers.csv           — per-pair test predictions
-  outputs/predictions/cascade_n2v_test_tiers.csv       — per-pair test predictions (n2v variant)
-  outputs/predictions/cascade_threshold_ablation.csv   — threshold sweep
-  outputs/predictions/cascade_val_metrics.json         — cascade scalar val metrics
-  outputs/predictions/kaggle_scores.csv                — Kaggle leaderboard scores
-  outputs/predictions/svm_val_metrics.json             — SVM scalar metrics
-  outputs/predictions/svm_val_errors.csv               — SVM per-pair val errors by difficulty
-  outputs/predictions/node2vec_ablation.json           — Node2Vec with/without ablation + coverage
-  outputs/predictions/hard_residual_analysis.json      — Tier-3 hard-residual / nodes.tsv join
-  outputs/predictions/throughput_benchmark.json        — CPU inference throughput
-  outputs/predictions/tier2_confidence_saturation.json — Tier-2 RandomForest confidence ceiling
-  outputs/predictions/embedding_val_metrics.json       — standalone EmbeddingClassifier baseline
+  data/raw/dsaa/train.csv, test.csv, nodes.tsv              — dataset sizes, graph stats
+  data/interim/dsaa/difficulty_train.csv                    — difficulty breakdown (train)
+  data/interim/dsaa/difficulty_test.csv                     — difficulty breakdown (test)
+  data/interim/dsaa/difficulty_thresholds.json              — CN / TF-IDF thresholds
+  data/interim/dsaa/leakage_pairs.csv                       — leakage audit
+  data/interim/dsaa/structural_train.csv                    — CN / graph coverage
+  data/interim/dsaa/tfidf_train.csv                         — TF-IDF separability
+  outputs/predictions/dsaa/cascade_val_tiers.csv            — per-pair val predictions (+ scores)
+  outputs/predictions/dsaa/cascade_test_tiers.csv           — per-pair test predictions
+  outputs/predictions/dsaa/cascade_n2v_test_tiers.csv       — per-pair test predictions (n2v variant)
+  outputs/predictions/dsaa/cascade_threshold_ablation.csv   — threshold sweep
+  outputs/predictions/dsaa/cascade_val_metrics.json         — cascade scalar val metrics
+  outputs/predictions/dsaa/kaggle_scores.csv                — Kaggle leaderboard scores
+  outputs/predictions/dsaa/svm_val_metrics.json             — SVM scalar metrics
+  outputs/predictions/dsaa/svm_val_errors.csv               — SVM per-pair val errors by difficulty
+  outputs/predictions/dsaa/node2vec_ablation.json           — Node2Vec with/without ablation + coverage
+  outputs/predictions/dsaa/hard_residual_analysis.json      — Tier-3 hard-residual / nodes.tsv join
+  outputs/predictions/dsaa/throughput_benchmark.json        — CPU inference throughput
+  outputs/predictions/dsaa/tier2_confidence_saturation.json — Tier-2 RandomForest confidence ceiling
+  outputs/predictions/dsaa/embedding_val_metrics.json       — standalone EmbeddingClassifier baseline
 
 Writes:
   outputs/stats/summary_stats.json
@@ -51,9 +51,9 @@ from src.utils.log_utils import setup_logging
 
 log = setup_logging('compute_summary_stats')
 
-INTERIM     = pathlib.Path('data/interim')
-RAW         = pathlib.Path('data/raw')
-PREDICTIONS = pathlib.Path('outputs/predictions')
+INTERIM     = pathlib.Path('data/interim/dsaa')
+RAW         = pathlib.Path('data/raw/dsaa')
+PREDICTIONS = pathlib.Path('outputs/predictions/dsaa')
 STATS       = pathlib.Path('outputs/stats')
 CONFIGS     = pathlib.Path('configs')
 
@@ -187,15 +187,15 @@ def _load() -> dict:
         STATS / 'hub_in_predictions_audit.json', 'run python -m scripts.analysis.audit_hub_in_predictions first')
 
     # ---- Fresh, artifact-free Wikipedia validation dataset ----
-    d['wiki_fresh'] = _load_json_optional(
-        STATS / 'wiki_fresh_experiment_results.json',
-        'run python -m scripts.analysis.run_wiki_fresh_experiment first')
-    d['wiki_fresh_crawl'] = _load_json_optional(
-        pathlib.Path('data/wiki_fresh/crawl_stats.json'),
+    d['wikipedia'] = _load_json_optional(
+        STATS / 'wikipedia_experiment_results.json',
+        'run python -m scripts.analysis.run_wikipedia_experiment first')
+    d['wikipedia_crawl'] = _load_json_optional(
+        pathlib.Path('data/raw/wikipedia/crawl_stats.json'),
         'run python -m scripts.data.build_from_wikidump first')
-    d['wiki_fresh_text'] = _load_json_optional(
-        pathlib.Path('data/wiki_fresh/text_fetch_stats.json'),
-        'run python -m scripts.data.fetch_wiki_fresh_text first')
+    d['wikipedia_text'] = _load_json_optional(
+        pathlib.Path('data/raw/wikipedia/text_fetch_stats.json'),
+        'run python -m scripts.data.fetch_wikipedia_text first')
 
     return d
 
@@ -754,7 +754,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
 
     # ---- Fresh, artifact-free Wikipedia validation dataset ----
-    wf = d['wiki_fresh']
+    wf = d['wikipedia']
     wf_name_to_macro = {'structural': 'WfStructural', 'tfidf': 'WfTfidf', 'pos': 'WfPos',
                         'embedding': 'WfEmbedding', 'svm': 'WfSvm', 'cascade': 'WfCascade'}
     if wf:
@@ -782,7 +782,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
 
     # ---- Fresh dataset: crawl + text-fetch provenance (dataset construction methodology) ----
-    wc = d['wiki_fresh_crawl']
+    wc = d['wikipedia_crawl']
     if wc:
         m['WfCrawlSeed']            = str(wc['seed']).replace('_', ' ')
         m['WfCrawlTarget']          = gint(wc['target'])
@@ -807,7 +807,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
                   'WfCrawlMeanDegree', 'WfDumpPageMb', 'WfDumpLinktargetMb', 'WfDumpPagelinksMb'):
             m[k] = _MISSING
 
-    wt = d['wiki_fresh_text']
+    wt = d['wikipedia_text']
     if wt:
         m['WfTextConfig']    = str(wt['config'])
         m['WfTextWanted']    = gint(wt['n_titles_wanted'])

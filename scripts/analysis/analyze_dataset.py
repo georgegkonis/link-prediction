@@ -8,8 +8,8 @@ into each difficulty bucket.
 
 Outputs:
     outputs/analyze_dataset-results.txt
-    data/interim/difficulty_train.csv   (id, difficulty)
-    data/interim/difficulty_test.csv    (id, difficulty)
+    data/interim/dsaa/difficulty_train.csv   (id, difficulty)
+    data/interim/dsaa/difficulty_test.csv    (id, difficulty)
 
 Usage:
     python -m scripts.analyze_dataset [--cn-threshold F] [--tfidf-threshold F] [--fpr F]
@@ -25,15 +25,15 @@ from src.data.loader import load_edges
 from src.utils.difficulty import label_difficulty, pick_thresholds
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim'
+INTERIM = 'data/interim/dsaa'
 OUTPUTS = 'outputs'
 
 
 def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
     log = setup_logging('analyze_dataset')
     log.info('Loading edges and features...')
-    train = load_edges('data/raw/train.csv')
-    test = load_edges('data/raw/test.csv')
+    train = load_edges('data/raw/dsaa/train.csv')
+    test = load_edges('data/raw/dsaa/test.csv')
     y = train['label'].values
 
     cn_train = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')['cn'].values

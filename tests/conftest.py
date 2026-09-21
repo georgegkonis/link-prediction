@@ -1,6 +1,6 @@
 """Shared synthetic fixtures.
 
-Everything here is built in-code: no `data/raw/`, no `data/interim/`, no network
+Everything here is built in-code: no `data/raw/dsaa/`, no `data/interim/dsaa/`, no network
 access, no model downloads. Files that a test genuinely needs are written to
 ``tmp_path``.
 """

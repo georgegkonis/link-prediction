@@ -4,16 +4,16 @@
 
 | File                                            | Description                                    |
 |-------------------------------------------------|------------------------------------------------|
-| `data/raw/train.csv`                            | Pairs with labels (id1, id2, label)            |
-| `data/raw/test.csv`                             | Unlabeled pairs (id1, id2) for submission      |
-| `data/raw/nodes.tsv`                            | Node text (id, markup)                         |
-| `data/interim/pp_nodes.csv`                     | Preprocessed node text (id, text)              |
-| `data/interim/structural_{train,test}.csv`      | CN, Jaccard, AA, PageRank per pair             |
-| `data/interim/node2vec.kv`                      | Trained KeyedVectors (Node2Vec embeddings)     |
-| `data/interim/tfidf_{train,test}.csv`           | TF-IDF cosine similarity                       |
-| `data/interim/sentence_emb_{train,test}.csv`    | Sentence-Transformer cosine similarity         |
-| `data/interim/{pos,tfidf}_train.npy / test.npy` | POS frequency features                         |
-| `data/interim/difficulty_{train,test}.csv`      | Per-pair difficulty labels                     |
+| `data/raw/dsaa/train.csv`                            | Pairs with labels (id1, id2, label)            |
+| `data/raw/dsaa/test.csv`                             | Unlabeled pairs (id1, id2) for submission      |
+| `data/raw/dsaa/nodes.tsv`                            | Node text (id, markup)                         |
+| `data/interim/dsaa/pp_nodes.csv`                     | Preprocessed node text (id, text)              |
+| `data/interim/dsaa/structural_{train,test}.csv`      | CN, Jaccard, AA, PageRank per pair             |
+| `data/interim/dsaa/node2vec.kv`                      | Trained KeyedVectors (Node2Vec embeddings)     |
+| `data/interim/dsaa/tfidf_{train,test}.csv`           | TF-IDF cosine similarity                       |
+| `data/interim/dsaa/sentence_emb_{train,test}.csv`    | Sentence-Transformer cosine similarity         |
+| `data/interim/dsaa/{pos,tfidf}_train.npy / test.npy` | POS frequency features                         |
+| `data/interim/dsaa/difficulty_{train,test}.csv`      | Per-pair difficulty labels                     |
 
 ## Key Facts
 

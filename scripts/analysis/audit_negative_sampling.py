@@ -58,8 +58,8 @@ def hub_stats(df: pd.DataFrame, threshold: int) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--train', default='data/raw/train.csv')
-    parser.add_argument('--test', default='data/raw/test.csv')
+    parser.add_argument('--train', default='data/raw/dsaa/train.csv')
+    parser.add_argument('--test', default='data/raw/dsaa/test.csv')
     parser.add_argument('--output', default='outputs/stats/negative_sampling_audit.json')
     args = parser.parse_args()
 

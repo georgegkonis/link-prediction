@@ -19,7 +19,7 @@ from src.utils.log_utils import setup_logging
 
 load_dotenv()
 
-RAW = Path('data/raw')
+RAW = Path('data/raw/dsaa')
 log = setup_logging('download_data')
 
 
@@ -45,7 +45,7 @@ def main():
             log.info('Copying %s → %s', src.name, dest)
             shutil.copy2(src, dest)
 
-    log.info('Done. Files in data/raw/:')
+    log.info('Done. Files in data/raw/dsaa/:')
     for f in sorted(RAW.iterdir()):
         log.info('  %s  (%.1f KB)', f.name, f.stat().st_size / 1024)
 

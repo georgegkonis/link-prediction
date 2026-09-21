@@ -2,11 +2,11 @@
 Compute structural features for train and test pairs.
 
 Outputs:
-    data/interim/structural_train.csv   — heuristic scores for training pairs
-    data/interim/structural_test.csv    — heuristic scores for test pairs
-    data/interim/node2vec.kv            — trained Node2Vec KeyedVectors
-    data/interim/n2v_train.npy          — 64-dim Node2Vec Hadamard features for training pairs
-    data/interim/n2v_test.npy           — 64-dim Node2Vec Hadamard features for test pairs
+    data/interim/dsaa/structural_train.csv   — heuristic scores for training pairs
+    data/interim/dsaa/structural_test.csv    — heuristic scores for test pairs
+    data/interim/dsaa/node2vec.kv            — trained Node2Vec KeyedVectors
+    data/interim/dsaa/n2v_train.npy          — 64-dim Node2Vec Hadamard features for training pairs
+    data/interim/dsaa/n2v_test.npy           — 64-dim Node2Vec Hadamard features for test pairs
 
 Usage:
     python -m scripts.data.compute_structural [dev.nrows=N] [dev.skip_n2v=true]
@@ -21,15 +21,15 @@ from src.data.loader import build_graph, load_edges
 from src.features.structural import compute_heuristics, node2vec_hadamard_features, train_node2vec
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim'
+INTERIM = 'data/interim/dsaa'
 
 
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     log = setup_logging('compute_structural')
     log.info('Loading edges...')
-    train = load_edges('data/raw/train.csv', nrows=cfg.dev.nrows)
-    test  = load_edges('data/raw/test.csv',  nrows=cfg.dev.nrows)
+    train = load_edges('data/raw/dsaa/train.csv', nrows=cfg.dev.nrows)
+    test  = load_edges('data/raw/dsaa/test.csv',  nrows=cfg.dev.nrows)
 
     log.info('Building graph from positive training edges...')
     G = build_graph(train)

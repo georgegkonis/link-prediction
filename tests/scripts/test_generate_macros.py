@@ -1,7 +1,7 @@
 """Tests for the pure Greek-number formatters in scripts/paper/compute_summary_stats.py.
 
 Only the formatters are exercised — `_load`, `_compute_macros` and `_compute_figures` read
-`data/`/`outputs/predictions/`, so they are out of scope here.
+`data/`/`outputs/predictions/dsaa/`, so they are out of scope here.
 """
 
 import pytest

@@ -10,7 +10,7 @@ training edge (transductive) — this is the root cause of the Kaggle
 public-score collapse documented in chap5.tex SS5.1.
 
 Outputs:
-    outputs/predictions/node2vec_ablation.json
+    outputs/predictions/dsaa/node2vec_ablation.json
 
 Usage:
     python -m scripts.analysis.ablate_node2vec
@@ -31,9 +31,9 @@ from src.data.loader import load_edges
 from src.features.structural import node2vec_hadamard_features
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim'
-RAW = 'data/raw'
-PREDICTIONS = 'outputs/predictions'
+INTERIM = 'data/interim/dsaa'
+RAW = 'data/raw/dsaa'
+PREDICTIONS = 'outputs/predictions/dsaa'
 HEURISTICS = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
 TIER1_THRESHOLD = 0.8
 

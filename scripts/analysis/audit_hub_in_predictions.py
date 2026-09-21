@@ -1,15 +1,15 @@
 """
 Show the id1-hub negative-sampling artifact (audit_negative_sampling.py) "in
 action" against the thesis's own existing, unmodified CascadeLP validation
-predictions (outputs/predictions/cascade_val_tiers.csv, from `make train
+predictions (outputs/predictions/dsaa/cascade_val_tiers.csv, from `make train
 MODEL=cascade` on the original protocol) — no rerun, no protocol change.
 
 Quantifies how much of the reported near-perfect Macro F1 is attributable to
 a trivial 65-value id1 lookup versus how the same model does elsewhere.
 
 Reads:
-    data/raw/train.csv
-    outputs/predictions/cascade_val_tiers.csv
+    data/raw/dsaa/train.csv
+    outputs/predictions/dsaa/cascade_val_tiers.csv
 
 Writes:
     outputs/stats/hub_in_predictions_audit.json
@@ -32,8 +32,8 @@ log = setup_logging('audit_hub_in_predictions')
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--train', default='data/raw/train.csv')
-    parser.add_argument('--tiers', default='outputs/predictions/cascade_val_tiers.csv')
+    parser.add_argument('--train', default='data/raw/dsaa/train.csv')
+    parser.add_argument('--tiers', default='outputs/predictions/dsaa/cascade_val_tiers.csv')
     parser.add_argument('--hub-threshold', type=int, default=100)
     parser.add_argument('--output', default='outputs/stats/hub_in_predictions_audit.json')
     args = parser.parse_args()

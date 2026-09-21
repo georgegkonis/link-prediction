@@ -29,9 +29,9 @@ from src.data.loader import load_edges
 from src.models.cascade import CascadeLP, cold_start_from_structural
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim'
-CHECKPOINTS = 'outputs/checkpoints'
-PREDICTIONS = 'outputs/predictions'
+INTERIM = 'data/interim/dsaa'
+CHECKPOINTS = 'outputs/checkpoints/dsaa'
+PREDICTIONS = 'outputs/predictions/dsaa'
 
 T1_GRID = [0.6, 0.7, 0.8, 0.9, 0.95]
 T2_GRID = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 0.999, 0.9999]
@@ -46,7 +46,7 @@ def _tier_f1(y_val, y_pred, tier_used, tier_id) -> float:
 
 def main():
     log = setup_logging('ablate_cascade_thresholds')
-    train = load_edges('data/raw/train.csv')
+    train = load_edges('data/raw/dsaa/train.csv')
     y = train['label'].values
     structural = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
     pos_features = np.load(f'{INTERIM}/pos_train.npy')

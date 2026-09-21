@@ -6,10 +6,10 @@ random from the same 8,000-node pool, excluding any real edge. Unlike DSAA
 is nothing to correct afterward.
 
 Reads:  <output>/positive_edges.csv, <output>/nodes.tsv
-Writes: <output>/train.csv   (id, id1, id2, label — same schema as data/raw/train.csv)
+Writes: <output>/train.csv   (id, id1, id2, label — same schema as data/raw/dsaa/train.csv)
 
 Usage:
-    python -m scripts.data.build_wiki_fresh_dataset --output data/wiki_fresh
+    python -m scripts.data.build_wikipedia_dataset --output data/raw/wikipedia
 """
 import argparse
 import pathlib
@@ -19,12 +19,12 @@ import pandas as pd
 
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('build_wiki_fresh_dataset')
+log = setup_logging('build_wikipedia_dataset')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', default='data/wiki_fresh')
+    parser.add_argument('--output', default='data/raw/wikipedia')
     parser.add_argument('--neg-ratio', type=float, default=1.0)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()

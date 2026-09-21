@@ -2,10 +2,10 @@
 CPU inference throughput benchmark for CascadeLP (thesis Ch.5 §5.4
 "Σύγκριση Αποτελεσματικότητας"): times a single `.predict()` pass over the
 held-out validation split using the deployed heuristics-only checkpoint
-(`outputs/checkpoints/cascade.joblib`, trained with `training.no_n2v=true`).
+(`outputs/checkpoints/dsaa/cascade.joblib`, trained with `training.no_n2v=true`).
 
 Outputs:
-    outputs/predictions/throughput_benchmark.json
+    outputs/predictions/dsaa/throughput_benchmark.json
 
 Usage:
     python -m scripts.analysis.benchmark_throughput
@@ -23,14 +23,14 @@ from src.models.cascade import CascadeLP
 from src.utils.log_utils import setup_logging
 from src.utils.metrics import timer
 
-INTERIM = 'data/interim'
-CHECKPOINTS = 'outputs/checkpoints'
-PREDICTIONS = 'outputs/predictions'
+INTERIM = 'data/interim/dsaa'
+CHECKPOINTS = 'outputs/checkpoints/dsaa'
+PREDICTIONS = 'outputs/predictions/dsaa'
 
 
 def main():
     log = setup_logging('benchmark_throughput')
-    train = load_edges('data/raw/train.csv')
+    train = load_edges('data/raw/dsaa/train.csv')
     y = train['label'].values
     structural = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')
     pos_features = np.load(f'{INTERIM}/pos_train.npy')

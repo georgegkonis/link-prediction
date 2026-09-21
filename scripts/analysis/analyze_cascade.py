@@ -1,7 +1,7 @@
 """
 Post-hoc analysis of CascadeLP validation results for the thesis (Ch.4 §4.4, Ch.5).
 
-Reads outputs/predictions/cascade_val_tiers.csv (written by scripts/train.py) plus
+Reads outputs/predictions/dsaa/cascade_val_tiers.csv (written by scripts/train.py) plus
 the structural features, and prints:
   - overall macro-F1 / accuracy on the validation split
   - per-tier n / call-rate / accuracy / macro-F1
@@ -21,8 +21,8 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from src.utils.log_utils import setup_logging
 
-PREDICTIONS = 'outputs/predictions'
-INTERIM = 'data/interim'
+PREDICTIONS = 'outputs/predictions/dsaa'
+INTERIM = 'data/interim/dsaa'
 
 TIER_NAMES = {0: 'Tier0 self-loop', 1: 'Tier1 structural',
               2: 'Tier2 POS', 3: 'Tier3 embedding'}

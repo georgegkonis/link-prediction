@@ -6,12 +6,12 @@ kaggle-cli, github.com/Kaggle/kaggle-cli) authenticated via KAGGLE_API_TOKEN.
 KAGGLE_API_TOKEN in .env (already used by scripts/download_data.py /
 kagglehub) is sufficient -- no separate username/key pair needed.
 
-Every submit/check call upserts outputs/predictions/kaggle_scores.csv, keyed
+Every submit/check call upserts outputs/predictions/dsaa/kaggle_scores.csv, keyed
 by Kaggle's submission `ref` (not list position or description, which can be
 blank) so scores stay correctly matched to the file that earned them.
 
 Usage:
-    python -m scripts.submit_kaggle --file outputs/predictions/cascade_submission.csv \
+    python -m scripts.submit_kaggle --file outputs/predictions/dsaa/cascade_submission.csv \
         --message "CascadeLP val macro-F1 0.9986" --wait
     python -m scripts.submit_kaggle --check          # list + log recent submissions
     python -m scripts.submit_kaggle --check --wait   # block until the newest is scored

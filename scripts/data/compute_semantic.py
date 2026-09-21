@@ -3,12 +3,12 @@ Compute semantic features (TF-IDF cosine similarity, Sentence-Transformer
 cosine similarity, POS frequency vectors) for train and test pairs.
 
 Outputs:
-    data/interim/tfidf_train.csv        — TF-IDF cosine scores, train pairs
-    data/interim/tfidf_test.csv         — TF-IDF cosine scores, test pairs
-    data/interim/sentence_emb_train.csv — Sentence-Transformer scores, train
-    data/interim/sentence_emb_test.csv  — Sentence-Transformer scores, test
-    data/interim/pos_train.npy          — POS feature matrix, train pairs
-    data/interim/pos_test.npy           — POS feature matrix, test pairs
+    data/interim/dsaa/tfidf_train.csv        — TF-IDF cosine scores, train pairs
+    data/interim/dsaa/tfidf_test.csv         — TF-IDF cosine scores, test pairs
+    data/interim/dsaa/sentence_emb_train.csv — Sentence-Transformer scores, train
+    data/interim/dsaa/sentence_emb_test.csv  — Sentence-Transformer scores, test
+    data/interim/dsaa/pos_train.npy          — POS feature matrix, train pairs
+    data/interim/dsaa/pos_test.npy           — POS feature matrix, test pairs
 
 Usage:
     python -m scripts.data.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]
@@ -31,22 +31,22 @@ from src.features.embeddings import (
 from src.features.linguistic import compute_pos_features
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim'
+INTERIM = 'data/interim/dsaa'
 
 
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     log = setup_logging('compute_semantic')
     log.info('Loading edges...')
-    train = load_edges('data/raw/train.csv', nrows=cfg.dev.nrows)
-    test  = load_edges('data/raw/test.csv',  nrows=cfg.dev.nrows)
+    train = load_edges('data/raw/dsaa/train.csv', nrows=cfg.dev.nrows)
+    test  = load_edges('data/raw/dsaa/test.csv',  nrows=cfg.dev.nrows)
 
     all_pairs = pd.concat([train, test])
     unique_ids = set(pd.unique(all_pairs[['id1', 'id2']].values.ravel()).tolist())
     log.info('Unique node IDs across train+test: %s', f'{len(unique_ids):,}')
 
     log.info('Loading nodes for required IDs (streaming)...')
-    nodes = load_nodes_for_ids('data/raw/nodes.tsv', unique_ids)
+    nodes = load_nodes_for_ids('data/raw/dsaa/nodes.tsv', unique_ids)
     log.info('  Loaded %s nodes', f'{len(nodes):,}')
 
     # ── TF-IDF ───────────────────────────────────────────────────────────────

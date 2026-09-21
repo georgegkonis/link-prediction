@@ -11,7 +11,7 @@
   },
   "pos": {
     "macro_f1": 0.8557444938060885,
-    "auc_roc": 0.9291947860030418,
+    "auc_roc": 0.9291947853939655,
     "n": 81039
   },
   "embedding": {
@@ -45,13 +45,80 @@
         "n": 5296,
         "pct": 6.535125063241155
       }
+    },
+    "tier_performance": {
+      "tier1": {
+        "macro_f1": 0.9509681749814762,
+        "auc_roc": 0.9637225860925264,
+        "n": 69989,
+        "positive_rate": 0.48776236265698897,
+        "errors": 3421
+      },
+      "tier2": {
+        "macro_f1": 0.8139370347799981,
+        "auc_roc": 0.8602263286782974,
+        "n": 5754,
+        "positive_rate": 0.5714285714285714,
+        "errors": 1063
+      },
+      "tier3": {
+        "macro_f1": 0.7016346394796931,
+        "auc_roc": 0.7762217380144262,
+        "n": 5296,
+        "positive_rate": 0.5840256797583081,
+        "errors": 1547
+      }
+    },
+    "diagnostic_subsets": {
+      "zero_cn": {
+        "macro_f1": 0.4837102732362813,
+        "auc_roc": 0.5712766349359808,
+        "n": 36609,
+        "positive_rate": 0.06905405774536316,
+        "errors": 2526,
+        "false_negatives": 2524,
+        "false_positives": 2,
+        "positive_recall": 0.0015822784810126582
+      },
+      "functional_cold_start": {
+        "macro_f1": 0.7395348837209302,
+        "auc_roc": 0.7768959435626103,
+        "n": 72,
+        "positive_rate": 0.125,
+        "errors": 7,
+        "false_negatives": 5,
+        "false_positives": 2,
+        "positive_recall": 0.4444444444444444
+      },
+      "missing_text": {
+        "macro_f1": 0.9563256584968738,
+        "auc_roc": 0.96263512250651,
+        "n": 9114,
+        "positive_rate": 0.4098090849242923,
+        "errors": 382,
+        "false_negatives": 284,
+        "false_positives": 98,
+        "positive_recall": 0.9239625167336011
+      }
     }
+  },
+  "bootstrap": {
+    "n_resamples": 500,
+    "cascade_macro_f1_ci95": [
+      0.9238623938686498,
+      0.9272018564081727
+    ],
+    "cascade_minus_structural_macro_f1": 0.020107181446100575,
+    "cascade_minus_structural_ci95": [
+      0.01837560058040014,
+      0.021644011691985352
+    ]
   },
   "_meta": {
     "n_train": 324153,
     "n_val": 81039,
     "graph_nodes": 7994,
     "graph_edges": 162077,
-    "elapsed_min": 10.270529639720916
+    "elapsed_min": 8.103888976573945
   }
 }

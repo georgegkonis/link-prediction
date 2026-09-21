@@ -430,14 +430,15 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
                 m[f'Tier{tier_name}{diff_name}N']   = '0'
                 m[f'Tier{tier_name}{diff_name}Acc'] = _MISSING
 
-    # ---- Cold-start (no common neighbours) ----
-    # proxy: pairs routed to Tier 2 or 3 never got a confident Tier-1 structural
-    # decision, i.e. they behave as cold-start w.r.t. the structural signal.
-    cs_count  = (vt['tier_used'] >= 2).sum()
+    # ---- Historically named cold-start metric: zero common neighbours ----
+    # This reproduces metrics.cold_start_mask. It is broader than operational
+    # cold-start because both endpoints may be present in the graph.
+    zero_cn = d['struct_train'].loc[vt['id'].to_numpy(), 'cn'].fillna(0).to_numpy() == 0
+    cs_count  = int(zero_cn.sum())
     cs_pct    = 100 * cs_count / n_vt
     non_cs    = n_vt - cs_count
     m['ColdStartCount']    = gint(cs_count)
-    m['ColdStartPct']      = gfloat(cs_pct, 2)
+    m['ColdStartPct']      = gfloat(cs_pct, 3)
     m['ColdStartNonCount'] = gint(non_cs)
 
     # ---- Hard residual (Tier 3 ∩ hard) ----
@@ -464,7 +465,13 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
 
     # ---- Test-set tier distribution ----
-        m['TestTierOneCount'] = gint(tt1_n)
+    tt = d['test_tiers']
+    n_tt = len(tt)
+    tt0_n = int((tt['tier_used'] == 0).sum())
+    tt1_n = int((tt['tier_used'] == 1).sum())
+    tt2_n = int((tt['tier_used'] == 2).sum())
+    tt1_pct = 100 * tt1_n / n_tt
+    m['TestTierOneCount'] = gint(tt1_n)
     m['TestTierOnePct']   = gpct(tt1_pct, 1)
     m['TestTierZeroPct']  = gpct(100 * tt0_n / n_tt, 1)
     m['TestTierTwoPct']   = gpct(100 * tt2_n / n_tt, 1)
@@ -697,10 +704,43 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[f'{prefix}Fone'] = gfloat(r['macro_f1'], 4) if r else _MISSING
             m[f'{prefix}Auc']  = gfloat(r['auc_roc'], 4) if r and r.get('auc_roc') is not None else _MISSING
         cascade_tiers = wf.get('cascade', {}).get('tier_stats', {})
+        cascade_performance = wf.get('cascade', {}).get('tier_performance', {})
         for t, name in [('tier0', 'Zero'), ('tier1', 'One'), ('tier2', 'Two'), ('tier3', 'Three')]:
             stats = cascade_tiers.get(t)
+            performance = cascade_performance.get(t)
             m[f'WfTier{name}Pct'] = gfloat(stats['pct'], 1) if stats else _MISSING
             m[f'WfTier{name}Count'] = gint(stats['n']) if stats else _MISSING
+            m[f'WfTier{name}Fone'] = gfloat(performance['macro_f1'], 4) if performance else _MISSING
+            m[f'WfTier{name}Errors'] = gint(performance['errors']) if performance else _MISSING
+
+        bootstrap = wf.get('bootstrap', {})
+        cascade_ci = bootstrap.get('cascade_macro_f1_ci95')
+        delta_ci = bootstrap.get('cascade_minus_structural_ci95')
+        m['WfBootstrapResamples'] = gint(bootstrap.get('n_resamples', 0)) if bootstrap else _MISSING
+        m['WfCascadeCiLow'] = gfloat(cascade_ci[0], 4) if cascade_ci else _MISSING
+        m['WfCascadeCiHigh'] = gfloat(cascade_ci[1], 4) if cascade_ci else _MISSING
+        m['WfCascadeDeltaStructural'] = gfloat(
+            bootstrap['cascade_minus_structural_macro_f1'], 4) if bootstrap else _MISSING
+        m['WfCascadeDeltaStructuralCiLow'] = gfloat(delta_ci[0], 4) if delta_ci else _MISSING
+        m['WfCascadeDeltaStructuralCiHigh'] = gfloat(delta_ci[1], 4) if delta_ci else _MISSING
+
+        diagnostics = wf.get('cascade', {}).get('diagnostic_subsets', {})
+        for key, name in [('zero_cn', 'ZeroCn'), ('functional_cold_start', 'ColdStart'),
+                          ('missing_text', 'MissingText')]:
+            diagnostic = diagnostics.get(key)
+            m[f'Wf{name}Count'] = gint(diagnostic['n']) if diagnostic else _MISSING
+            m[f'Wf{name}Fone'] = (
+                gfloat(diagnostic['macro_f1'], 4)
+                if diagnostic and diagnostic.get('macro_f1') is not None else _MISSING)
+            m[f'Wf{name}PosPct'] = (
+                gpct(100 * diagnostic['positive_rate'], 1)
+                if diagnostic and diagnostic.get('positive_rate') is not None else _MISSING)
+            m[f'Wf{name}Errors'] = gint(diagnostic['errors']) if diagnostic else _MISSING
+            m[f'Wf{name}FalseNegatives'] = (
+                gint(diagnostic['false_negatives']) if diagnostic else _MISSING)
+            m[f'Wf{name}PositiveRecall'] = (
+                gfloat(diagnostic['positive_recall'], 4)
+                if diagnostic and diagnostic.get('positive_recall') is not None else _MISSING)
         meta = wf.get('_meta', {})
         m['WfTrainSplitSize'] = gint(meta.get('n_train', 0))
         m['WfValSplitSize']   = gint(meta.get('n_val', 0))
@@ -712,6 +752,17 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[f'{prefix}Fone'] = m[f'{prefix}Auc'] = _MISSING
         for name in ('Zero', 'One', 'Two', 'Three'):
             m[f'WfTier{name}Pct'] = m[f'WfTier{name}Count'] = _MISSING
+            m[f'WfTier{name}Fone'] = m[f'WfTier{name}Errors'] = _MISSING
+        for k in ('WfBootstrapResamples', 'WfCascadeCiLow', 'WfCascadeCiHigh',
+                  'WfCascadeDeltaStructural', 'WfCascadeDeltaStructuralCiLow',
+                  'WfCascadeDeltaStructuralCiHigh', 'WfZeroCnCount', 'WfZeroCnFone',
+                  'WfColdStartCount', 'WfColdStartFone', 'WfMissingTextCount',
+                  'WfMissingTextFone', 'WfZeroCnPosPct', 'WfZeroCnErrors',
+                  'WfZeroCnFalseNegatives', 'WfZeroCnPositiveRecall', 'WfColdStartPosPct',
+                  'WfColdStartErrors', 'WfColdStartFalseNegatives', 'WfColdStartPositiveRecall',
+                  'WfMissingTextPosPct', 'WfMissingTextErrors', 'WfMissingTextFalseNegatives',
+                  'WfMissingTextPositiveRecall'):
+            m[k] = _MISSING
         for k in ('WfTrainSplitSize', 'WfValSplitSize', 'WfGraphNodes', 'WfGraphEdges', 'WfMeanDegree'):
             m[k] = _MISSING
 

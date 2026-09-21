@@ -33,6 +33,43 @@ def evaluate(y_true, y_pred, y_score) -> dict:
     }
 
 
+def bootstrap_comparison(y_true, cascade_pred, structural_pred, seed, n_boot=500) -> dict:
+    """Paired bootstrap intervals for CascadeLP and its gain over the strongest baseline."""
+    rng = np.random.default_rng(seed)
+    n = len(y_true)
+    cascade_scores = np.empty(n_boot)
+    deltas = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, n)
+        cascade_scores[i] = f1_score(y_true[idx], cascade_pred[idx], average='macro')
+        structural_score = f1_score(y_true[idx], structural_pred[idx], average='macro')
+        deltas[i] = cascade_scores[i] - structural_score
+    return {
+        'n_resamples': n_boot,
+        'cascade_macro_f1_ci95': np.quantile(cascade_scores, [0.025, 0.975]).tolist(),
+        'cascade_minus_structural_macro_f1': float(
+            f1_score(y_true, cascade_pred, average='macro')
+            - f1_score(y_true, structural_pred, average='macro')),
+        'cascade_minus_structural_ci95': np.quantile(deltas, [0.025, 0.975]).tolist(),
+    }
+
+
+def evaluate_subset(y_true, y_pred, y_score, mask) -> dict:
+    """Evaluate a diagnostic slice and retain its balance and error direction."""
+    truth = y_true[mask]
+    prediction = y_pred[mask]
+    result = evaluate(truth, prediction, y_score[mask])
+    positives = truth == 1
+    result.update({
+        'positive_rate': float(truth.mean()),
+        'errors': int((prediction != truth).sum()),
+        'false_negatives': int(((truth == 1) & (prediction == 0)).sum()),
+        'false_positives': int(((truth == 0) & (prediction == 1)).sum()),
+        'positive_recall': float(prediction[positives].mean()) if positives.any() else None,
+    })
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pairs', default='data/raw/wiki_cs_8k/train.csv')
@@ -111,6 +148,7 @@ def main():
         return v.iloc[idx] if isinstance(v, pd.DataFrame) else v[idx]
 
     results = {}
+    val_predictions = {}
     pred_dir = pathlib.Path(args.predictions)
     pred_dir.mkdir(parents=True, exist_ok=True)
 
@@ -118,41 +156,84 @@ def main():
     m = StructuralClassifier(random_state=args.seed)
     m.fit(sub(structural, tr), y[tr])
     proba = m.predict_proba(sub(structural, val))
-    results['structural'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
+    val_predictions['structural'] = proba.argmax(1)
+    results['structural'] = evaluate(y[val], val_predictions['structural'], proba[:, 1])
 
     log.info('Training TfidfClassifier...')
     m = TfidfClassifier(random_state=args.seed)
     m.fit(sub(tfidf_scores, tr), y[tr])
     proba = m.predict_proba(sub(tfidf_scores, val))
-    results['tfidf'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
+    val_predictions['tfidf'] = proba.argmax(1)
+    results['tfidf'] = evaluate(y[val], val_predictions['tfidf'], proba[:, 1])
 
     log.info('Training PosClassifier...')
     m = PosClassifier(random_state=args.seed)
     m.fit(sub(pos_features, tr), y[tr])
     proba = m.predict_proba(sub(pos_features, val))
-    results['pos'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
+    val_predictions['pos'] = proba.argmax(1)
+    results['pos'] = evaluate(y[val], val_predictions['pos'], proba[:, 1])
 
     log.info('Training EmbeddingClassifier...')
     m = EmbeddingClassifier(random_state=args.seed)
     m.fit(sub(st_scores, tr), y[tr])
     proba = m.predict_proba(sub(st_scores, val))
-    results['embedding'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
+    val_predictions['embedding'] = proba.argmax(1)
+    results['embedding'] = evaluate(y[val], val_predictions['embedding'], proba[:, 1])
 
     log.info('Training SvmClassifier...')
     m = SvmClassifier(random_state=args.seed)
     m.fit(sub(tfidf_scores, tr), y[tr])
     proba = m.predict_proba(sub(tfidf_scores, val))
-    results['svm'] = evaluate(y[val], proba.argmax(1), proba[:, 1])
+    val_predictions['svm'] = proba.argmax(1)
+    results['svm'] = evaluate(y[val], val_predictions['svm'], proba[:, 1])
 
     log.info('Training CascadeLP (original, unmodified architecture)...')
     m = CascadeLP()
     m.fit(sub(structural, tr), sub(pos_features, tr), sub(st_scores, tr), y[tr], pairs.iloc[tr])
     y_pred, tier_used, scores = m.predict(sub(structural, val), sub(pos_features, val), sub(st_scores, val), pairs.iloc[val])
     results['cascade'] = evaluate(y[val], y_pred, scores)
+    val_predictions['cascade'] = y_pred
     results['cascade']['tier_stats'] = m.tier_stats(tier_used)
+    results['cascade']['tier_performance'] = {
+        f'tier{tier}': {
+            **evaluate(y[val][tier_used == tier], y_pred[tier_used == tier],
+                       scores[tier_used == tier]),
+            'positive_rate': float(y[val][tier_used == tier].mean()),
+            'errors': int((y_pred[tier_used == tier] != y[val][tier_used == tier]).sum()),
+        }
+        for tier in range(4) if (tier_used == tier).any()
+    }
+
+    structural_val = sub(structural, val)
+    zero_cn = structural_val['cn'].fillna(0).to_numpy() == 0
+    heuristic_cols = ['cn', 'jaccard', 'adamic_adar', 'pref_attach']
+    functional_cold_start = (structural_val[heuristic_cols].fillna(0).to_numpy() == 0).all(axis=1)
+    results['cascade']['diagnostic_subsets'] = {
+        'zero_cn': evaluate_subset(y[val], y_pred, scores, zero_cn),
+        'functional_cold_start': evaluate_subset(
+            y[val], y_pred, scores, functional_cold_start),
+    }
+
+    nodes_for_audit = load_nodes_for_ids(args.nodes, unique_ids)
+    empty_ids = unique_ids - set(nodes_for_audit.index)
+    empty_ids.update(nodes_for_audit.index[
+        nodes_for_audit['text'].fillna('').astype(str).str.strip().eq('')])
+    val_pairs = pairs.iloc[val]
+    missing_text = (val_pairs['id1'].isin(empty_ids) | val_pairs['id2'].isin(empty_ids)).to_numpy()
+    results['cascade']['diagnostic_subsets']['missing_text'] = (
+        evaluate_subset(y[val], y_pred, scores, missing_text)
+        if missing_text.any() else {'macro_f1': None, 'auc_roc': None, 'n': 0})
+
+    results['bootstrap'] = bootstrap_comparison(
+        y[val], y_pred, val_predictions['structural'], args.seed)
+
     pd.DataFrame({'id': pairs.iloc[val].index, 'y_true': y[val], 'y_pred': y_pred,
                  'tier_used': tier_used, 'score': scores}).to_csv(
         pred_dir / 'cascade_val_tiers.csv', index=False)
+    prediction_frame = pd.DataFrame({'id': pairs.iloc[val].index, 'y_true': y[val]})
+    for name, prediction in val_predictions.items():
+        prediction_frame[f'{name}_pred'] = prediction
+    prediction_frame.to_csv(pred_dir / 'model_val_predictions.csv', index=False)
 
     results['_meta'] = {
         'n_train': int(len(tr)), 'n_val': int(len(val)),
@@ -162,7 +243,7 @@ def main():
 
     log.info('=== Results ===')
     for name, r in results.items():
-        if name == '_meta':
+        if name in ('_meta', 'bootstrap'):
             continue
         log.info('%-12s Macro F1=%.4f  AUC=%s  n=%d', name, r['macro_f1'],
                  f"{r['auc_roc']:.4f}" if r['auc_roc'] else 'n/a', r['n'])
@@ -172,7 +253,7 @@ def main():
 
     out = pathlib.Path(args.stats)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(results, indent=2))
+    out.write_text(json.dumps(results, indent=2) + '\n')
     log.info('Saved -> %s', out)
 
 

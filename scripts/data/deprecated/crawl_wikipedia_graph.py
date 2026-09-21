@@ -11,7 +11,7 @@ API, starting from a seed article and following genuine outgoing links
 (breadth-first), up to a target node count. Unlike the DSAA 2023 dataset,
 every edge here is a real hyperlink and every node's text is a real article
 extract — there is no negative-sampling artifact to correct after the fact,
-because we build the labels ourselves in build_wikipedia_cs_8k_dataset.py from
+because we build the labels ourselves in build_wiki_cs_8k_dataset.py from
 these genuine edges.
 
 Writes:
@@ -114,7 +114,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seed', default='Computer science')
     parser.add_argument('--target', type=int, default=8000)
-    parser.add_argument('--output', default='data/raw/wikipedia_cs_8k')
+    parser.add_argument('--output', default='data/raw/wiki_cs_8k')
     args = parser.parse_args()
 
     out_dir = pathlib.Path(args.output)

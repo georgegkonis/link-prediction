@@ -5,7 +5,7 @@ rate-limited too hard on this environment's IP to crawl at any useful scale.
 
 Every edge here is a genuine hyperlink extracted from a real dump; there is no
 negative-sampling artifact to correct because we construct labels ourselves in
-build_wikipedia_cs_8k_dataset.py from these real edges.
+build_wiki_cs_8k_dataset.py from these real edges.
 
 Requires (download once, e.g. from https://dumps.wikimedia.org/simplewiki/latest/):
     <dump-dir>/simplewiki-latest-page.sql.gz
@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--wiki', default='simplewiki')
     parser.add_argument('--seed', default='Computer_science', help='underscored title, as in MediaWiki')
     parser.add_argument('--target', type=int, default=8000)
-    parser.add_argument('--output', default='data/raw/wikipedia_cs_8k')
+    parser.add_argument('--output', default='data/raw/wiki_cs_8k')
     args = parser.parse_args()
     d = pathlib.Path(args.dump_dir)
 

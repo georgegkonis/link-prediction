@@ -38,8 +38,15 @@
     μόλις \TierThreePct\% των ζευγών.
     Συμπεριλαμβάνουμε επίσης ένα μοντέλο αναφοράς
     \en{TF-IDF + SVM}.
-    Η γενίκευση σε δεύτερο σύνολο δεδομένων αναβάλλεται ως
-    μελλοντική εργασία.
+    Ένας πρόσθετος έλεγχος αποκαλύπτει ότι ένα μικρό σύνολο κόμβων-πηγής
+    στο \en{DSAA 2023} καθορίζει σχεδόν πλήρως την ετικέτα ανεξάρτητα από
+    το δεύτερο άκρο, αφήνοντας ερμηνευτικά ανοιχτό αν το \en{CascadeLP}
+    έμαθε γνήσια σχεσιακή πρόβλεψη.
+    Απαντάμε επανεκπαιδεύοντας το ίδιο,
+    αναλλοίωτο \en{CascadeLP} σε ένα δεύτερο, ανεξάρτητα κατασκευασμένο
+    σύνολο δεδομένων πραγματικών υπερσυνδέσμων \en{Wikipedia}, όπου
+    πετυχαίνει \en{Macro F1} = \WfCascadeFone{} ξεπερνώντας κάθε
+    μεμονωμένη οικογένεια χαρακτηριστικών.
 
     \begin{keywords}
         Πρόβλεψη ακμών, γραφήματα με κειμενικά χαρακτηριστικά, νευρωνικά δίκτυα γραφημάτων,
@@ -76,8 +83,12 @@
         held-out validation set -- independently confirmed with Macro F1 = \KaggleBaselinePublic{}
         on the competition's public leaderboard -- while calling the expensive
         Sentence-Transformer encoder on only \TierThreePct\% of pairs. We also include a TF-IDF
-        + SVM reference baseline. Generalization to a second dataset is deferred to
-        future work. }
+        + SVM reference baseline. A further check reveals that a small set of source nodes in
+        DSAA 2023 determines the label almost entirely, independent of the second endpoint,
+        leaving open whether CascadeLP learned genuine relational prediction. We answer this by
+        retraining the same, unmodified CascadeLP on a second, independently built dataset of
+        real Wikipedia hyperlinks, where it reaches Macro F1 = \WfCascadeFone{}, outperforming
+        every individual feature family. }
 
     \begin{keywordseng}
         \en{Link prediction, text-attributed graphs, graph neural networks, language models,

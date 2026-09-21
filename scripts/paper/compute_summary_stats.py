@@ -13,7 +13,6 @@ Reads:
     data/interim/dsaa/tfidf_train.csv
     outputs/predictions/dsaa/cascade_val_tiers.csv
     outputs/predictions/dsaa/cascade_test_tiers.csv
-    outputs/predictions/dsaa/cascade_n2v_test_tiers.csv
     outputs/predictions/dsaa/cascade_threshold_ablation.csv
     outputs/predictions/dsaa/cascade_val_metrics.json
     outputs/predictions/dsaa/kaggle_scores.csv
@@ -154,7 +153,6 @@ def _load() -> dict:
         PREDICTIONS / 'svm_val_metrics.json', 'run make train MODEL=svm first')
     d['svm_errors'] = _load_csv_optional(
         PREDICTIONS / 'svm_val_errors.csv', 'run make train MODEL=svm first (writes per-pair errors too)')
-    d['n2v_ablation'] = None
     d['hard_residual'] = _load_json_optional(
         PREDICTIONS / 'hard_residual_analysis.json',
         'run python -m scripts.analysis.analyze_hard_residual first')
@@ -166,9 +164,6 @@ def _load() -> dict:
         'run python -m scripts.analysis.ablate_cascade_thresholds first')
     d['embedding'] = _load_json_optional(
         PREDICTIONS / 'embedding_val_metrics.json', 'run make train MODEL=embedding first')
-    d['n2v_test_tiers'] = _load_csv_optional(
-        PREDICTIONS / 'cascade_n2v_test_tiers.csv',
-        'run python -m scripts.analysis.run_dsaa_evaluate model=cascade training.no_n2v=false +tag=n2v first')
     d['cascade_val_metrics'] = _load_json_optional(
         PREDICTIONS / 'cascade_val_metrics.json', 'run make train MODEL=cascade first')
 
@@ -567,12 +562,6 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['SvmLatency'] = _MISSING
 
 
-    n2v_tt = d['n2v_test_tiers']
-    if n2v_tt is not None:
-        m['NTwoVTestTierOnePct'] = gpct(100 * (n2v_tt['tier_used'] == 1).mean(), 1)
-    else:
-        m['NTwoVTestTierOnePct'] = _MISSING
-
     # ---- Ablation grid ----
     # Scoped to the original moderate τ₂ range (≤0.9) — §5.1's opening grid
     # description of "the grid"; the extended τ₂ values (0.95-0.9999) feed only
@@ -777,14 +766,6 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     else:
         m['KaggleBaselinePublic']  = _MISSING
         m['KaggleBaselinePrivate'] = _MISSING
-
-    if not n2v_rows.empty:
-        best_n2v = n2v_rows.sort_values('public_score', ascending=False).iloc[0]
-        m['NTwoVKagglePublic']  = gfloat(best_n2v['public_score'], 5)
-        m['NTwoVKagglePrivate'] = gfloat(best_n2v['private_score'], 5)
-    else:
-        m['NTwoVKagglePublic']  = _MISSING
-        m['NTwoVKagglePrivate'] = _MISSING
 
     # ---- Shared raw intermediates for figure aggregation ----
     shared['G'] = G

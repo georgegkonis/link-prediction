@@ -42,9 +42,8 @@ _GROUPS = [
                                  'StructuralC', 'StructuralMaxIter', 'TfidfClfC', 'TfidfClfMaxIter',
                                  'PosNEstimators', 'PosClassWeight', 'EmbeddingC', 'EmbeddingMaxIter',
                                  'SvmC', 'SvmGamma',
-                                 'TfidfMaxFeatures', 'TfidfSublinearTf', 'TfidfMinDf', 'EmbeddingModelName',
-                                 'NTwoVDimensions', 'NTwoVWalkLength', 'NTwoVNumWalks', 'NTwoVWindow', 'NTwoVP', 'NTwoVQ']),
-    ('Cascade thresholds',     ['TauOneDefault', 'TauTwoDefault', 'NTwoVDim']),
+                                 'TfidfMaxFeatures', 'TfidfSublinearTf', 'TfidfMinDf', 'EmbeddingModelName']),
+    ('Cascade thresholds',     ['TauOneDefault', 'TauTwoDefault']),
     ('Cascade val results',    ['CascadeValFone', 'CascadeValAuc',
                                  'TierOneCount', 'TierOnePct', 'TierOneAcc', 'TierOneFone',
                                  'TierTwoCount', 'TierTwoPct', 'TierTwoAcc', 'TierTwoFone',
@@ -66,8 +65,6 @@ _GROUPS = [
                                  'SvmTotalErrors', 'CascadeVsSvmRatio', 'SvmErrorsHardN', 'SvmErrorsHardPct',
                                  'SvmErrorsTrivialN', 'SvmErrorsTrivialPct', 'SvmHighTextsimAcc', 'SvmHighTextsimFone',
                                  'SvmHardAcc', 'SvmHardFone']),
-                                 'NTwoVIdOneCoverage', 'NTwoVIdTwoCoverage', 'NTwoVZeroVecPct',
-                                 'NTwoVZeroVecN', 'NTwoVTestTierOnePct']),
     ('Threshold ablation',     ['AblGridPoints', 'AblTierOneLowFone', 'AblTierOneHighFone',
                                  'AblTierOneLowPct', 'AblTierOneBreakPct', 'AblTierOneBreakPctHigh',
                                  'AblBestFone', 'AblDefaultFone', 'AblHighTauOneLowFone', 'AblTauTwoMaxTierThreePct',
@@ -76,8 +73,7 @@ _GROUPS = [
                                  'AblTThreeRateZeroNineNine', 'AblTThreeRateZeroNineNineNine',
                                  'AblTThreeRateZeroNineNineNineNine']),
     ('SVM baseline',           ['SvmFone', 'SvmAuc', 'SvmCsFone', 'SvmLatency']),
-    ('Kaggle scores',          ['KaggleBaselinePublic', 'KaggleBaselinePrivate',
-                                 'NTwoVKagglePublic', 'NTwoVKagglePrivate']),
+    ('Kaggle scores',          ['KaggleBaselinePublic', 'KaggleBaselinePrivate']),
 ]
 
 
@@ -91,13 +87,14 @@ def _emit_tex(macros: dict[str, str]) -> None:
     for group_name, keys in _GROUPS:
         lines.append(f'%% {group_name}')
         for key in keys:
-            if key in macros:
+            if key in macros and not key.startswith('NTwoV'):
                 lines.append(f'\\newcommand{{\\{key}}}{{{macros[key]}}}')
                 emitted.add(key)
         lines.append('')
 
     # Catch any computed keys not in the explicit group list
-    remaining = {k: v for k, v in macros.items() if k not in emitted}
+    remaining = {k: v for k, v in macros.items()
+                 if k not in emitted and not k.startswith('NTwoV')}
     if remaining:
         lines.append('%% Additional computed macros')
         for k, v in sorted(remaining.items()):

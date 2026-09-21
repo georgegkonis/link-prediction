@@ -427,8 +427,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Dummy label marking the last page, for anyone who wants \pageref{lastback}
-% (mirrors \label{lastfront} set in \mainmatter above).
-\AtEndDocument{\subparagraph{}\label{lastback}}
+% (mirrors \label{lastfront} set in \mainmatter above). Uses \phantomsection
+% instead of an empty \subparagraph: a real sectioning command reserves its
+% "beforeskip" vertical space even with an empty title, which spills onto a
+% trailing blank page whenever the preceding page is already full (as with a
+% glossary that fills its last page exactly). \phantomsection just drops a
+% hyperref-safe anchor with no vertical space of its own.
+\AtEndDocument{\phantomsection\label{lastback}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Dedication page

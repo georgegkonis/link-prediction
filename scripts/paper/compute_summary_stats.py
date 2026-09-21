@@ -23,7 +23,7 @@ Reads:
     outputs/predictions/dsaa/tier2_confidence_saturation.json
     outputs/predictions/dsaa/embedding_val_metrics.json
 Writes:
-    outputs/stats/summary_stats.json
+    latex/shared/results/summary_stats.json
 
 Usage:
     python -m scripts.paper.compute_summary_stats
@@ -48,6 +48,7 @@ RAW         = pathlib.Path('data/raw/dsaa')
 PREDICTIONS = pathlib.Path('outputs/predictions/dsaa')
 STATS       = pathlib.Path('outputs/stats')
 CONFIGS     = pathlib.Path('configs')
+PUBLISHED_RESULTS = pathlib.Path('latex/shared/results')
 
 _MODEL_NAMES = ('structural', 'tfidf', 'pos', 'embedding', 'svm', 'cascade')
 
@@ -166,6 +167,12 @@ def _load() -> dict:
         PREDICTIONS / 'embedding_val_metrics.json', 'run make train MODEL=embedding first')
     d['cascade_val_metrics'] = _load_json_optional(
         PREDICTIONS / 'cascade_val_metrics.json', 'run make train MODEL=cascade first')
+    d['baseline_metrics'] = {
+        name: _load_json_optional(
+            PREDICTIONS / f'{name}_val_metrics.json',
+            f'run make train MODEL={name} first')
+        for name in _MODEL_NAMES
+    }
 
     # ---- Negative-sampling artifact audit (explains the near-perfect DSAA 2023 score) ----
     d['neg_sampling_audit'] = _load_json_optional(
@@ -1015,6 +1022,66 @@ def _compute_figures(d: dict, shared: dict) -> dict:
     if shared['kaggle_our_private'] is not None:
         figs['kaggle_our_score'] = shared['kaggle_our_private']
 
+    # ---- Publication figures for the revised thesis argument ----
+    neg_audit = d['neg_sampling_audit']
+    if neg_audit:
+        reference = next(
+            row for row in neg_audit['by_threshold']
+            if row['threshold'] == neg_audit['reference_threshold']
+        )
+        figs['negative_sampling_artifact'] = {
+            'hub_count': reference['n_hub_id1'],
+            'unique_source_count': reference['n_unique_id1'],
+            'hub_row_pct': reference['hub_row_pct'],
+            'test_hub_row_pct': neg_audit['test_rows_with_hub_id1_pct'],
+            'hub_negative_pct': 100 * reference['hub_negative_rate'],
+            'non_hub_positive_pct': 100 * reference['non_hub_positive_rate'],
+            'lookup_macro_f1': reference['trivial_lookup_macro_f1'],
+        }
+
+    protocol = d['protocol_audit']
+    if protocol:
+        figs['graph_protocol_leakage'] = {
+            'n_val': protocol['n_val'],
+            'validation_positives_in_graph': protocol['validation_positives_in_graph'],
+            'full_graph_cold_positive': protocol['full_graph']['cold_positive'],
+            'training_graph_cold_positive': protocol['training_partition_graph']['cold_positive'],
+        }
+        swap = protocol.get('swap')
+        if swap:
+            figs['endpoint_swap'] = {
+                'overall_change_pct': swap['label_change_pct'],
+                'negative_change_pct': swap['by_original_class']['0']['label_change_pct'],
+                'positive_change_pct': swap['by_original_class']['1']['label_change_pct'],
+                'mean_abs_probability_change': swap['mean_abs_probability_change'],
+            }
+
+    wikipedia = d['wikipedia']
+    dsaa_metrics = d['baseline_metrics']
+    if wikipedia and all(dsaa_metrics.get(name) for name in _MODEL_NAMES):
+        figs['cross_dataset_performance'] = {
+            'models': list(_MODEL_NAMES),
+            'dsaa_macro_f1': [dsaa_metrics[name]['macro_f1'] for name in _MODEL_NAMES],
+            'wiki_macro_f1': [wikipedia[name]['macro_f1'] for name in _MODEL_NAMES],
+            'wiki_cascade_ci95': wikipedia.get('bootstrap', {}).get('cascade_macro_f1_ci95'),
+        }
+
+        wiki_tiers = wikipedia['cascade']['tier_stats']
+        figs['routing_comparison'] = {
+            'dsaa': [100 * int(tier_counts.get(tier, 0)) / n_vt for tier in range(4)],
+            'wiki': [wiki_tiers[f'tier{tier}']['pct'] for tier in range(4)],
+        }
+
+        diagnostics = wikipedia['cascade']['diagnostic_subsets']
+        figs['wiki_diagnostic_subsets'] = {
+            key: {
+                'n': diagnostics[key]['n'],
+                'macro_f1': diagnostics[key]['macro_f1'],
+                'positive_recall': diagnostics[key]['positive_recall'],
+            }
+            for key in ('zero_cn', 'functional_cold_start', 'missing_text')
+        }
+
     return figs
 
 
@@ -1027,8 +1094,8 @@ def main() -> None:
     m, shared = _compute_macros(d)
     figs = _compute_figures(d, shared)
 
-    STATS.mkdir(parents=True, exist_ok=True)
-    out = STATS / 'summary_stats.json'
+    PUBLISHED_RESULTS.mkdir(parents=True, exist_ok=True)
+    out = PUBLISHED_RESULTS / 'summary_stats.json'
     out.write_text(json.dumps({'macros': m, 'figures': figs}, indent=2))
     log.info('Wrote %d macros + %d figure groups → %s', len(m), len(figs), out)
 

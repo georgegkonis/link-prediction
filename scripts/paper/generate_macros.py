@@ -1,8 +1,8 @@
 """
-Generate latex/shared/generated_macros.tex from outputs/stats/summary_stats.json.
+Generate latex/shared/generated_macros.tex from latex/shared/results/summary_stats.json.
 
 Reads:
-    outputs/stats/summary_stats.json
+    latex/shared/results/summary_stats.json
 Writes:
     latex/shared/generated_macros.tex
 
@@ -17,8 +17,8 @@ from src.utils.log_utils import setup_logging
 
 log = setup_logging('generate_macros')
 
-STATS  = pathlib.Path('outputs/stats')
 SHARED = pathlib.Path('latex/shared')
+RESULTS = SHARED / 'results'
 
 _GROUPS = [
     ('Dataset sizes',          ['TrainPairs', 'TrainPairsNoSelf', 'TrainSplitSize', 'ValSplitSize',
@@ -126,7 +126,7 @@ def _emit_tex(macros: dict[str, str]) -> None:
 
 
 def main():
-    stats_path = STATS / 'summary_stats.json'
+    stats_path = RESULTS / 'summary_stats.json'
     if not stats_path.exists():
         raise SystemExit(
             f'{stats_path} not found — run `make compute-stats` first '

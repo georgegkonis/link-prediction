@@ -103,9 +103,9 @@
     \midrule
     \multicolumn{2}{l}{\texttt{\en{scripts\slash{}paper\slash{}}}} \\
     \midrule
-    \texttt{\en{compute\_summary\_stats.py}} & συγκεντρωτικά στατιστικά προς \texttt{\en{outputs\slash{}stats\slash{}summary\_stats.json}} \\
+    \texttt{\en{compute\_summary\_stats.py}} & επιμελημένο στιγμιότυπο αποτελεσμάτων προς \texttt{\en{latex\slash{}shared\slash{}results\slash{}summary\_stats.json}} \\
     \texttt{\en{generate\_macros.py}} & παραγωγή \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}} \\
-    \texttt{\en{generate\_figures.py}} & παραγωγή σχημάτων στο \texttt{\en{outputs\slash{}figures\slash{}}} \\
+    \texttt{\en{generate\_figures.py}} & παραγωγή διανυσματικών σχημάτων στο \texttt{\en{latex\slash{}shared\slash{}figures\slash{}}} \\
 \end{longtable}
 \normalsize
 
@@ -189,10 +189,11 @@
 
 \begin{itemize}
   \item \texttt{\en{python -\allowbreak{}m scripts.paper.compute\_summary\_stats}} --- Έξοδος:
-    \texttt{\en{outputs\slash{}stats\slash{}summary\_stats.json}}
+    \texttt{\en{latex\slash{}shared\slash{}results\slash{}summary\_stats.json}}
   \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_macros}} --- Έξοδος:
     \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_figures}} --- Έξοδος: \texttt{\en{outputs\slash{}figures\slash{}*}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_figures}} --- Έξοδος:
+    \texttt{\en{latex\slash{}shared\slash{}figures\slash{}*.pdf}}
 \end{itemize}
 
 

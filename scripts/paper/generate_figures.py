@@ -1,10 +1,11 @@
 """
-Generate figures from outputs/stats/summary_stats.json and save to outputs/figures/.
+Generate publication figures from latex/shared/results/summary_stats.json and
+save them as vector PDFs in latex/shared/figures/.
 
 Reads:
-    outputs/stats/summary_stats.json
+    latex/shared/results/summary_stats.json
 Writes:
-    outputs/figures/
+    latex/shared/figures/
 
 Usage:
     python -m scripts.paper.generate_figures
@@ -14,26 +15,31 @@ import json
 import pathlib
 
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 
 from src.utils.log_utils import setup_logging
 
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+matplotlib.rcParams.update({
+    'font.size': 10,
+    'axes.titlesize': 11,
+    'axes.labelsize': 10,
+    'legend.fontsize': 8,
+    'pdf.fonttype': 42,
+})
 
 log = setup_logging('generate_figures')
 
-STATS    = pathlib.Path('outputs/stats')
-OUT_FIGS = pathlib.Path('outputs/figures')
+RESULTS  = pathlib.Path('latex/shared/results')
+OUT_FIGS = pathlib.Path('latex/shared/figures')
 
 PALETTE = {
     'pos': '#2196F3',
     'neg': '#F44336',
     'colors': ['#2196F3', '#4CAF50', '#FF9800', '#F44336', '#9C27B0', '#795548'],
 }
-
-TIER_NAMES = {0: 'Επίπεδο 0\n(αυτοβρόχος)', 1: 'Επίπεδο 1\n(Structural)',
-              2: 'Επίπεδο 2\n(POS+RF)', 3: 'Επίπεδο 3\n(Embedding)'}
 
 DIFF_LABELS = {
     'trivial_self_loop':    'Αυτοβρόχοι',
@@ -46,8 +52,8 @@ DIFF_ORDER = ['trivial_self_loop', 'trivial_high_cn', 'trivial_high_textsim', 'h
 
 def _save(fig: plt.Figure, name: str) -> None:
     OUT_FIGS.mkdir(parents=True, exist_ok=True)
-    src = OUT_FIGS / name
-    fig.savefig(src, dpi=150, bbox_inches='tight')
+    src = (OUT_FIGS / name).with_suffix('.pdf')
+    fig.savefig(src, bbox_inches='tight')
     log.info('Saved → %s', src)
     plt.close(fig)
 
@@ -57,7 +63,7 @@ def _save(fig: plt.Figure, name: str) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_separability(figs: dict) -> None:
-    log.info('Generating separability_distributions.png ...')
+    log.info('Generating separability_distributions.pdf ...')
     sep = figs.get('separability')
     if sep is None:
         log.warning('SKIP: no separability stats')
@@ -84,7 +90,7 @@ def fig_separability(figs: dict) -> None:
     axes[1].legend()
 
     fig.tight_layout()
-    _save(fig, 'separability_distributions.png')
+    _save(fig, 'separability_distributions')
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +98,7 @@ def fig_separability(figs: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_difficulty(figs: dict) -> None:
-    log.info('Generating difficulty_breakdown.png ...')
+    log.info('Generating difficulty_breakdown.pdf ...')
     pcts_by_cat = figs.get('difficulty_train_pct')
     if pcts_by_cat is None:
         log.warning('SKIP: no difficulty_train_pct stats')
@@ -116,214 +122,7 @@ def fig_difficulty(figs: dict) -> None:
     ax.set_title('Κατανομή Δυσκολίας — Σύνολο Εκπαίδευσης')
     ax.legend(loc='upper right', fontsize=8)
     fig.tight_layout()
-    _save(fig, 'difficulty_breakdown.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 3: SVM metrics
-# ---------------------------------------------------------------------------
-
-def fig_svm_metrics(figs: dict) -> None:
-    log.info('Generating svm_metrics.png ...')
-    svm = figs.get('svm_metrics')
-    if svm is None:
-        log.warning('SKIP: no svm_metrics')
-        return
-
-    lat = svm.get('latency_ms', 0)
-    n   = svm.get('n_val', 1)
-    lat_per_pair = lat / n if n else 0
-
-    metrics = [
-        ('Macro F1',        svm.get('macro_f1', 0)),
-        ('AUC-ROC',         svm.get('auc_roc', 0)),
-        ('Cold-start F1',   svm.get('cold_start_f1', 0)),
-        ('Latency (ms/pair)', lat_per_pair),
-    ]
-    names  = [m[0] for m in metrics]
-    values = [m[1] for m in metrics]
-
-    fig, ax = plt.subplots(figsize=(7, 4))
-    bars = ax.bar(names, values, color=PALETTE['colors'], width=0.5)
-
-    for bar, val in zip(bars, values):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
-                f'{val:.4f}', ha='center', va='bottom', fontsize=9)
-
-    ax.set_ylim(0, max(values) * 1.15)
-    ax.set_ylabel('Τιμή')
-    ax.set_title('Απόδοση μοντέλου αναφοράς TF-IDF + SVM')
-    fig.tight_layout()
-    _save(fig, 'svm_metrics.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 4: cascade tier routing
-# ---------------------------------------------------------------------------
-
-def fig_tier_routing(figs: dict) -> None:
-    log.info('Generating tier_routing.png ...')
-    tier_counts = figs.get('tier_counts')
-    n_total = figs.get('tier_counts_total')
-    if not tier_counts or not n_total:
-        log.warning('SKIP: no tier_counts stats')
-        return
-
-    fig, ax = plt.subplots(figsize=(8, 3.5))
-    left = 0
-    for tier in sorted(TIER_NAMES):
-        n = int(tier_counts.get(str(tier), 0))
-        pct = 100 * n / n_total
-        color = PALETTE['colors'][tier % len(PALETTE['colors'])]
-        ax.barh(0, pct, left=left, color=color,
-                label=f'{TIER_NAMES[tier].splitlines()[0]} ({pct:.1f}%, n={n:,})', height=0.5)
-        if pct > 2:
-            ax.text(left + pct / 2, 0, f'{pct:.1f}%',
-                    ha='center', va='center', fontsize=9, color='white', fontweight='bold')
-        left += pct
-
-    ax.set_xlim(0, 100)
-    ax.set_yticks([])
-    ax.set_xlabel('Ποσοστό ζευγών (%)')
-    ax.set_title('Δρομολόγηση Ζευγών ανά Επίπεδο CascadeLP')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=2, fontsize=8)
-    fig.tight_layout()
-    _save(fig, 'tier_routing.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 5: tier x difficulty accuracy heatmap
-# ---------------------------------------------------------------------------
-
-def fig_tier_difficulty_heatmap(figs: dict) -> None:
-    log.info('Generating tier_difficulty_heatmap.png ...')
-    table = figs.get('tier_difficulty_table')
-    if not table:
-        log.warning('SKIP: no tier_difficulty_table stats')
-        return
-
-    tiers = figs['tiers_present']
-    diffs = figs['diffs_present']
-
-    acc = np.full((len(tiers), len(diffs)), np.nan)
-    for i, tier in enumerate(tiers):
-        for j, diff in enumerate(diffs):
-            cell = table.get(str(tier), {}).get(diff)
-            if cell:
-                acc[i, j] = cell['acc']
-
-    fig, ax = plt.subplots(figsize=(7, 4))
-    im = ax.imshow(acc, cmap='RdYlGn', vmin=0, vmax=1, aspect='auto')
-    ax.set_xticks(range(len(diffs)))
-    ax.set_xticklabels([DIFF_LABELS[d] for d in diffs], rotation=20, ha='right')
-    ax.set_yticks(range(len(tiers)))
-    ax.set_yticklabels([TIER_NAMES.get(t, str(t)).replace('\n', ' ') for t in tiers])
-    for i in range(len(tiers)):
-        for j in range(len(diffs)):
-            if not np.isnan(acc[i, j]):
-                ax.text(j, i, f'{acc[i, j]:.3f}', ha='center', va='center', fontsize=9)
-    ax.set_title('Ακρίβεια ανά Επίπεδο × Κατηγορία Δυσκολίας')
-    fig.colorbar(im, ax=ax, label='Ακρίβεια')
-    fig.tight_layout()
-    _save(fig, 'tier_difficulty_heatmap.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 6: per-tier confusion matrices
-# ---------------------------------------------------------------------------
-
-def fig_confusion_matrices(figs: dict) -> None:
-    log.info('Generating tier_confusion_matrices.png ...')
-    cms = figs.get('confusion_matrices')
-    if not cms:
-        log.warning('SKIP: no confusion_matrices stats')
-        return
-
-    tiers = figs['tiers_present']
-    fig, axes = plt.subplots(1, len(tiers), figsize=(3.2 * len(tiers), 3.2))
-    if len(tiers) == 1:
-        axes = [axes]
-
-    for ax, tier in zip(axes, tiers):
-        cm = np.array(cms[str(tier)])
-        ax.imshow(cm, cmap='Blues')
-        for i in range(2):
-            for j in range(2):
-                ax.text(j, i, f'{cm[i, j]:,}', ha='center', va='center',
-                         color='white' if cm[i, j] > cm.max() / 2 else 'black', fontsize=9)
-        ax.set_xticks([0, 1]); ax.set_xticklabels(['0', '1'])
-        ax.set_yticks([0, 1]); ax.set_yticklabels(['0', '1'])
-        ax.set_xlabel('Πρόβλεψη')
-        ax.set_ylabel('Πραγματική')
-        ax.set_title(TIER_NAMES.get(tier, str(tier)).replace('\n', ' '), fontsize=9)
-
-    fig.suptitle('Πίνακες Σύγχυσης ανά Επίπεδο')
-    fig.tight_layout()
-    _save(fig, 'tier_confusion_matrices.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 7: ROC curve, CascadeLP vs. SVM
-# ---------------------------------------------------------------------------
-
-def fig_roc_curve(figs: dict) -> None:
-    log.info('Generating roc_curve.png ...')
-    roc_cascade = figs.get('roc_cascade')
-    roc_svm = figs.get('roc_svm')
-
-    fig, ax = plt.subplots(figsize=(6, 5.5))
-    plotted = False
-
-    if roc_cascade is not None:
-        ax.plot(roc_cascade['fpr'], roc_cascade['tpr'], color=PALETTE['pos'], label='CascadeLP')
-        plotted = True
-    if roc_svm is not None:
-        ax.plot(roc_svm['fpr'], roc_svm['tpr'], color=PALETTE['neg'], label='SVM (TF-IDF)')
-        plotted = True
-
-    if not plotted:
-        log.warning('SKIP: no scored predictions available for ROC curve')
-        plt.close(fig)
-        return
-
-    ax.plot([0, 1], [0, 1], color='gray', linestyle='--', linewidth=1)
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
-    ax.set_title('Καμπύλη ROC')
-    ax.legend(loc='lower right')
-    fig.tight_layout()
-    _save(fig, 'roc_curve.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 8: per-tier confidence-score distribution
-# ---------------------------------------------------------------------------
-
-def fig_confidence_distribution(figs: dict) -> None:
-    log.info('Generating tier_confidence_distribution.png ...')
-    hist = figs.get('confidence_hist')
-    if not hist:
-        log.warning('SKIP: no confidence_hist stats')
-        return
-
-    tiers = sorted(int(t) for t in hist)
-    fig, axes = plt.subplots(1, len(tiers), figsize=(3.5 * len(tiers), 3.2), sharey=True)
-    if len(tiers) == 1:
-        axes = [axes]
-
-    for ax, tier in zip(axes, tiers):
-        h = hist[str(tier)]
-        edges = np.array(h['bin_edges'])
-        widths = np.diff(edges)
-        ax.bar(edges[:-1], h['counts'], width=widths, align='edge',
-               color=PALETTE['colors'][tier % len(PALETTE['colors'])])
-        ax.set_title(TIER_NAMES.get(tier, str(tier)).replace('\n', ' '), fontsize=9)
-        ax.set_xlabel('P(y=1)')
-    axes[0].set_ylabel('Πλήθος ζευγών')
-
-    fig.suptitle('Κατανομή Βαθμολογίας Εμπιστοσύνης ανά Επίπεδο')
-    fig.tight_layout()
-    _save(fig, 'tier_confidence_distribution.png')
+    _save(fig, 'difficulty_breakdown')
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +130,7 @@ def fig_confidence_distribution(figs: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_threshold_ablation(figs: dict) -> None:
-    log.info('Generating threshold_ablation.png ...')
+    log.info('Generating threshold_ablation.pdf ...')
     grid = figs.get('ablation_grid')
     if not grid:
         log.warning('SKIP: no ablation_grid stats')
@@ -374,7 +173,7 @@ def fig_threshold_ablation(figs: dict) -> None:
     axes[2].legend(fontsize=8)
 
     fig.tight_layout()
-    _save(fig, 'threshold_ablation.png')
+    _save(fig, 'threshold_ablation')
 
 
 # ---------------------------------------------------------------------------
@@ -382,7 +181,7 @@ def fig_threshold_ablation(figs: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def fig_throughput_comparison(figs: dict) -> None:
-    log.info('Generating throughput_comparison.png ...')
+    log.info('Generating throughput_comparison.pdf ...')
     thr = figs.get('throughput')
     if thr is None:
         log.warning('SKIP: no throughput stats')
@@ -400,162 +199,198 @@ def fig_throughput_comparison(figs: dict) -> None:
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
                 f'{val:.4f} ms', ha='center', va='bottom', fontsize=9)
     fig.tight_layout()
-    _save(fig, 'throughput_comparison.png')
+    _save(fig, 'throughput_comparison')
 
 
 # ---------------------------------------------------------------------------
-# Figure 12: cold-start comparison, CascadeLP vs. SVM
+# Revised-thesis figures
 # ---------------------------------------------------------------------------
 
-def fig_coldstart_comparison(figs: dict) -> None:
-    log.info('Generating coldstart_comparison.png ...')
-    cs = figs.get('coldstart')
-    if cs is None:
-        log.warning('SKIP: no coldstart stats')
+def fig_negative_sampling_artifact(figs: dict) -> None:
+    """Visualize the endpoint-identity shortcut in DSAA 2023."""
+    data = figs.get('negative_sampling_artifact')
+    if not data:
+        log.warning('SKIP: no negative_sampling_artifact stats')
         return
 
-    names = ['CascadeLP', 'SVM (TF-IDF)']
-    overall = [cs['cascade']['macro_f1'], cs['svm']['macro_f1']]
-    cold_start = [cs['cascade']['cold_start_f1'], cs['svm']['cold_start_f1']]
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.8))
 
-    x = np.arange(len(names))
-    width = 0.35
-    fig, ax = plt.subplots(figsize=(6, 4.5))
-    ax.bar(x - width / 2, overall, width, label='Macro F1 (σύνολο)', color=PALETTE['colors'][0])
-    ax.bar(x + width / 2, cold_start, width, label='Macro F1 (cold-start)', color=PALETTE['colors'][2])
+    groups = [f"{data['hub_count']} κόμβοι-πηγές", 'Όλοι οι υπόλοιποι']
+    negative = [data['hub_negative_pct'], 100 - data['non_hub_positive_pct']]
+    positive = [100 - data['hub_negative_pct'], data['non_hub_positive_pct']]
+    x = np.arange(2)
+    axes[0].bar(x, negative, color=PALETTE['neg'], label='Αρνητικά')
+    axes[0].bar(x, positive, bottom=negative, color=PALETTE['pos'], label='Θετικά')
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(groups)
+    axes[0].set_ylim(0, 105)
+    axes[0].set_ylabel('Ποσοστό ετικετών (%)')
+    axes[0].set_title('Ετικέτα ανά ομάδα πρώτου άκρου')
+    axes[0].legend(loc='center right')
+    for i, value in enumerate([data['hub_negative_pct'], data['non_hub_positive_pct']]):
+        axes[0].text(i, 50, f'{value:.3f}%', ha='center', va='center',
+                     color='white', fontweight='bold')
+
+    coverage = [data['hub_row_pct'], data['test_hub_row_pct']]
+    bars = axes[1].bar(['Εκπαίδευση', 'Έλεγχος'], coverage,
+                       color=[PALETTE['colors'][2], PALETTE['colors'][4]], width=0.55)
+    axes[1].set_ylim(0, 65)
+    axes[1].set_ylabel('Γραμμές με κόμβο-πηγή (%)')
+    axes[1].set_title('Κάλυψη του ίδιου συνόλου κόμβων')
+    for bar, value in zip(bars, coverage):
+        axes[1].text(bar.get_x() + bar.get_width() / 2, value + 1,
+                     f'{value:.2f}%', ha='center')
+    axes[1].text(0.5, 0.04, f"Lookup Macro F1 = {data['lookup_macro_f1']:.6f}",
+                 transform=axes[1].transAxes, ha='center', fontsize=9)
+
+    fig.tight_layout()
+    _save(fig, 'negative_sampling_artifact')
+
+
+def fig_graph_protocol_leakage(figs: dict) -> None:
+    """Contrast legacy full-graph features with a training-only graph."""
+    data = figs.get('graph_protocol_leakage')
+    if not data:
+        log.warning('SKIP: no graph_protocol_leakage stats')
+        return
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    names = ['Θετικές ακμές επικύρωσης\nήδη στο πλήρες γράφημα',
+             'Θετικά ζεύγη με μη παρατηρημένο άκρο\nστο γράφημα εκπαίδευσης']
+    values = [data['validation_positives_in_graph'], data['training_graph_cold_positive']]
+    bars = ax.bar(names, values, color=[PALETTE['neg'], PALETTE['colors'][2]], width=0.58)
+    ax.set_ylabel('Πλήθος ζευγών')
+    ax.set_title('Επίδραση της κατασκευής του γραφήματος στο DSAA 2023')
+    ax.set_ylim(0, max(values) * 1.18)
+    ax.tick_params(axis='x', labelsize=9)
+    for bar, value in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + max(values) * 0.025,
+                f'{value:,}', ha='center', fontweight='bold')
+    ax.text(0.98, 0.96, f"n επικύρωσης = {data['n_val']:,}", transform=ax.transAxes,
+            ha='right', va='top', fontsize=9)
+    fig.tight_layout()
+    _save(fig, 'graph_protocol_leakage')
+
+
+def fig_endpoint_swap(figs: dict) -> None:
+    """Show prediction instability after reversing undirected endpoints."""
+    data = figs.get('endpoint_swap')
+    if not data:
+        log.warning('SKIP: no endpoint_swap stats')
+        return
+
+    names = ['Όλα τα ζεύγη', 'Αρχικά αρνητικά', 'Αρχικά θετικά']
+    values = [data['overall_change_pct'], data['negative_change_pct'], data['positive_change_pct']]
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    bars = ax.bar(names, values,
+                  color=[PALETTE['colors'][2], PALETTE['neg'], PALETTE['pos']], width=0.58)
+    ax.set_ylim(0, 108)
+    ax.set_ylabel('Προβλέψεις που αλλάζουν (%)')
+    ax.set_title('Ευαισθησία του CascadeLP στην αντιστροφή των άκρων')
+    for bar, value in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 2,
+                f'{value:.2f}%', ha='center', fontweight='bold')
+    ax.text(0.98, 0.93,
+            f"Μέση |Δp| = {data['mean_abs_probability_change']:.3f}",
+            transform=ax.transAxes, ha='right', fontsize=9)
+    fig.tight_layout()
+    _save(fig, 'endpoint_swap_sensitivity')
+
+
+def fig_cross_dataset_performance(figs: dict) -> None:
+    """Compare model rankings under the DSAA and Wiki-CS-8k protocols."""
+    data = figs.get('cross_dataset_performance')
+    if not data:
+        log.warning('SKIP: no cross_dataset_performance stats')
+        return
+
+    labels = ['Δομικό', 'TF-IDF', 'POS', 'Embedding', 'SVM', 'CascadeLP']
+    colors = [PALETTE['colors'][1], PALETTE['colors'][4], PALETTE['colors'][2],
+              PALETTE['colors'][5], PALETTE['colors'][3], PALETTE['colors'][0]]
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.2), sharey=True)
+    datasets = [('DSAA 2023 — αρχικό πρωτόκολλο', data['dsaa_macro_f1']),
+                ('Wiki-CS-8k — αυστηρό πρωτόκολλο', data['wiki_macro_f1'])]
+    x = np.arange(len(labels))
+    for ax, (title, values) in zip(axes, datasets):
+        bars = ax.bar(x, values, color=colors, width=0.68)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=25, ha='right')
+        ax.set_ylim(0.75, 1.015)
+        ax.set_title(title)
+        for bar, value in zip(bars, values):
+            ax.text(bar.get_x() + bar.get_width() / 2, value + 0.004,
+                    f'{value:.3f}', ha='center', fontsize=8, rotation=90)
+
+    ci = data.get('wiki_cascade_ci95')
+    if ci:
+        center = data['wiki_macro_f1'][-1]
+        axes[1].errorbar([x[-1]], [center],
+                         yerr=[[center - ci[0]], [ci[1] - center]],
+                         fmt='none', ecolor='black', capsize=4, linewidth=1.2)
+    axes[0].set_ylabel('Macro F1')
+    fig.tight_layout()
+    _save(fig, 'cross_dataset_performance')
+
+
+def fig_routing_comparison(figs: dict) -> None:
+    """Compare CascadeLP final-decision routing across the two datasets."""
+    data = figs.get('routing_comparison')
+    if not data:
+        log.warning('SKIP: no routing_comparison stats')
+        return
+
+    fig, ax = plt.subplots(figsize=(8.4, 3.8))
+    labels = ['DSAA 2023', 'Wiki-CS-8k']
+    left = np.zeros(2)
+    tier_labels = ['Επίπεδο 0', 'Επίπεδο 1 — Δομή', 'Επίπεδο 2 — POS',
+                   'Επίπεδο 3 — Embedding']
+    for tier, tier_label in enumerate(tier_labels):
+        values = np.array([data['dsaa'][tier], data['wiki'][tier]])
+        ax.barh(labels, values, left=left, color=PALETTE['colors'][tier], label=tier_label)
+        for row, (start, value) in enumerate(zip(left, values)):
+            if value >= 4:
+                ax.text(start + value / 2, row, f'{value:.1f}%', ha='center', va='center',
+                        color='white', fontweight='bold', fontsize=9)
+        left += values
+    ax.set_xlim(0, 100)
+    ax.set_xlabel('Ζεύγη ανά επίπεδο τελικής απόφασης (%)')
+    ax.set_title('Μεταβολή της δρομολόγησης μεταξύ συνόλων δεδομένων')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=4)
+    fig.tight_layout()
+    _save(fig, 'routing_comparison')
+
+
+def fig_wiki_diagnostic_subsets(figs: dict) -> None:
+    """Show both size and performance of the Wiki-CS-8k diagnostic slices."""
+    data = figs.get('wiki_diagnostic_subsets')
+    if not data:
+        log.warning('SKIP: no wiki_diagnostic_subsets stats')
+        return
+
+    keys = ['zero_cn', 'functional_cold_start', 'missing_text']
+    labels = ['Μηδενικό CN', 'Cold-start', 'Ελλιπές κείμενο']
+    macro_f1 = [data[key]['macro_f1'] for key in keys]
+    recall = [data[key]['positive_recall'] for key in keys]
+    counts = [data[key]['n'] for key in keys]
+    x = np.arange(len(keys))
+    width = 0.34
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.3))
+    bars_f1 = ax.bar(x - width / 2, macro_f1, width, label='Macro F1', color=PALETTE['pos'])
+    bars_rec = ax.bar(x + width / 2, recall, width, label='Ανάκληση θετικών',
+                      color=PALETTE['colors'][2])
     ax.set_xticks(x)
-    ax.set_xticklabels(names)
-    ax.set_ylim(0, 1.05)
-    ax.set_title('Απόδοση σε Ζεύγη Cold-Start')
+    ax.set_xticklabels([f'{label}\n(n={count:,})' for label, count in zip(labels, counts)])
+    ax.set_ylim(0, 1.08)
+    ax.set_ylabel('Τιμή μετρικής')
+    ax.set_title('Διαγνωστικά υποσύνολα στο Wiki-CS-8k')
     ax.legend()
+    for bars in (bars_f1, bars_rec):
+        for bar in bars:
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
+                    f'{bar.get_height():.3f}', ha='center', fontsize=8)
     fig.tight_layout()
-    _save(fig, 'coldstart_comparison.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 13: error breakdown by difficulty, CascadeLP vs. SVM
-# ---------------------------------------------------------------------------
-
-def fig_error_by_difficulty_comparison(figs: dict) -> None:
-    log.info('Generating error_by_difficulty_comparison.png ...')
-    err = figs.get('error_by_difficulty')
-    if not err or 'svm' not in err:
-        log.warning('SKIP: need both cascade and svm error_by_difficulty stats')
-        return
-
-    diffs = figs['diffs_present']
-    cascade_err_pct = [err['cascade'][d] for d in diffs]
-    svm_err_pct = [err['svm'][d] for d in diffs]
-
-    x = np.arange(len(diffs))
-    width = 0.35
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.bar(x - width / 2, cascade_err_pct, width, label='CascadeLP', color=PALETTE['colors'][0])
-    ax.bar(x + width / 2, svm_err_pct, width, label='SVM (TF-IDF)', color=PALETTE['colors'][3])
-    ax.set_xticks(x)
-    ax.set_xticklabels([DIFF_LABELS[d] for d in diffs], rotation=15, ha='right')
-    ax.set_ylabel('Ποσοστό Σφάλματος (%)')
-    ax.set_title('Ποσοστό Σφάλματος ανά Κατηγορία Δυσκολίας')
-    ax.legend()
-    fig.tight_layout()
-    _save(fig, 'error_by_difficulty_comparison.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 14: graph degree distribution
-# ---------------------------------------------------------------------------
-
-def fig_graph_degree_distribution(figs: dict) -> None:
-    log.info('Generating graph_degree_distribution.png ...')
-    hist = figs.get('graph_degree_hist')
-    if hist is None:
-        log.warning('SKIP: no graph_degree_hist stats')
-        return
-
-    edges = np.array(hist['bin_edges'])
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.stairs(hist['counts'], edges, fill=True, color=PALETTE['colors'][0])
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('Βαθμός Κόμβου (λογαριθμική κλίμακα)')
-    ax.set_ylabel('Πλήθος Κόμβων (λογαριθμική κλίμακα)')
-    ax.set_title('Κατανομή Βαθμού στο Γράφημα Θετικών Ακμών')
-    fig.tight_layout()
-    _save(fig, 'graph_degree_distribution.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 15: dataset composition detail
-# ---------------------------------------------------------------------------
-
-def fig_dataset_composition(figs: dict) -> None:
-    log.info('Generating dataset_composition.png ...')
-    comp = figs.get('dataset_composition')
-    if comp is None:
-        log.warning('SKIP: no dataset_composition stats')
-        return
-
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
-
-    label_counts = comp['label_counts']
-    neg, pos = label_counts.get('0', 0), label_counts.get('1', 0)
-    axes[0].bar(['Αρνητικά', 'Θετικά'], [neg, pos],
-                color=[PALETTE['neg'], PALETTE['pos']], width=0.5)
-    axes[0].set_ylabel('Πλήθος Ζευγών')
-    axes[0].set_title('Ισορροπία Κλάσεων — train.csv')
-    for i, v in enumerate([neg, pos]):
-        axes[0].text(i, v, f'{v:,}', ha='center', va='bottom', fontsize=9)
-
-    diff_counts = comp['difficulty_counts']
-    axes[1].bar([DIFF_LABELS[c] for c in DIFF_ORDER], [diff_counts.get(c, 0) for c in DIFF_ORDER],
-                color=PALETTE['colors'][:len(DIFF_ORDER)], width=0.5)
-    axes[1].set_ylabel('Πλήθος Ζευγών')
-    axes[1].set_title('Κατηγορίες Δυσκολίας — train.csv')
-    axes[1].tick_params(axis='x', rotation=15)
-
-    fig.tight_layout()
-    _save(fig, 'dataset_composition.png')
-
-
-# ---------------------------------------------------------------------------
-# Figure 16: DSAA 2023 leaderboard comparison
-# ---------------------------------------------------------------------------
-
-# Reported scores from other DSAA 2023 competition entries, matching
-# latex/thesis/body_matter/chap2.tex's tab:dsaa-submissions exactly (external, citation-backed
-# facts — not this project's experiment output, hence literal here per CLAUDE.md's
-# no-magic-numbers carve-out). Teams with no reported numeric score in their short paper
-# (nguyen2023mat, mata2023link, kansal2023predict) are omitted from the chart below.
-_DSAA_OTHER_TEAMS = [
-    ('UIT-NLP\n(phan2023link)', 1.0),
-    ('Tran et al.\n(tran2023text)', 0.99999),
-    ('Yang\n(yang2023achieving)', 0.99),
-    ('Giannoulidis &\nMavroudopoulos', 0.948),
-]
-
-
-def fig_dsaa_leaderboard_comparison(figs: dict) -> None:
-    log.info('Generating dsaa_leaderboard_comparison.png ...')
-    our_score = figs.get('kaggle_our_score')
-    if our_score is None:
-        log.warning('SKIP: no kaggle_our_score stat')
-        return
-
-    names = [t for t, _ in _DSAA_OTHER_TEAMS] + ['CascadeLP\n(παρούσα εργασία)']
-    scores = [s for _, s in _DSAA_OTHER_TEAMS] + [our_score]
-    colors = [PALETTE['colors'][1]] * len(_DSAA_OTHER_TEAMS) + [PALETTE['colors'][0]]
-
-    fig, ax = plt.subplots(figsize=(9, 4.5))
-    bars = ax.bar(names, scores, color=colors, width=0.55)
-    for bar, val in zip(bars, scores):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                f'{val:.5f}', ha='center', va='bottom', fontsize=8)
-    ax.set_ylim(0.9, 1.005)
-    ax.set_ylabel('Macro F1')
-    ax.set_title('Σύγκριση με Άλλες Συμμετοχές DSAA 2023')
-    ax.tick_params(axis='x', labelsize=8)
-    fig.tight_layout()
-    _save(fig, 'dsaa_leaderboard_comparison.png')
+    _save(fig, 'wiki_diagnostic_subsets')
 
 
 # ---------------------------------------------------------------------------
@@ -563,7 +398,7 @@ def fig_dsaa_leaderboard_comparison(figs: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    stats_path = STATS / 'summary_stats.json'
+    stats_path = RESULTS / 'summary_stats.json'
     if not stats_path.exists():
         raise SystemExit(
             f'{stats_path} not found — run `make compute-stats` first '
@@ -574,19 +409,14 @@ def main() -> None:
 
     fig_separability(figs)
     fig_difficulty(figs)
-    fig_svm_metrics(figs)
-    fig_tier_routing(figs)
-    fig_tier_difficulty_heatmap(figs)
-    fig_confusion_matrices(figs)
-    fig_roc_curve(figs)
-    fig_confidence_distribution(figs)
     fig_threshold_ablation(figs)
     fig_throughput_comparison(figs)
-    fig_coldstart_comparison(figs)
-    fig_error_by_difficulty_comparison(figs)
-    fig_graph_degree_distribution(figs)
-    fig_dataset_composition(figs)
-    fig_dsaa_leaderboard_comparison(figs)
+    fig_negative_sampling_artifact(figs)
+    fig_graph_protocol_leakage(figs)
+    fig_endpoint_swap(figs)
+    fig_cross_dataset_performance(figs)
+    fig_routing_comparison(figs)
+    fig_wiki_diagnostic_subsets(figs)
     log.info('Done.')
 
 

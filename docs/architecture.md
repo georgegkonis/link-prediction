@@ -17,16 +17,20 @@
 │   ├── raw/                    Source data (subdirs: dsaa/, wiki_cs_8k/)
 │   └── interim/                Generated features (subdirs: dsaa/, wiki_cs_8k/)
 ├── outputs/
-│   ├── checkpoints/            Serialized .joblib models (subdirs: dsaa/, wiki_cs_8k/)
-│   ├── figures/                PNG plots
-│   └── predictions/            Kaggle submission CSVs and metrics (subdirs: dsaa/, wiki_cs_8k/)
-└── latex/thesis/              LaTeX thesis (CEID bilingual template)
-    ├── thesis.tex              Entry point
-    ├── body_matter/            chap1–chap6
-    ├── front_matter/           abstract, acknowledgements
-    ├── back_matter/            appendix, references.bib, abbreviations, glossary
-    ├── figures/                Plots included in the paper
-    └── static/                 PatrasLogo.png
+│   ├── checkpoints/            Serialized .joblib models (ignored)
+│   ├── predictions/            Predictions and metrics (ignored)
+│   └── stats/                  Intermediate analysis reports (ignored)
+└── latex/
+    ├── shared/
+    │   ├── figures/            Committed vector figures generated for all documents
+    │   ├── results/            Committed curated aggregate results snapshot
+    │   └── generated_macros.tex
+    └── thesis/                 LaTeX thesis (CEID bilingual template)
+        ├── thesis.tex          Entry point
+        ├── body_matter/        chap1–chap6
+        ├── front_matter/       abstract, acknowledgements
+        ├── back_matter/        appendix, references.bib, abbreviations, glossary
+        └── static/             PatrasLogo.png
 ```
 
 ## Data Layer (`src/data/`)

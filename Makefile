@@ -1,7 +1,7 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV) --no-capture-output
 
-.PHONY: help env env-update run train evaluate kaggle-submit kaggle-check latex-compile latex-clean test jupyter
+.PHONY: help env env-update run train evaluate kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets latex-compile latex-clean test jupyter
 
 help:
 	@echo "Usage:"
@@ -11,6 +11,7 @@ help:
 	@echo "  make evaluate MODEL=cascade           Evaluate a DSAA model"
 	@echo "  make kaggle-submit FILE=.. MSG=..     Submit predictions to Kaggle"
 	@echo "  make kaggle-check                     Check recent Kaggle scores"
+	@echo "  make thesis-assets                    Regenerate committed macros and vector figures"
 	@echo "  make latex-compile DOC=thesis         Compile thesis/paper/presentation PDF"
 	@echo "  make latex-clean DOC=thesis           Clean LaTeX aux files"
 	@echo "  make pipeline-dsaa                    Run entire DSAA pipeline"
@@ -39,6 +40,17 @@ kaggle-submit:
 
 kaggle-check:
 	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --check
+
+compute-stats:
+	$(RUN) python -m scripts.paper.compute_summary_stats
+
+thesis-macros:
+	$(RUN) python -m scripts.paper.generate_macros
+
+thesis-figures:
+	MPLCONFIGDIR=/tmp/matplotlib-link-prediction $(RUN) python -m scripts.paper.generate_figures
+
+thesis-assets: thesis-macros thesis-figures
 
 latex-compile:
 	cd latex/$(DOC) && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex && (biber $(DOC) || true) && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex && xelatex -interaction=nonstopmode -halt-on-error $(DOC).tex
@@ -77,9 +89,8 @@ pipeline-wiki:
 
 pipeline-paper:
 	@echo "--- Compiling Thesis Assets & PDF ---"
-	$(RUN) python -m scripts.paper.compute_summary_stats
-	$(RUN) python -m scripts.paper.generate_macros
-	$(RUN) python -m scripts.paper.generate_figures
+	$(MAKE) compute-stats
+	$(MAKE) thesis-assets
 	$(MAKE) latex-compile DOC=thesis
 
 pipeline-all: pipeline-dsaa pipeline-wiki pipeline-paper

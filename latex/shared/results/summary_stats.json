@@ -2329,6 +2329,88 @@
         "cold_start_f1": 0.9090982062822947
       }
     },
-    "kaggle_our_score": 0.99828
+    "kaggle_our_score": 0.99828,
+    "negative_sampling_artifact": {
+      "hub_count": 65,
+      "unique_source_count": 425664,
+      "hub_row_pct": 54.62526558856986,
+      "test_hub_row_pct": 54.13904784279505,
+      "hub_negative_pct": 99.99941450962253,
+      "non_hub_positive_pct": 100.0,
+      "lookup_macro_f1": 0.9999967741407435
+    },
+    "graph_protocol_leakage": {
+      "n_val": 187603,
+      "validation_positives_in_graph": 85125,
+      "full_graph_cold_positive": 0,
+      "training_graph_cold_positive": 84135
+    },
+    "endpoint_swap": {
+      "overall_change_pct": 54.44209314349984,
+      "negative_change_pct": 99.30912000624524,
+      "positive_change_pct": 0.4287812041116006,
+      "mean_abs_probability_change": 0.5393673855221082
+    },
+    "cross_dataset_performance": {
+      "models": [
+        "structural",
+        "tfidf",
+        "pos",
+        "embedding",
+        "svm",
+        "cascade"
+      ],
+      "dsaa_macro_f1": [
+        0.9957556322333843,
+        0.9089561597296333,
+        0.9988115873626903,
+        0.9057866279313453,
+        0.9091027450610163,
+        0.998596585848492
+      ],
+      "wiki_macro_f1": [
+        0.9053919555524543,
+        0.8232704666551087,
+        0.8557444938060885,
+        0.7975559142331173,
+        0.8233160702349285,
+        0.9254991369985549
+      ],
+      "wiki_cascade_ci95": [
+        0.9238623938686498,
+        0.9272018564081727
+      ]
+    },
+    "routing_comparison": {
+      "dsaa": [
+        0.0,
+        19.37708885252368,
+        80.57440446048304,
+        0.048506686993278356
+      ],
+      "wiki": [
+        0.0,
+        86.36458988881897,
+        7.100285047939881,
+        6.535125063241155
+      ]
+    },
+    "wiki_diagnostic_subsets": {
+      "zero_cn": {
+        "n": 36609,
+        "macro_f1": 0.4837102732362813,
+        "positive_recall": 0.0015822784810126582
+      },
+      "functional_cold_start": {
+        "n": 72,
+        "macro_f1": 0.7395348837209302,
+        "positive_recall": 0.4444444444444444
+      },
+      "missing_text": {
+        "n": 9114,
+        "macro_f1": 0.9563256584968738,
+        "positive_recall": 0.9239625167336011
+      }
+    }
   }
 }

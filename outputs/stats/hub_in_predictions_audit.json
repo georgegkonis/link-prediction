@@ -1,0 +1,13 @@
+{
+  "hub_threshold": 100,
+  "n_hub_ids": 65,
+  "n_val": 187603,
+  "n_val_hub_sourced": 102478,
+  "val_hub_sourced_pct": 54.62492604062835,
+  "cascade_overall_macro_f1": 0.998596585848492,
+  "cascade_hub_subset_macro_f1": null,
+  "cascade_nonhub_subset_macro_f1": null,
+  "trivial_lookup_macro_f1_same_val_set": 1.0,
+  "agreement_cascade_vs_trivial_lookup_pct": 99.86087642521709,
+  "agreement_on_hub_subset_pct": 99.93266847518491
+}

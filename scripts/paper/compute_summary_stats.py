@@ -180,6 +180,17 @@ def _load() -> dict:
     d['cascade_val_metrics'] = _load_json_optional(
         PREDICTIONS / 'cascade_val_metrics.json', 'run make train MODEL=cascade first')
 
+    # ---- Negative-sampling artifact audit (explains the near-perfect DSAA 2023 score) ----
+    d['neg_sampling_audit'] = _load_json_optional(
+        STATS / 'negative_sampling_audit.json', 'run python -m scripts.analysis.audit_negative_sampling first')
+    d['hub_in_predictions'] = _load_json_optional(
+        STATS / 'hub_in_predictions_audit.json', 'run python -m scripts.analysis.audit_hub_in_predictions first')
+
+    # ---- Fresh, artifact-free Wikipedia validation dataset ----
+    d['wiki_fresh'] = _load_json_optional(
+        STATS / 'wiki_fresh_experiment_results.json',
+        'run python -m scripts.analysis.run_wiki_fresh_experiment first')
+
     return d
 
 
@@ -703,6 +714,66 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['EmbeddingFone']   = _MISSING
         m['EmbeddingAuc']    = _MISSING
         m['EmbeddingCsFone'] = _MISSING
+
+    # ---- Negative-sampling artifact audit: explains the near-perfect score above ----
+    audit = d['neg_sampling_audit']
+    if audit:
+        ref = next(r for r in audit['by_threshold'] if r['threshold'] == audit['reference_threshold'])
+        m['HubThreshold']   = gint(audit['reference_threshold'])
+        m['HubCount']       = gint(ref['n_hub_id1'])
+        m['HubUniqueSourceCount'] = gint(ref['n_unique_id1'])
+        m['HubRowCount']    = gint(ref['hub_row_count'])
+        m['HubRowPct']      = gfloat(ref['hub_row_pct'], 2)
+        m['HubPurityPct']   = gfloat(100 * ref['hub_purity_fraction'], 4)
+        m['NonHubRowCount'] = gint(ref['non_hub_row_count'])
+        m['NonHubPosPct']   = gfloat(100 * ref['non_hub_positive_rate'], 4)
+        m['HubLookupFone']  = gfloat(ref['trivial_lookup_macro_f1'], 6)
+        m['HubLookupAcc']   = gfloat(ref['trivial_lookup_accuracy'], 6)
+        m['HubTestOverlap'] = gint(audit['test_hub_id1_overlap'])
+        m['HubTestRowPct']  = gfloat(audit['test_rows_with_hub_id1_pct'], 2)
+    else:
+        for k in ('HubThreshold', 'HubCount', 'HubUniqueSourceCount', 'HubRowCount', 'HubRowPct',
+                  'HubPurityPct', 'NonHubRowCount', 'NonHubPosPct', 'HubLookupFone', 'HubLookupAcc',
+                  'HubTestOverlap', 'HubTestRowPct'):
+            m[k] = _MISSING
+
+    hp = d['hub_in_predictions']
+    if hp:
+        m['HubValSourcedPct']       = gfloat(hp['val_hub_sourced_pct'], 2)
+        m['HubValLookupFone']       = gfloat(hp['trivial_lookup_macro_f1_same_val_set'], 4)
+        m['HubValAgreementPct']     = gfloat(hp['agreement_cascade_vs_trivial_lookup_pct'], 2)
+        m['HubValHubAgreementPct']  = gfloat(hp['agreement_on_hub_subset_pct'], 2)
+    else:
+        for k in ('HubValSourcedPct', 'HubValLookupFone', 'HubValAgreementPct', 'HubValHubAgreementPct'):
+            m[k] = _MISSING
+
+    # ---- Fresh, artifact-free Wikipedia validation dataset ----
+    wf = d['wiki_fresh']
+    wf_name_to_macro = {'structural': 'WfStructural', 'tfidf': 'WfTfidf', 'pos': 'WfPos',
+                        'embedding': 'WfEmbedding', 'svm': 'WfSvm', 'cascade': 'WfCascade'}
+    if wf:
+        for name, prefix in wf_name_to_macro.items():
+            r = wf.get(name)
+            m[f'{prefix}Fone'] = gfloat(r['macro_f1'], 4) if r else _MISSING
+            m[f'{prefix}Auc']  = gfloat(r['auc_roc'], 4) if r and r.get('auc_roc') is not None else _MISSING
+        cascade_tiers = wf.get('cascade', {}).get('tier_stats', {})
+        for t, name in [('tier0', 'Zero'), ('tier1', 'One'), ('tier2', 'Two'), ('tier3', 'Three')]:
+            stats = cascade_tiers.get(t)
+            m[f'WfTier{name}Pct'] = gfloat(stats['pct'], 1) if stats else _MISSING
+            m[f'WfTier{name}Count'] = gint(stats['n']) if stats else _MISSING
+        meta = wf.get('_meta', {})
+        m['WfTrainSplitSize'] = gint(meta.get('n_train', 0))
+        m['WfValSplitSize']   = gint(meta.get('n_val', 0))
+        m['WfGraphNodes']     = gint(meta.get('graph_nodes', 0))
+        m['WfGraphEdges']     = gint(meta.get('graph_edges', 0))
+        m['WfMeanDegree']     = gfloat(2 * meta.get('graph_edges', 0) / max(meta.get('graph_nodes', 1), 1), 1)
+    else:
+        for prefix in wf_name_to_macro.values():
+            m[f'{prefix}Fone'] = m[f'{prefix}Auc'] = _MISSING
+        for name in ('Zero', 'One', 'Two', 'Three'):
+            m[f'WfTier{name}Pct'] = m[f'WfTier{name}Count'] = _MISSING
+        for k in ('WfTrainSplitSize', 'WfValSplitSize', 'WfGraphNodes', 'WfGraphEdges', 'WfMeanDegree'):
+            m[k] = _MISSING
 
     # ---- Kaggle scores ----
     kg = d['kaggle']

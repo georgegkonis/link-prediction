@@ -6,6 +6,7 @@ downloaded to disk first.
 
 Reads:  <output>/titles.json        (from build_from_wikidump.py)
 Writes: <output>/nodes.tsv          (id, text — same schema as data/raw/nodes.tsv)
+        <output>/text_fetch_stats.json (match-rate provenance, for thesis macros)
 
 Usage:
     python -m scripts.data.fetch_wiki_fresh_text --output data/wiki_fresh
@@ -50,8 +51,17 @@ def main():
     nodes_df = pd.DataFrame(rows, columns=['id', 'text']).set_index('id').sort_index()
     nodes_df.to_csv(out_dir / 'nodes.tsv', sep='\t')
 
-    n_missing = (nodes_df['text'].str.len() == 0).sum()
+    n_missing = int((nodes_df['text'].str.len() == 0).sum())
     print(f'Wrote {out_dir}/nodes.tsv — {len(nodes_df)} nodes, {n_missing} with empty text')
+
+    stats = {
+        'config': args.config,
+        'n_titles_wanted': len(wanted),
+        'n_titles_matched': len(found),
+        'match_pct': 100 * len(found) / len(wanted),
+        'n_nodes_empty_text': n_missing,
+    }
+    (out_dir / 'text_fetch_stats.json').write_text(json.dumps(stats, indent=2))
 
 
 if __name__ == '__main__':

@@ -190,6 +190,12 @@ def _load() -> dict:
     d['wiki_fresh'] = _load_json_optional(
         STATS / 'wiki_fresh_experiment_results.json',
         'run python -m scripts.analysis.run_wiki_fresh_experiment first')
+    d['wiki_fresh_crawl'] = _load_json_optional(
+        pathlib.Path('data/wiki_fresh/crawl_stats.json'),
+        'run python -m scripts.data.build_from_wikidump first')
+    d['wiki_fresh_text'] = _load_json_optional(
+        pathlib.Path('data/wiki_fresh/text_fetch_stats.json'),
+        'run python -m scripts.data.fetch_wiki_fresh_text first')
 
     return d
 
@@ -773,6 +779,43 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         for name in ('Zero', 'One', 'Two', 'Three'):
             m[f'WfTier{name}Pct'] = m[f'WfTier{name}Count'] = _MISSING
         for k in ('WfTrainSplitSize', 'WfValSplitSize', 'WfGraphNodes', 'WfGraphEdges', 'WfMeanDegree'):
+            m[k] = _MISSING
+
+    # ---- Fresh dataset: crawl + text-fetch provenance (dataset construction methodology) ----
+    wc = d['wiki_fresh_crawl']
+    if wc:
+        m['WfCrawlSeed']            = str(wc['seed']).replace('_', ' ')
+        m['WfCrawlTarget']          = gint(wc['target'])
+        m['WfCrawlPageRows']        = gint(wc['n_page_rows_total'])
+        m['WfCrawlPages']           = gint(wc['n_namespace0_nonredirect_pages'])
+        m['WfCrawlLinktargetRows']  = gint(wc['n_linktarget_rows_total'])
+        m['WfCrawlLinktargets']     = gint(wc['n_namespace0_link_targets'])
+        m['WfCrawlPagelinksRows']   = gint(wc['n_pagelinks_rows_raw'])
+        m['WfCrawlResolvedEdges']   = gint(wc['n_resolved_directed_edges'])
+        m['WfCrawlPagesWithLink']   = gint(wc['n_pages_with_at_least_one_link'])
+        m['WfCrawlNodes']           = gint(wc['n_crawled_nodes'])
+        m['WfCrawlEdges']           = gint(wc['n_crawled_undirected_edges'])
+        m['WfCrawlMeanDegree']      = gfloat(wc['crawled_mean_degree'], 1)
+        sizes = wc['dump_sizes_bytes']
+        m['WfDumpPageMb']       = gfloat(sizes['page_bytes'] / 1e6, 1)
+        m['WfDumpLinktargetMb'] = gfloat(sizes['linktarget_bytes'] / 1e6, 1)
+        m['WfDumpPagelinksMb']  = gfloat(sizes['pagelinks_bytes'] / 1e6, 1)
+    else:
+        for k in ('WfCrawlSeed', 'WfCrawlTarget', 'WfCrawlPageRows', 'WfCrawlPages',
+                  'WfCrawlLinktargetRows', 'WfCrawlLinktargets', 'WfCrawlPagelinksRows',
+                  'WfCrawlResolvedEdges', 'WfCrawlPagesWithLink', 'WfCrawlNodes', 'WfCrawlEdges',
+                  'WfCrawlMeanDegree', 'WfDumpPageMb', 'WfDumpLinktargetMb', 'WfDumpPagelinksMb'):
+            m[k] = _MISSING
+
+    wt = d['wiki_fresh_text']
+    if wt:
+        m['WfTextConfig']    = str(wt['config'])
+        m['WfTextWanted']    = gint(wt['n_titles_wanted'])
+        m['WfTextMatched']   = gint(wt['n_titles_matched'])
+        m['WfTextMatchPct']  = gfloat(wt['match_pct'], 1)
+        m['WfTextEmptyN']    = gint(wt['n_nodes_empty_text'])
+    else:
+        for k in ('WfTextConfig', 'WfTextWanted', 'WfTextMatched', 'WfTextMatchPct', 'WfTextEmptyN'):
             m[k] = _MISSING
 
     # ---- Kaggle scores ----

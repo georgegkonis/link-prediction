@@ -16,6 +16,8 @@ Writes:
     <output>/titles.json         — page_id -> title mapping (crawled subgraph only)
     <output>/positive_edges.csv  — id1, id2 (real hyperlinks, undirected, deduped,
                                    ids are page_id from the dump)
+    <output>/crawl_stats.json    — dump/crawl provenance counts, for thesis macros
+                                   (no magic numbers — see compute_summary_stats.py)
 
 Usage:
     python -m scripts.data.build_from_wikidump --dump-dir /tmp --seed "Computer_science" --target 8000
@@ -38,23 +40,32 @@ def main():
     args = parser.parse_args()
     d = pathlib.Path(args.dump_dir)
 
+    dump_sizes = {}
+    for table in ('page', 'linktarget', 'pagelinks'):
+        p = d / f'{args.wiki}-latest-{table}.sql.gz'
+        dump_sizes[f'{table}_bytes'] = p.stat().st_size if p.exists() else None
+
     print('Parsing page table...')
     id_to_title = {}       # page_id -> title, namespace 0, non-redirect only
     title_to_id = {}
+    n_page_rows = 0
     for row in iter_insert_rows(str(d / f'{args.wiki}-latest-page.sql.gz'), 'page'):
+        n_page_rows += 1
         page_id, ns, title, is_redirect = row[0], row[1], row[2], row[3]
         if ns == '0' and is_redirect == '0':
             id_to_title[page_id] = title
             title_to_id[title] = page_id
-    print(f'  {len(id_to_title):,} namespace-0 non-redirect pages')
+    print(f'  {len(id_to_title):,} namespace-0 non-redirect pages (of {n_page_rows:,} total page rows)')
 
     print('Parsing linktarget table...')
     lt_to_title = {}        # lt_id -> title, namespace 0 only
+    n_linktarget_rows = 0
     for row in iter_insert_rows(str(d / f'{args.wiki}-latest-linktarget.sql.gz'), 'linktarget'):
+        n_linktarget_rows += 1
         lt_id, ns, title = row[0], row[1], row[2]
         if ns == '0':
             lt_to_title[lt_id] = title
-    print(f'  {len(lt_to_title):,} namespace-0 link targets')
+    print(f'  {len(lt_to_title):,} namespace-0 link targets (of {n_linktarget_rows:,} total)')
 
     print('Parsing pagelinks table (this is the big one)...')
     adjacency = defaultdict(set)  # page_id -> set(page_id) — real, resolved, namespace-0-to-namespace-0 edges
@@ -72,8 +83,10 @@ def main():
             continue
         adjacency[pl_from].add(target_id)
         adjacency[target_id]  # ensure key exists for BFS even with in-degree only
-    print(f'  {n_rows:,} raw pagelinks rows -> {sum(len(v) for v in adjacency.values()):,} resolved directed edges '
-          f'among {len(adjacency):,} pages with at least one link')
+    n_resolved_directed = sum(len(v) for v in adjacency.values())
+    n_pages_with_link = len(adjacency)
+    print(f'  {n_rows:,} raw pagelinks rows -> {n_resolved_directed:,} resolved directed edges '
+          f'among {n_pages_with_link:,} pages with at least one link')
 
     seed_id = title_to_id.get(args.seed)
     if seed_id is None:
@@ -107,7 +120,24 @@ def main():
         f.write('id1,id2\n')
         for a, b in edges:
             f.write(f'{a},{b}\n')
-    print(f'Wrote {out_dir}/titles.json and {out_dir}/positive_edges.csv')
+
+    mean_degree = 2 * len(edges) / max(len(visited), 1)
+    stats = {
+        'wiki': args.wiki, 'seed': args.seed, 'target': args.target,
+        'dump_sizes_bytes': dump_sizes,
+        'n_page_rows_total': n_page_rows,
+        'n_namespace0_nonredirect_pages': len(id_to_title),
+        'n_linktarget_rows_total': n_linktarget_rows,
+        'n_namespace0_link_targets': len(lt_to_title),
+        'n_pagelinks_rows_raw': n_rows,
+        'n_resolved_directed_edges': n_resolved_directed,
+        'n_pages_with_at_least_one_link': n_pages_with_link,
+        'n_crawled_nodes': len(visited),
+        'n_crawled_undirected_edges': len(edges),
+        'crawled_mean_degree': mean_degree,
+    }
+    (out_dir / 'crawl_stats.json').write_text(json.dumps(stats, indent=2))
+    print(f'Wrote {out_dir}/titles.json, positive_edges.csv, and crawl_stats.json')
 
 
 if __name__ == '__main__':

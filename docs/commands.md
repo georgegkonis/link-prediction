@@ -5,43 +5,27 @@ All `make` targets invoke `conda run -n link-prediction` internally — no manua
 ## Make Targets
 
 ```bash
-make env                         # Create conda environment
-make env-update                  # Update from environment.yml
+make env                               # Create conda environment
+make env-update                        # Update from environment.yml
 
-make data-download               # Pull DSAA 2023 dataset from Kaggle (requires .env with KAGGLE_USERNAME/KEY)
+# Run any script via 'make run SCRIPT=...'
+make run SCRIPT=data.download_data     # Pull DSAA 2023 dataset from Kaggle
+make run SCRIPT=data.compute_structural # Compute structural features
+make run SCRIPT=data.compute_semantic  # Compute semantic features
+make run SCRIPT=analysis.analyze_dataset # Run separability characterization
+make run SCRIPT=paper.generate_figures # Generate thesis figures
 
-make features-structural         # Compute CN/Jaccard/AA/PA/Node2Vec for all pairs
-make features-semantic           # Compute TF-IDF, Sentence-Transformer, POS features
+# Dedicated Training Targets
+make train MODEL=structural            # Train a baseline model
+make train MODEL=cascade               # Train CascadeLP
+make evaluate MODEL=cascade            # Run inference on test set
 
-make train MODEL=structural      # Train a baseline model (also: tfidf, pos, embedding, svm)
-make train MODEL=cascade         # Train CascadeLP — exports per-pair tier/difficulty/correctness/score
-                                 #   to outputs/predictions/dsaa/cascade_val_tiers.csv
-                                 #   Supports: model.tier1_threshold=, model.tier2_threshold=,
-                                 #             training.cn_threshold=, training.tfidf_threshold=,
-                                 #             training.no_n2v=true   (thesis-reported heuristics-only
-                                 #             config — pass this to reproduce cascade.joblib as documented)
-make evaluate MODEL=cascade      # Run inference on test set → outputs/predictions/dsaa/
-                                 #   Pass the same training.no_n2v= value used at train time, or
-                                 #   predict() will crash on a feature-dimension mismatch.
+# Compilation
+make latex-compile DOC=thesis          # Compile thesis PDF
+make latex-clean DOC=thesis            # Clean LaTeX auxiliary files
+make latex-compile DOC=presentation    # Compile presentation PDF
 
-make analyze-leakage             # Train/test pair overlap + self-loop + intra-train duplicate audit
-make analyze-dataset             # Separability characterization → data/interim/dsaa/difficulty_{train,test}.csv
-make analyze-cascade             # CascadeLP tier and difficulty breakdown
-make analyze-node2vec            # Node2Vec with/without ablation + test-set vocabulary coverage
-                                 #   → outputs/predictions/dsaa/node2vec_ablation.json
-make analyze-hard-residual       # Tier-3 hard-residual / nodes.tsv join (missing-text analysis)
-                                 #   → outputs/predictions/dsaa/hard_residual_analysis.json
-make benchmark-throughput        # CPU inference throughput benchmark
-                                 #   → outputs/predictions/dsaa/throughput_benchmark.json
-make ablate-thresholds           # tau1/tau2 threshold grid sweep on the trained cascade checkpoint
-                                 #   → outputs/predictions/dsaa/cascade_threshold_ablation.csv
-make analyze                     # Run analyze-leakage, analyze-dataset, analyze-cascade,
-                                 #   analyze-node2vec, analyze-hard-residual, benchmark-throughput
-
-make paper-compile               # Compile thesis PDF (xelatex → biber → xelatex × 2)
-make paper-clean                 # Remove LaTeX auxiliary files (keeps main.pdf)
-
-make jupyter                     # Start JupyterLab
+make jupyter                           # Start JupyterLab
 ```
 
 ## Dev Flags

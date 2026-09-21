@@ -43,15 +43,15 @@ conda env create -f environment.yml
 make data-download
 
 # 3. Compute features
-make features-structural
-make features-semantic
+make run SCRIPT=data.compute_structural
+make run SCRIPT=data.compute_semantic
 
 # 4. Train and evaluate
 make train MODEL=cascade
 make evaluate MODEL=cascade
 
 # 5. Compile thesis
-make paper-compile
+make latex-compile DOC=thesis
 ```
 
 To run the whole pipeline on Kaggle instead of locally, import

@@ -286,3 +286,49 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 επαναχρησιμοποιεί τη διαίρεση μαζί με \en{fingerprints} εισόδου στο
 \texttt{\en{data\slash{}interim\slash{}wiki\_cs\_8k}}, ώστε να μην μπορεί να
 αντικατασταθεί σιωπηρά από διαίρεση άλλου αρχείου ή σπόρου.
+
+
+\section{Έλεγχος Πρωτοκόλλου Δεδομένων Επαλήθευσης (\S\ref{subsec:data-splits}, \S\ref{sec:endpoint-swap})}
+\label{sec:protocol-audit-appendix}
+
+Ο πίνακας~\ref{tab:protocol-audit} συνοψίζει τις ωμές τιμές του
+\texttt{\en{scripts\slash{}analysis\slash{}audit\_protocol.py}}, του \en{script} που παράγει τους
+αριθμούς διαρροής μέσω κατασκευής γραφήματος (\S\ref{subsec:data-splits}) και
+ευαισθησίας στη σειρά άκρων (\S\ref{sec:endpoint-swap}). Το \en{script} δεν
+εξάγει κανένα νέο χαρακτηριστικό ούτε επανεκπαιδεύει κανένα μοντέλο: διαβάζει
+αποκλειστικά ήδη υπολογισμένα αρχεία (\texttt{\en{data\slash{}interim\slash{}dsaa\slash{}structural\_train.csv}},
+\texttt{\en{pos\_train.npy}}, \texttt{\en{sentence\_emb\_train.csv}}) και το ήδη εκπαιδευμένο
+\texttt{\en{outputs\slash{}checkpoints\slash{}dsaa\slash{}cascade.joblib}}, και επαληθεύει ρητά ότι οι
+μη-αντεστραμμένες προβλέψεις του αναπαράγουν επακριβώς το αποθηκευμένο
+\texttt{\en{cascade\_val\_tiers.csv}} πριν υπολογίσει οτιδήποτε άλλο. Εκτελείται με
+\texttt{\en{python -m scripts.analysis.audit\_protocol --swap}} και γράφει
+\texttt{\en{outputs\slash{}stats\slash{}supervisor\_audit.json}}, το οποίο διαβάζεται στη
+συνέχεια από το \texttt{\en{compute\_summary\_stats.py}} (\S\ref{sec:code-layout}) για την
+παραγωγή των \en{macros} \texttt{\en{Audit*}}/\texttt{\en{Swap*}} που αναφέρονται στο κύριο κείμενο.
+
+\begin{table}[h!]
+  \centering
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Μέγεθος} & \textbf{Τιμή} \\
+    \midrule
+    Ζεύγη επικύρωσης (\texttt{\en{n\_val}}) & \AuditValN{} \\
+    Θετικά ζεύγη επικύρωσης ήδη στο πλήρες γράφημα & \AuditValPositivesInGraph{} (\AuditValPositivesInGraphPct\%) \\
+    Θετικά ζεύγη επικύρωσης εκτός γραφήματος-μόνο-εκπαίδευσης & \AuditTrainGraphColdPositive{} (\AuditTrainGraphColdPositivePct\%) \\
+    Ομάδες μη κατευθυνόμενων ζευγών σε αμφότερες τις πλευρές του διαχωρισμού & \AuditCrossSplitGroups{} \\
+    \midrule
+    Ζεύγη ελέγχου αντιστροφής άκρων & \SwapN{} \\
+    Ποσοστό αλλαγής πρόβλεψης μετά την αντιστροφή & \SwapLabelChangePct\% \\
+    Ποσοστό αλλαγής, αρχικά αρνητικά ζεύγη & \SwapNegClassChangePct\% \\
+    Ποσοστό αλλαγής, αρχικά θετικά ζεύγη & \SwapPosClassChangePct\% \\
+    Μέση απόλυτη μεταβολή πιθανότητας & \SwapMeanAbsProbChange{} \\
+    Αλλαγές επιπέδου απόφασης & \SwapTierChanges{} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Ωμά αποτελέσματα του ελέγχου πρωτοκόλλου δεδομένων: διαρροή μέσω
+  κατασκευής γραφήματος (πάνω) και ευαισθησία σειράς άκρων (κάτω), και τα δύο
+  υπολογισμένα πάνω στην πραγματική, ήδη χρησιμοποιούμενη διαίρεση και τον ήδη
+  εκπαιδευμένο έλεγχο του \en{CascadeLP}.}
+  \label{tab:protocol-audit}
+\end{table}

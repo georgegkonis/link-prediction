@@ -10,17 +10,16 @@
 │   ├── models/                 Classifiers and CascadeLP orchestrator
 │   └── utils/                  Evaluation metrics, difficulty labeling, helpers
 ├── scripts/                    CLI entry points
-│   ├── data/                   download_data, compute_structural, compute_semantic
-│   ├── analysis/               audit_leakage, analyze_dataset, analyze_cascade, ablations
-│   ├── paper/                  generate_macros, generate_figures
-│   └── (root)                  train, evaluate, submit_kaggle
+│   ├── data/                   download_data, compute_structural, compute_semantic, build_from_wikidump, fetch_wiki_cs_8k_text, build_wiki_cs_8k_dataset
+│   ├── analysis/               run_dsaa_train, run_dsaa_evaluate, submit_dsaa_kaggle, run_wiki_cs_8k_experiment, audit_leakage, analyze_dataset, analyze_cascade, ablations
+│   └── paper/                  generate_macros, generate_figures
 ├── data/
-│   ├── raw/                    Source data
-│   └── interim/                Generated features
+│   ├── raw/                    Source data (subdirs: dsaa/, wiki_cs_8k/)
+│   └── interim/                Generated features (subdirs: dsaa/, wiki_cs_8k/)
 ├── outputs/
-│   ├── checkpoints/            Serialized .joblib models
+│   ├── checkpoints/            Serialized .joblib models (subdirs: dsaa/, wiki_cs_8k/)
 │   ├── figures/                PNG plots
-│   └── predictions/            Kaggle submission CSVs
+│   └── predictions/            Kaggle submission CSVs and metrics (subdirs: dsaa/, wiki_cs_8k/)
 └── paper/                      LaTeX thesis (CEID bilingual template)
     ├── main.tex                Entry point
     ├── body_matter/            chap1–chap6

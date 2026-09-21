@@ -56,6 +56,17 @@ conda run -n link-prediction python -m scripts.data.compute_structural --nrows 5
 conda run -n link-prediction python -m scripts.data.compute_semantic --nrows 300 --skip-st
 ```
 
+## Wiki-CS-8k Pipeline
+
+For the Wiki-CS-8k dataset, the following parallel pipeline of scripts is used:
+
+```bash
+conda run -n link-prediction python -m scripts.data.build_from_wikidump
+conda run -n link-prediction python -m scripts.data.fetch_wiki_cs_8k_text
+conda run -n link-prediction python -m scripts.data.build_wiki_cs_8k_dataset
+conda run -n link-prediction python -m scripts.analysis.run_wiki_cs_8k_experiment
+```
+
 ## Running on Kaggle
 
 `notebooks/kaggle_full_pipeline.ipynb` runs the whole pipeline (features → analysis → train all

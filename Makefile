@@ -115,16 +115,16 @@ ablate-thresholds:
 analyze: analyze-leakage analyze-dataset analyze-cascade analyze-node2vec analyze-hard-residual benchmark-throughput
 
 train:
-	$(RUN) python -m scripts.train model=$(MODEL)
+	$(RUN) python -m scripts.analysis.run_dsaa_train model=$(MODEL)
 
 evaluate:
-	$(RUN) python -m scripts.evaluate model=$(MODEL)
+	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=$(MODEL)
 
 kaggle-submit:
-	$(RUN) python -m scripts.submit_kaggle --file $(FILE) --message "$(MSG)"
+	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --file $(FILE) --message "$(MSG)"
 
 kaggle-check:
-	$(RUN) python -m scripts.submit_kaggle --check
+	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --check
 
 compute-stats:
 	$(RUN) python -m scripts.paper.compute_summary_stats

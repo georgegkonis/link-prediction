@@ -173,6 +173,12 @@ def _load() -> dict:
     d['hub_in_predictions'] = _load_json_optional(
         STATS / 'hub_in_predictions_audit.json', 'run python -m scripts.analysis.audit_hub_in_predictions first')
 
+    # ---- Cached-data protocol audit: graph-construction leakage + endpoint-order
+    # sensitivity of the legacy DSAA 2023 row split (Chapter 4/5 limitations) ----
+    d['protocol_audit'] = _load_json_optional(
+        STATS / 'supervisor_audit.json',
+        'run python -m scripts.analysis.audit_protocol --swap first')
+
     # ---- Fresh, artifact-free Wikipedia validation dataset ----
     d['wikipedia'] = _load_json_optional(
         STATS / 'wiki_cs_8k_experiment_results.json',
@@ -692,6 +698,41 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['HubValHubAgreementPct']  = gfloat(hp['agreement_on_hub_subset_pct'], 2)
     else:
         for k in ('HubValSourcedPct', 'HubValLookupFone', 'HubValAgreementPct', 'HubValHubAgreementPct'):
+            m[k] = _MISSING
+
+    # ---- Cached-data protocol audit: graph-construction leakage in the legacy
+    # DSAA 2023 row split, and endpoint-order sensitivity of the trained
+    # CascadeLP checkpoint (Chapter 4/5 limitations) ----
+    pa = d['protocol_audit']
+    if pa:
+        m['AuditValPositivesInGraph']    = gint(pa['validation_positives_in_graph'])
+        m['AuditValN']                   = gint(pa['n_val'])
+        m['AuditValPositivesInGraphPct'] = gfloat(100 * pa['validation_positives_in_graph'] / pa['n_val'], 2)
+        m['AuditCrossSplitGroups']       = gint(pa['cross_split_unordered_groups'])
+        m['AuditFullGraphColdTotal']         = gint(pa['full_graph']['cold_total'])
+        m['AuditFullGraphColdPositive']      = gint(pa['full_graph']['cold_positive'])
+        m['AuditTrainGraphColdTotal']        = gint(pa['training_partition_graph']['cold_total'])
+        m['AuditTrainGraphColdPositive']     = gint(pa['training_partition_graph']['cold_positive'])
+        m['AuditTrainGraphColdPositivePct']  = gfloat(
+            100 * pa['training_partition_graph']['cold_positive'] / pa['n_val'], 2)
+        if 'swap' in pa:
+            sw = pa['swap']
+            m['SwapN']                = gint(sw['n'])
+            m['SwapLabelChangePct']   = gfloat(sw['label_change_pct'], 2)
+            m['SwapMeanAbsProbChange'] = gfloat(sw['mean_abs_probability_change'], 3)
+            m['SwapTierChanges']      = gint(sw['tier_changes'])
+            m['SwapNegClassChangePct'] = gfloat(sw['by_original_class']['0']['label_change_pct'], 2)
+            m['SwapPosClassChangePct'] = gfloat(sw['by_original_class']['1']['label_change_pct'], 2)
+        else:
+            for k in ('SwapN', 'SwapLabelChangePct', 'SwapMeanAbsProbChange', 'SwapTierChanges',
+                      'SwapNegClassChangePct', 'SwapPosClassChangePct'):
+                m[k] = _MISSING
+    else:
+        for k in ('AuditValPositivesInGraph', 'AuditValN', 'AuditValPositivesInGraphPct',
+                  'AuditCrossSplitGroups', 'AuditFullGraphColdTotal', 'AuditFullGraphColdPositive',
+                  'AuditTrainGraphColdTotal', 'AuditTrainGraphColdPositive', 'AuditTrainGraphColdPositivePct',
+                  'SwapN', 'SwapLabelChangePct', 'SwapMeanAbsProbChange', 'SwapTierChanges',
+                  'SwapNegClassChangePct', 'SwapPosClassChangePct'):
             m[k] = _MISSING
 
     # ---- Fresh, artifact-free Wikipedia validation dataset ----

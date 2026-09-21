@@ -64,7 +64,7 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 Σχηματικό
 διάγραμμα της αλυσίδας φαίνεται στο Σχήμα~\ref{fig:cascade}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
     \tikzset{
         block/.style={rectangle, draw, rounded corners, minimum width=3.6cm,
@@ -264,7 +264,7 @@ $\theta_{\mathrm{CN}}$ και $\theta_{\mathrm{TF\text{-}IDF}}$ ορίζοντα
 \en{CN} $>$ υψηλή ομοιότητα κειμένου $>$ \en{hard}) αντικατοπτρίζει το κόστος της
 κάθε οικογένειας χαρακτηριστικών, από τη φθηνότερη προς την ακριβότερη.
 
-\begin{algorithm}[h!]
+\begin{algorithm}[htbp]
 \caption{Πρωτόκολλο Χαρακτηρισμού Δυσκολίας}
 \label{alg:difficulty}
 \begin{algorithmic}[1]
@@ -363,7 +363,7 @@ Attachment} (Εξίσωση~\ref{eq:pa}).
 Ο Αλγόριθμος~\ref{alg:heuristics} περιγράφει
 τον υπολογισμό των τεσσάρων χαρακτηριστικών για ένα σύνολο ζευγών.
 
-\begin{algorithm}[h!]
+\begin{algorithm}[htbp]
 \caption{Υπολογισμός Δομικών Ευρετικών Δεικτών}
 \label{alg:heuristics}
 \begin{algorithmic}[1]
@@ -524,7 +524,7 @@ $\mathbf{e}_v = \mathrm{ST}(d_v) \in \mathbb{R}^{384}$ υπολογίζεται 
 
 Ο Αλγόριθμος~\ref{alg:cascade} τυποποιεί τη διαδικασία δρομολόγησης \en{CascadeLP}.
 
-\begin{algorithm}[h!]
+\begin{algorithm}[htbp]
 \caption{Δρομολόγηση \en{CascadeLP} για ζεύγος $(u, v)$}
 \label{alg:cascade}
 \begin{algorithmic}[1]
@@ -696,7 +696,7 @@ $O(n^2)$--$O(n^3)$ ως προς τον αριθμό ζευγών εκπαίδε
 τέσσερα βήματα, ανεξάρτητα από το πόσο «εύκολο» ή «δύσκολο» είναι
 (Σχήμα~\ref{fig:svm-pipeline}).
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
     \tikzset{
         svmbox/.style={rectangle, draw, rounded corners, minimum width=3.0cm,
@@ -729,7 +729,7 @@ $O(n^2)$--$O(n^3)$ ως προς τον αριθμό ζευγών εκπαίδε
 
 Ο Αλγόριθμος~\ref{alg:svm} περιγράφει την εκπαίδευση με υποδειγματοληψία.
 
-\begin{algorithm}[h!]
+\begin{algorithm}[htbp]
 \caption{Εκπαίδευση \en{SVM} με Στρωματοποιημένη Υποδειγματοληψία}
 \label{alg:svm}
 \begin{algorithmic}[1]

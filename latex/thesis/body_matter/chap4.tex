@@ -140,7 +140,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 κατασκευής του \en{DSAA 2023} και συνεπώς δεν αποτελεί ανεξάρτητο έλεγχο του
 τεχνουργήματος δειγματοληψίας.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
     \centering
     \tikzset{
         box/.style={rectangle, draw, rounded corners, minimum width=3.4cm,
@@ -212,7 +212,7 @@ $O(n^2\text{--}n^3)$ του \en{SVC} πυρήνα ακτινικής βάσης.
 Ο \textbf{Αλγόριθμος~\ref{alg:eval-protocol}} περιγράφει το κοινό πρωτόκολλο
 αξιολόγησης που εφαρμόζεται σε κάθε μοντέλο αναφοράς και στο \en{CascadeLP}.
 
-\begin{algorithm}[h!]
+\begin{algorithm}[htbp]
 \caption{Πρωτόκολλο Αξιολόγησης Μοντέλου}
 \label{alg:eval-protocol}
 \begin{algorithmic}[1]
@@ -338,7 +338,7 @@ $\theta_{\mathrm{TF\text{-}IDF}} > \TfidfThreshold$ (1\% FPR στην αρνητ
 
 Ο χαρακτηρισμός αποδίδει τις ακόλουθες κατανομές:
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \small
   \begin{tabular}{lrcrrc}
@@ -355,14 +355,14 @@ $\theta_{\mathrm{TF\text{-}IDF}} > \TfidfThreshold$ (1\% FPR στην αρνητ
   \label{tab:difficulty-breakdown}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{separability_distributions}
   \caption{Κατανομές Κοινών Γειτόνων και ομοιότητας \en{TF-IDF} για θετικά και αρνητικά ζεύγη (χωρίς αυτοβρόχους). Η καθαρή διαχωρισιμότητα της \en{TF-IDF} υποδηλώνει ότι το κειμενικό περιεχόμενο παρέχει ισχυρό σήμα.}
   \label{fig:separability-dist}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.7\textwidth]{difficulty_breakdown}
   \caption{Κατανομή της λειτουργικής ετικέτας δυσκολίας στο σύνολο εκπαίδευσης. Η κατηγορία «δύσκολο» δηλώνει ότι δεν ικανοποιείται κανένα από τα τρία απλά κριτήρια.}
@@ -397,7 +397,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 βελτίωση του \en{CascadeLP} έναντι κάθε επιμέρους μοντέλου· δείχνει κυρίως ότι
 πολλές διαφορετικές μέθοδοι κορεστούν στο ίδιο προβληματικό πεδίο αξιολόγησης.
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \begin{tabular}{lrrcc}
     \toprule
@@ -451,7 +451,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 που το πρωτόκολλο χαρακτηρισμού δυσκολίας (\S\ref{sec:forensics-protocol}) είχε ήδη
 προσδιορίσει ως μη διαχωρίσιμο από τα απλά κριτήρια.
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \small
   \begin{tabular}{lrrr}
@@ -511,7 +511,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 Τα αποτελέσματα παρουσιάζονται στον
 Πίνακα~\ref{tab:wiki-fresh-results}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \begin{tabular}{lrr}
     \toprule
@@ -555,7 +555,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 επίπεδο έλαβε την τελική απόφαση πάνω σε προϋπολογισμένα χαρακτηριστικά· δεν
 αποτελούν μέτρηση ίσης ποσοστιαίας μείωσης του κόστους κωδικοποίησης.
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \begin{tabular}{lrrr}
     \toprule
@@ -610,7 +610,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 θεωρητική ικανότητα της μεθόδου \en{SVM}.
 Τα αποτελέσματα επικύρωσης είναι:
 
-\begin{table}[h!]
+\begin{table}[htbp]
   \centering
   \begin{tabular}{lcc}
     \toprule
@@ -626,7 +626,7 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
   \label{tab:svm-results}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{svm_metrics}
   \caption{Απόδοση μοντέλου αναφοράς \en{TF-IDF + SVM} σε σύνολο επικύρωσης. Το \en{SVM} επιτυγχάνει \en{Macro F1} = \SvmFone{} και \en{AUC-ROC} = \SvmAuc{}, υποδηλώνοντας την ισχυρή προβλεπτική ικανότητα της κειμενικής ομοιότητας.}

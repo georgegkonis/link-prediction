@@ -96,7 +96,7 @@
   \small
   \begin{tabular}{lrrrr}
     \toprule
-    \textbf{Μοντέλο} & \textbf{\en{Macro F1}} & \textbf{\en{AUC-ROC}} & \textbf{\en{Cold-start F1}} & \textbf{Καθυστ.\ (ms/ζ.)} \\
+    \textbf{Μοντέλο} & \textbf{\en{Macro F1}} & \textbf{\en{AUC-ROC}} & \textbf{F1 ($\mathrm{CN}=0$)} & \textbf{Καθυστ.\ (ms/ζ.)} \\
     \midrule
     \en{CascadeLP} (τελικό) & \CascadeValFone{} & \CascadeValAuc{} & \CascadeValFone{} & \ThroughputLatency{} \\
     \en{TF-IDF + SVM}       & \SvmFone{}        & \SvmAuc{}         & \SvmCsFone{}      & \SvmLatency{}      \\
@@ -104,9 +104,10 @@
   \end{tabular}
   \caption{Σύγκριση \en{CascadeLP} έναντι \en{SVM} σε όλες τις μετρικές αξιολόγησης,
   σύνολο επικύρωσης (n=\ValSplitSize{}).
-  Το \en{Cold-start F1} του \en{CascadeLP} ταυτίζεται με το συνολικό \en{Macro F1}
-  επειδή σχεδόν το σύνολο των ζευγών επικύρωσης είναι \en{cold-start}
-  (\S\ref{sec:cold-start-results}).}
+  Το F1 μηδενικού \en{CN} του \en{CascadeLP} ταυτίζεται αριθμητικά με το συνολικό
+  \en{Macro F1}, επειδή σχεδόν όλα τα ζεύγη επικύρωσης ανήκουν σε αυτό το
+  διαγνωστικό υποσύνολο. Η μάσκα δεν ταυτίζεται με το λειτουργικό
+  \en{cold-start} της δρομολόγησης (\S\ref{sec:cold-start-results}).}
   \label{tab:full-model-comparison}
 \end{table}
 
@@ -186,7 +187,7 @@
 
 Αξίζει να σημειωθεί η χαμηλή τιμή του μέσου βαθμού κόμβου (\GraphMeanDegree{}).
 Σε ένα τόσο αραιό γράφημα, η συντριπτική πλειονότητα των ζευγών στερείται κοινών γειτόνων,
-γεγονός που εξηγεί γιατί το \ColdStartPct\% των ζευγών επικύρωσης ανήκει στο \en{cold-start} υποσύνολο
+γεγονός που εξηγεί γιατί το \ColdStartPct\% των ζευγών επικύρωσης ανήκει στο υποσύνολο μηδενικού \en{CN}
 (\S\ref{sec:cold-start-results}) και γιατί τα ευρετικά χαρακτηριστικά δομής αποτυγχάνουν
 στην πλειονότητα των ζευγών χωρίς \en{Node2Vec}.
 

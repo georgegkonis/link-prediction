@@ -5,8 +5,9 @@
     τόσο την τοπολογία του γραφήματος όσο και το κειμενικό περιεχόμενο των κόμβων.
     Πρόσφατες εργασίες σε τέτοια γραφήματα έχουν αναφέρει σχεδόν τέλεια ακρίβεια με
     καθαρά σημασιολογικές προσεγγίσεις βασισμένες σε προ-εκπαιδευμένα γλωσσικά
-    μοντέλα, όμως το τετραγωνικό κόστος συμπερασμού τους τα καθιστά μη πρακτικά σε
-    κλίμακα.
+    μοντέλα. Η εφαρμογή ενός \en{cross-encoder} ανά ζεύγος ή η παραγωγή
+    ενσωματώσεων για μεγάλο πλήθος κόμβων είναι αισθητά ακριβότερη από την
+    αναζήτηση τοπικών δομικών χαρακτηριστικών.
 
     Η παρούσα διπλωματική εργασία προτείνει το \textbf{\en{CascadeLP}}, ένα
     τετραεπίπεδο πλαίσιο πρόβλεψης ακμών που αντιμετωπίζει το κόστος συμπερασμού ως
@@ -21,10 +22,9 @@
     προηγούμενα επίπεδα εμφανίζουν αβεβαιότητα.
 
     Αξιολογούμε το \en{CascadeLP} στο σύνολο αξιολόγησης \en{DSAA 2023} της
-    \en{Wikipedia}, το οποίο επιλέγεται ως πεδίο αξιολόγησης επειδή συνιστά
-    ρεαλιστικό στιγμιότυπο γραφήματος με κειμενικά χαρακτηριστικά σε κλίμακα
-    εκατοντάδων χιλιάδων κόμβων, με καθιερωμένο πίνακα κατάταξης διαγωνισμού που
-    παρέχει υπαρκτές λύσεις προς σύγκριση.
+    \en{Wikipedia}, το οποίο επιλέγεται ως αρχικό πεδίο αξιολόγησης λόγω της
+    κλίμακάς του και του καθιερωμένου πίνακα κατάταξης διαγωνισμού που παρέχει
+    υπαρκτές λύσεις προς σύγκριση.
     Για να ελέγξουμε τι μετρά η επιτυγχανόμενη ακρίβεια, διεξάγουμε έλεγχο
     ακεραιότητας των δεδομένων, ο οποίος βρίσκει αμελητέα επικάλυψη ζευγών αλλά
     αποκαλύπτει σοβαρό τεχνούργημα στη δειγματοληψία των αρνητικών παραδειγμάτων.
@@ -71,9 +71,9 @@
         structural neighbours, and a classifier over Sentence-Transformer similarity for pairs
         where the earlier tiers remain uncertain.
 
-        We evaluate CascadeLP on the DSAA 2023 Wikipedia benchmark, selected as our evaluation
-        scope because it is a realistic, large-scale text-attributed graph with an established
-        competition leaderboard of existing solutions to benchmark against. To determine what
+        We evaluate CascadeLP on the DSAA 2023 Wikipedia benchmark, selected as the initial
+        evaluation setting because of its scale and its established competition leaderboard of
+        existing solutions. To determine what
         the achieved accuracy measures, we audit the dataset. The audit finds negligible pair
         overlap but reveals a severe artifact in the sampling of negative examples. Under the
         original DSAA protocol, CascadeLP achieves Macro F1 = \CascadeValFone{} on a held-out

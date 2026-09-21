@@ -34,16 +34,29 @@
 σημείο αναφοράς: καταγράφει, ανά αρχείο, τα βασικά σύμβολα (συναρτήσεις και κλάσεις) που
 εξάγονται, ώστε κάθε όνομα που αναφέρεται αλλού στο κείμενο να εντοπίζεται άμεσα.
 
-\begin{table}[h!]
-  \centering
-  \small
-  \begin{tabular}{p{5.8cm} p{8.4cm}}
+\small
+\begin{longtable}{p{5.0cm} p{8.0cm}}
+    \caption{Κατάλογος αρχείων του \texttt{\en{src\slash{}}} και του
+    \texttt{\en{scripts\slash{}}} με τα κύρια εξαγόμενα σύμβολά τους.}
+    \label{tab:code-layout}\\
     \toprule
     \textbf{Αρχείο} & \textbf{Βασικά σύμβολα} \\
     \midrule
+    \endfirsthead
+    \multicolumn{2}{l}{\small\textit{Συνέχεια Πίνακα~\ref{tab:code-layout}}}\\
+    \toprule
+    \textbf{Αρχείο} & \textbf{Βασικά σύμβολα} \\
+    \midrule
+    \endhead
+    \midrule
+    \multicolumn{2}{r}{\small\textit{Συνεχίζεται στην επόμενη σελίδα}}\\
+    \endfoot
+    \bottomrule
+    \endlastfoot
     \multicolumn{2}{l}{\texttt{\en{src\slash{}data\slash{}}}} \\
     \midrule
     \texttt{\en{loader.py}} & \texttt{\en{load\_edges()}}, \texttt{\en{load\_nodes()}}, \texttt{\en{load\_nodes\_for\_ids()}}, \texttt{\en{build\_graph()}} \\
+    \texttt{\en{protocol.py}} & \texttt{\en{grouped\_split()}}, \texttt{\en{prepare\_split()}}, \texttt{\en{load\_split()}}, \texttt{\en{load\_structural()}} \\
     \midrule
     \multicolumn{2}{l}{\texttt{\en{src\slash{}features\slash{}}}} \\
     \midrule
@@ -67,16 +80,23 @@
     \texttt{\en{download\_data.py}} & λήψη του συνόλου δεδομένων του διαγωνισμού από το \en{Kaggle} \\
     \texttt{\en{compute\_structural.py}} & \en{CLI} για \texttt{\en{compute\_heuristics}}/\allowbreak{}\texttt{\en{train\_node2vec}} \\
     \texttt{\en{compute\_semantic.py}} & \en{CLI} για \en{TF-IDF}/\allowbreak{}\en{Sentence-Transformer}/\allowbreak{}\en{POS} χαρακτηριστικά \\
+    \texttt{\en{build\_from\_wikidump.py}} & εξαγωγή κόμβων και πραγματικών υπερσυνδέσμων από αρχεία \en{SQL dump} \\
+    \texttt{\en{build\_wiki\_fresh\_dataset.py}} & δειγματοληψία τυχαίων μη ακμών και δημιουργία του νέου \texttt{\en{train.csv}} \\
+    \texttt{\en{fetch\_wiki\_fresh\_text.py}} & ανάκτηση κειμένου για τους κόμβους του νέου συνόλου \\
+    \texttt{\en{mysql\_dump.py}} & ρέουσα ανάλυση πλειάδων από συμπιεσμένα αρχεία \en{MySQL} \\
     \midrule
     \multicolumn{2}{l}{\texttt{\en{scripts\slash{}analysis\slash{}}}} \\
     \midrule
     \texttt{\en{audit\_leakage.py}} & έλεγχος διαρροής εκπαίδευσης--ελέγχου και αυτοβρόχων \\
+    \texttt{\en{audit\_negative\_sampling.py}} & έλεγχος συγκέντρωσης αρνητικών και κανόνας αναζήτησης πρώτου άκρου \\
+    \texttt{\en{audit\_hub\_in\_predictions.py}} & σύγκριση του κανόνα αναζήτησης με τις προβλέψεις \en{CascadeLP} \\
     \texttt{\en{analyze\_dataset.py}} & χαρακτηρισμός διαχωρισιμότητας και ορίων $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ \\
     \texttt{\en{analyze\_cascade.py}} & ανάλυση \en{CascadeLP} ανά επίπεδο και δυσκολία \\
     \texttt{\en{ablate\_node2vec.py}} & \en{ablation} \en{Node2Vec} και μέτρηση κάλυψης στο σύνολο ελέγχου \\
     \texttt{\en{ablate\_cascade\_thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
     \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
     \texttt{\en{benchmark\_throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
+    \texttt{\en{run\_wiki\_fresh\_experiment.py}} & κοινή εκπαίδευση βασικών γραμμών και \en{CascadeLP} στο νέο σύνολο \\
     \midrule
     \multicolumn{2}{l}{\texttt{\en{scripts\slash{}paper\slash{}}}} \\
     \midrule
@@ -89,12 +109,8 @@
     \texttt{\en{train.py}} & εκπαίδευση ενός εκ των έξι μοντέλων \\
     \texttt{\en{evaluate.py}} & παραγωγή προβλέψεων στο σύνολο ελέγχου \\
     \texttt{\en{submit\_kaggle.py}} & υποβολή/\allowbreak{}έλεγχος κατάστασης στο \en{Kaggle} (\S\ref{sec:kaggle-submit}) \\
-    \bottomrule
-  \end{tabular}
-  \caption{Κατάλογος αρχείων του \texttt{\en{src\slash{}}} και του \texttt{\en{scripts\slash{}}} με τα
-  κύρια εξαγόμενα σύμβολά τους.}
-  \label{tab:code-layout}
-\end{table}
+\end{longtable}
+\normalsize
 
 
 \section{Κατάλογος Εντολών}
@@ -119,6 +135,16 @@
     \texttt{\en{--nrows N}}, \texttt{\en{--model NAME}}, \texttt{\en{--skip-\allowbreak{}st}}, \texttt{\en{--skip-\allowbreak{}pos}}.
     Έξοδος: \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}},
     \texttt{\en{pos\_\{train,\allowbreak{}test\}.npy}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.build\_from\_wikidump}} --- Σημαίες:
+    \texttt{\en{--dump-\allowbreak{}dir PATH}}, \texttt{\en{--seed TITLE}},
+    \texttt{\en{--target N}}, \texttt{\en{--output PATH}}. Έξοδος: κόμβοι,
+    πραγματικές ακμές και στατιστικά διάσχισης του νέου συνόλου
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.fetch\_wiki\_fresh\_text}} --- Σημαίες:
+    \texttt{\en{--output PATH}}, \texttt{\en{--config NAME}}. Έξοδος:
+    \texttt{\en{data\slash{}wiki\_fresh\slash{}nodes.tsv}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.data.build\_wiki\_fresh\_dataset}} --- Σημαίες:
+    \texttt{\en{--output PATH}}, \texttt{\en{--neg-\allowbreak{}ratio X}},
+    \texttt{\en{--seed N}}. Έξοδος: \texttt{\en{data\slash{}wiki\_fresh\slash{}train.csv}}
 \end{itemize}
 
 \textit{Εκπαίδευση /\allowbreak{} Αξιολόγηση} (\en{Hydra}, \texttt{\en{key=value}} \en{overrides})
@@ -137,6 +163,10 @@
 \begin{itemize}
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_leakage}} --- Σημαίες:
     \texttt{\en{--train PATH}}, \texttt{\en{--test PATH}}. Έξοδος: αναφορά διαρροής
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_negative\_sampling}} ---
+    Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}negative\_sampling\_audit.json}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_hub\_in\_predictions}} ---
+    Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}hub\_in\_predictions\_audit.json}}
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_dataset}} --- Σημαίες:
     \texttt{\en{--cn-\allowbreak{}threshold X}}, \texttt{\en{--tfidf-\allowbreak{}threshold X}}, \texttt{\en{--fpr X}} (προεπ.\ 0{,}01).
     Έξοδος: στατιστικά τετριμμένων ζευγών
@@ -145,6 +175,9 @@
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_cascade\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.benchmark\_throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_wiki\_fresh\_experiment}} ---
+    Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}wiki\_fresh\_experiment\_results.json}}
+    και προβλέψεις ανά επίπεδο
 \end{itemize}
 
 \textit{Παραγωγή Υλικού Διατριβής}
@@ -182,6 +215,14 @@
   \caption{Σχήματα των ακατέργαστων αρχείων εισόδου (\texttt{\en{data\slash{}raw\slash{}}}).}
   \label{tab:raw-schemas}
 \end{table}
+
+Ο Πίνακας~\ref{tab:raw-schemas} αφορά τα αρχεία του \en{DSAA 2023}. Το νέο
+σύνολο διατηρεί το ίδιο σχήμα \texttt{\en{train.csv}} με επισημασμένα ζεύγη και
+το ίδιο σχήμα \texttt{\en{nodes.tsv}} με στήλες \texttt{\en{id}} και
+\texttt{\en{text}}, κάτω από το \texttt{\en{data\slash{}wiki\_fresh\slash{}}}.
+Επιπλέον, το \texttt{\en{positive\_edges.csv}} περιέχει τις πραγματικές ακμές
+πριν από τη δειγματοληψία αρνητικών και το \texttt{\en{crawl\_stats.json}}
+καταγράφει την προέλευση και τα μεγέθη της διάσχισης.
 
 \begin{table}[h!]
   \centering
@@ -251,3 +292,14 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 
 Ο στόχος \texttt{\en{make test}} εκτελεί τη σουίτα \en{unit} ελέγχων χωρίς να απαιτεί κανένα από
 τα παραπάνω δεδομένα.
+
+Η παραπάνω ακολουθία αφορά το αρχικό πείραμα \en{DSAA}. Για το νέο σύνολο
+απαιτούνται επιπλέον τα τρία επίσημα συμπιεσμένα αρχεία \en{dump}
+\texttt{\en{page}}, \texttt{\en{linktarget}} και \texttt{\en{pagelinks}} της
+Απλής Αγγλικής \en{Wikipedia}. Με αυτά διαθέσιμα, η σειρά είναι
+\texttt{\en{build\_from\_wikidump}}, \texttt{\en{fetch\_wiki\_fresh\_text}},
+\texttt{\en{build\_wiki\_fresh\_dataset}} και τέλος
+\texttt{\en{run\_wiki\_fresh\_experiment}}. Το τελευταίο βήμα αποθηκεύει και
+επαναχρησιμοποιεί τη διαίρεση μαζί με \en{fingerprints} εισόδου στο
+\texttt{\en{data\slash{}interim\slash{}wiki\_fresh}}, ώστε να μην μπορεί να
+αντικατασταθεί σιωπηρά από διαίρεση άλλου αρχείου ή σπόρου.

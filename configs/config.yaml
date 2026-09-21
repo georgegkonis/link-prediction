@@ -5,11 +5,11 @@ defaults:
   - _self_
 
 paths:
-  raw: data/raw
-  interim: data/interim
-  checkpoints: outputs/checkpoints
-  predictions: outputs/predictions
-  log_path: outputs/predictions/kaggle_scores.csv
+  raw: data/raw/dsaa
+  interim: data/interim/dsaa
+  checkpoints: outputs/checkpoints/dsaa
+  predictions: outputs/predictions/dsaa
+  log_path: outputs/predictions/dsaa/kaggle_scores.csv
 
 kaggle:
   competition: dsaa-2023-competition
@@ -18,7 +18,6 @@ seed: 42
 
 dev:
   nrows: null
-  skip_n2v: false
   skip_st: false
   skip_pos: false
 

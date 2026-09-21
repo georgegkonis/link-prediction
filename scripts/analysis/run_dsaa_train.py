@@ -32,14 +32,12 @@ from src.models.svm import (
 from src.utils.difficulty import label_difficulty, pick_thresholds
 from src.utils.metrics import cold_start_mask, evaluate, evaluate_by_group, tier_difficulty_breakdown, timer
 
-def _load(model_name: str, raw_path: str, interim_path: str, no_n2v: bool = False) -> dict:
+def _load(model_name: str, raw_path: str, interim_path: str) -> dict:
     train = load_edges(os.path.join(raw_path, 'train.csv'))
     data  = {'pairs': train, 'y': train['label'].values}
 
     if model_name in ('structural', 'cascade'):
         data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
-        if not no_n2v:
-            data['n2v'] = np.load(f'{interim_path}/n2v_train.npy')
 
     if model_name == 'svm':
         # cn only, for per-pair difficulty labeling of the error-by-difficulty export below
@@ -89,7 +87,7 @@ def main(cfg: DictConfig):
     os.makedirs(predictions_path, exist_ok=True)
 
     log.info(f'Loading features for [{model_name}]...')
-    data = _load(model_name, raw_path, interim_path, cfg.training.no_n2v)
+    data = _load(model_name, raw_path, interim_path)
     tr, val, sub = _split(data, model_name, cfg.training.val_size, cfg.seed)
     y = data['y']
 
@@ -99,12 +97,9 @@ def main(cfg: DictConfig):
         model = StructuralClassifier(
             C=cfg.model.get('C', 1.0), max_iter=cfg.model.get('max_iter', 1000), random_state=cfg.seed)
         tr_X, val_X = sub(data['structural'])
-        tr_n2v = val_n2v = None
-        if 'n2v' in data:
-            tr_n2v, val_n2v = sub(data['n2v'])
-        model.fit(tr_X, y[tr], tr_n2v)
+        model.fit(tr_X, y[tr])
         with timer() as t:
-            proba = model.predict_proba(val_X, val_n2v)
+            proba = model.predict_proba(val_X)
         y_pred, y_scores = proba.argmax(axis=1), proba[:, 1]
 
     elif model_name == 'tfidf':
@@ -169,16 +164,11 @@ def main(cfg: DictConfig):
         tr_structural, val_structural = sub(data['structural'])
         tr_pos, val_pos = sub(data['pos_features'])
         tr_st, val_st = sub(data['st_scores'])
-        tr_n2v = val_n2v = None
-        if 'n2v' in data:
-            tr_n2v, val_n2v = sub(data['n2v'])
-        model.fit(
-            tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr], tr_n2v,
-        )
+        model.fit(tr_structural, tr_pos, tr_st, y[tr], data['pairs'].iloc[tr])
         val_pairs = data['pairs'].iloc[val]
         with timer() as t:
             y_pred, tier_used, y_scores = model.predict(
-                val_structural, val_pos, val_st, val_pairs, val_n2v,
+                val_structural, val_pos, val_st, val_pairs,
             )
         log.info('Tier usage:')
         for tier, stats in model.tier_stats(tier_used).items():

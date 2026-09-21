@@ -14,9 +14,9 @@ Novel four-tier, confidence-based link predictor that routes node pairs through 
 | Tier | Method                     | Feature                                         |
 |------|----------------------------|-------------------------------------------------|
 | 0    | Self-loop check            | id1 == id2                                      |
-| 1    | Structural (LogReg)        | CN, Jaccard, Adamic-Adar, PageRank              |
+| 1    | Structural (LogReg)        | CN, Jaccard, Adamic-Adar, Preferential Attachment |
 | 2    | Linguistic (Random Forest) | POS frequency vectors                           |
-| 3    | Semantic (LogReg)          | TF-IDF + Sentence-Transformer cosine similarity |
+| 3    | Semantic (LogReg)          | Sentence-Transformer cosine similarity          |
 
 Each tier exits if `max(proba) ≥ threshold`; otherwise the pair cascades to the next tier.
 
@@ -40,7 +40,7 @@ All `make` targets invoke `conda run -n link-prediction` internally.
 conda env create -f environment.yml
 
 # 2. Download dataset (requires KAGGLE_USERNAME / KAGGLE_KEY in .env)
-make data-download
+make run SCRIPT=data.download_data
 
 # 3. Compute features
 make run SCRIPT=data.compute_structural
@@ -72,7 +72,7 @@ secret (it clones this repo). See [docs/commands.md](docs/commands.md#running-on
 
 - **Kaggle download fails:** Check `~/.kaggle/kaggle.json` or set `KAGGLE_USERNAME`/`KAGGLE_KEY` in `.env`
 - **Sentence-Transformer hangs:** Use `--skip-st` dev flag
-- **LaTeX build fails:** Run `make paper-clean` and retry; check `paper/main.log`
+- **LaTeX build fails:** Run `make latex-clean DOC=thesis` and retry; check `latex/thesis/thesis.log`
 
 ## Author
 

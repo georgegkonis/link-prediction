@@ -20,8 +20,8 @@
 │   ├── checkpoints/            Serialized .joblib models (subdirs: dsaa/, wiki_cs_8k/)
 │   ├── figures/                PNG plots
 │   └── predictions/            Kaggle submission CSVs and metrics (subdirs: dsaa/, wiki_cs_8k/)
-└── paper/                      LaTeX thesis (CEID bilingual template)
-    ├── main.tex                Entry point
+└── latex/thesis/              LaTeX thesis (CEID bilingual template)
+    ├── thesis.tex              Entry point
     ├── body_matter/            chap1–chap6
     ├── front_matter/           abstract, acknowledgements
     ├── back_matter/            appendix, references.bib, abbreviations, glossary
@@ -52,7 +52,6 @@
 |--------------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `svm.py`     | Five sklearn classifiers     | `StructuralClassifier` (LogReg), `TfidfClassifier` (LogReg), `PosClassifier` (RandomForest), `EmbeddingClassifier` (LogReg), `SvmClassifier` (RBF SVC on a stratified subsample) |
 | `cascade.py` | Novel four-tier orchestrator | `CascadeLP(tier1_threshold, tier2_threshold)` — `.fit()`, `.predict()` → `(predictions, tier_used)`, `.tier_stats()`                                                             |
-| `gnn.py`     | Stub (Phase 5)               | GNN with MC-Dropout uncertainty (not implemented)                                                                                                                                |
 
 ## Evaluation & Difficulty Labeling (`src/utils/`)
 

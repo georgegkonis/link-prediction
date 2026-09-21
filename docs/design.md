@@ -42,10 +42,6 @@ Each tier is trained on the full training set; no cascading labels between tiers
 Graph is the first argument. Reversed args silently KeyError because networkx treats the dataframe as an adjacency
 lookup.
 
-**Copy figures to `paper/figures/`**
-Figures in `outputs/figures/` are ephemeral. Copying to `paper/figures/` (tracked in git) keeps the thesis
-self-contained at every commit.
-
 ## Framing
 
 CascadeLP is framed primarily as a **cost-aware diagnostic**: measuring which tier resolves which pairs,

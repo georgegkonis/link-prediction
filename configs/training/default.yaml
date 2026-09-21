@@ -1,4 +1,3 @@
 val_size: 0.2
 cn_threshold: null
 tfidf_threshold: null
-no_n2v: true

@@ -142,9 +142,9 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 
 Τρία αρχεία στο \texttt{\en{src\slash{}features\slash{}}} μετατρέπουν ζεύγη κόμβων σε αριθμητικά
 διανύσματα. Το \texttt{\en{structural.py}} υπολογίζει τους τέσσερις ευρετικούς δείκτες μέσω
-της \texttt{\en{compute\_heuristics(G,\allowbreak{} pairs)}} — με το γράφημα πάντα ως πρώτο όρισμα, αντιστροφή
-που αποτυγχάνει σιωπηλά επειδή η \en{NetworkX} ερμηνεύει τότε το \en{DataFrame} ως πίνακα
-γειτνίασης.
+της \texttt{\en{compute\_heuristics(G,\allowbreak{} pairs)}}, με το γράφημα πάντα ως πρώτο όρισμα.
+Η αντιστροφή των ορισμάτων πρέπει να αποφεύγεται, επειδή η \en{NetworkX} μπορεί να
+ερμηνεύσει το \en{DataFrame} ως πίνακα γειτνίασης και να οδηγήσει σε παραπλανητικό σφάλμα.
 Το \texttt{\en{embeddings.py}} υλοποιεί
 τον καθαρισμό κειμένου \en{Wikitext} (\texttt{\en{clean\_wiki\_text()}}) και τις δύο οικογένειες
 σημασιολογικής ομοιότητας: \en{TF-IDF} μέσω \texttt{\en{build\_tfidf()}}/\texttt{\en{compute\_tfidf\_scores()}}, και
@@ -172,24 +172,24 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 επίπεδο, και η \texttt{\en{.save()}}/\texttt{\en{.load()}} σειριοποιούν ολόκληρο το αντικείμενο μέσω
 \texttt{\en{joblib}} στο \texttt{\en{outputs\slash{}checkpoints\slash{}}}.
 
-Για το αρχικό πείραμα \en{DSAA}, το \texttt{\en{scripts\slash{}train.py}} συνδέει τα παραπάνω: φορτώνει τα
-προϋπολογισμένα χαρακτηριστικά από το \texttt{\en{data\slash{}interim\slash{}}}, διαχωρίζει σε υποσύνολα
+Για το αρχικό πείραμα \en{DSAA}, το \texttt{\en{scripts\slash{}analysis\slash{}run\_dsaa\_train.py}} συνδέει τα παραπάνω: φορτώνει τα
+προϋπολογισμένα χαρακτηριστικά από το \texttt{\en{data\slash{}interim\slash{}dsaa\slash{}}}, διαχωρίζει σε υποσύνολα
 εκπαίδευσης/επικύρωσης με στρωματοποίηση ως προς την ετικέτα
 (\texttt{\en{train\_test\_split(...,\allowbreak{} stratify=y)}}), και εφαρμόζει το ίδιο κλείσιμο \texttt{\en{sub()}} σε
 κάθε πίνακα χαρακτηριστικών ώστε όλα τα μοντέλα —συμπεριλαμβανομένου του
 \en{CascadeLP}— να εκπαιδεύονται αποκλειστικά στους δείκτες \texttt{\en{tr}} και να αξιολογούνται
-στους \texttt{\en{val}}. Μετά την πρόβλεψη, το \texttt{\en{scripts\slash{}train.py}} διασταυρώνει το
+στους \texttt{\en{val}}. Μετά την πρόβλεψη, το ίδιο \en{script} διασταυρώνει το
 \texttt{\en{tier\_used}} με την ετικέτα δυσκολίας από το \texttt{\en{src\slash{}utils\slash{}difficulty.py}}
 (\texttt{\en{label\_difficulty()}}) μέσω της \texttt{\en{tier\_difficulty\_breakdown()}} του
 \texttt{\en{src\slash{}utils\slash{}metrics.py}}, και εξάγει ανά-ζεύγος στήλες
-\texttt{\en{(tier\_used,\allowbreak{} difficulty,\allowbreak{} y\_pred)}} στο \texttt{\en{outputs\slash{}predictions\slash{}cascade\_val\_tiers.csv}}. Το
-\texttt{\en{scripts\slash{}evaluate.py}} επαναλαμβάνει την ίδια διασταύρωση στο σύνολο ελέγχου,
+\texttt{\en{(tier\_used,\allowbreak{} difficulty,\allowbreak{} y\_pred)}} στο \texttt{\en{outputs\slash{}predictions\slash{}dsaa\slash{}cascade\_val\_tiers.csv}}. Το
+\texttt{\en{scripts\slash{}analysis\slash{}run\_dsaa\_evaluate.py}} επαναλαμβάνει την ίδια διασταύρωση στο σύνολο ελέγχου,
 παράγοντας το αντίστοιχο \texttt{\en{cascade\_test\_tiers.csv}}. Οι αναλύσεις ανά
 επίπεδο και δυσκολία του \en{DSAA} προέρχονται από αυτά τα αρχεία. Για το νέο
-σύνολο, το \texttt{\en{scripts\slash{}analysis\slash{}run\_wiki\_fresh\_experiment.py}}
+σύνολο, το \texttt{\en{scripts\slash{}analysis\slash{}run\_wiki\_cs\_8k\_experiment.py}}
 χρησιμοποιεί την ομαδοποιημένη διαίρεση του \texttt{\en{src\slash{}data\slash{}protocol.py}},
 κατασκευάζει γράφημα μόνο από το τμήμα εκπαίδευσης και αποθηκεύει τις μετρικές στο
-\texttt{\en{outputs\slash{}stats\slash{}wiki\_fresh\_experiment\_results.json}}.
+\texttt{\en{outputs\slash{}stats\slash{}wiki\_cs\_8k\_experiment\_results.json}}.
 
 
 \section{Πρωτόκολλο Ανίχνευσης Δεδομένων}

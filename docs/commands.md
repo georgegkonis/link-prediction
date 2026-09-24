@@ -47,6 +47,17 @@ For fast iteration without running full feature computation:
 conda run -n link-prediction python -m scripts.dsaa.compute_semantic dev.nrows=300 dev.skip_st=true
 ```
 
+Development runs save features under `data/interim/dsaa/dev_.../`; for example,
+the command above writes to `dev_nrows_300_skip_st/`. They do not replace the
+full-data caches. Both DSAA feature commands honor
+`paths.raw` and `paths.interim` Hydra overrides. Model training and prediction
+save their resolved configurations beside the results; use matching `tag=NAME`
+in both commands for a tagged checkpoint.
+The CascadeLP protocol audit, threshold sweep, and inference benchmark read
+the untagged `cascade_run_config.json` when available, so their validation
+split matches the trained model. Use each command's path flags for results
+outside the default output directory.
+
 ## Wiki-CS-8k Pipeline
 
 For Wiki-CS-8k, run these steps in order after placing the MediaWiki SQL dumps in `/tmp`:
@@ -57,6 +68,12 @@ conda run -n link-prediction python -m scripts.wiki.fetch_text
 conda run -n link-prediction python -m scripts.wiki.build_dataset
 conda run -n link-prediction python -m scripts.wiki.run_experiment
 ```
+
+The Wiki experiment reads shared feature/model YAML settings from `configs/`
+(`--config-dir` selects another directory). It checks cached features against
+the split, article text, settings, and file checksums. If you have caches from
+an older run without a manifest, pass `--rebuild-features` once. `make pipeline-wiki`
+already does this.
 
 ## Running on Kaggle
 

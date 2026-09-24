@@ -23,6 +23,11 @@ Reads:
     outputs/predictions/dsaa/tier2_confidence_saturation.json
     outputs/predictions/dsaa/embedding_val_metrics.json
     outputs/predictions/graph_holdout_v1/matched_samples_v2/metrics.csv
+    outputs/stats/{negative_sampling_audit,hub_in_predictions_audit,supervisor_audit}.json
+    outputs/stats/wiki_cs_8k_experiment_results.json
+    data/raw/wiki_cs_8k/{crawl_stats,text_fetch_stats}.json
+    configs/{config,features,training,model} YAML defaults for legacy results
+    DSAA feature/model run configuration snapshots when available
 Writes:
     latex/shared/results/summary_stats.json
 
@@ -56,12 +61,7 @@ PUBLISHED_RESULTS = pathlib.Path('latex/shared/results')
 
 
 def _load_configs() -> dict:
-    """
-    Read configs/*.yaml directly (plain YAML, no Hydra runtime needed here — we
-    only need the resolved literal values). This is the single source of truth
-    for every hyperparameter/reproducibility macro below; nothing here should
-    ever be a hardcoded Python literal that could drift from configs/.
-    """
+    """Use recorded run settings; support existing results without snapshots."""
     cfg = yaml.safe_load((CONFIGS / 'config.yaml').read_text())
     cfg['training'] = yaml.safe_load((CONFIGS / 'training/default.yaml').read_text())
     cfg['features'] = yaml.safe_load((CONFIGS / 'features/default.yaml').read_text())
@@ -69,6 +69,48 @@ def _load_configs() -> dict:
         name: yaml.safe_load((CONFIGS / f'model/{name}.yaml').read_text())
         for name in _MODEL_NAMES
     }
+    paths = {
+        name: PREDICTIONS / f'{name}_run_config.json' for name in _MODEL_NAMES
+    }
+    paths['structural_features'] = INTERIM / 'structural_config.json'
+    paths['semantic_features'] = INTERIM / 'semantic_config.json'
+    present = {name for name, path in paths.items() if path.exists()}
+    if not present:
+        log.warning('No run configuration snapshots found; legacy results use YAML defaults')
+        return cfg
+    if present != set(paths):
+        missing = sorted(set(paths) - present)
+        raise ValueError(f'Incomplete run configuration snapshots: {missing}. '
+                         'Regenerate all DSAA features and models before building the thesis.')
+
+    runs = {name: json.loads(path.read_text()) for name, path in paths.items()}
+    reference = runs['cascade']['config']
+    for name in _MODEL_NAMES:
+        run = runs[name]
+        actual = run['config']
+        if actual['model']['name'] != name:
+            raise ValueError(f'Run configuration does not match model {name}')
+        for key in ('seed', 'training'):
+            if actual[key] != reference[key]:
+                raise ValueError(f'Inconsistent {key} across DSAA model runs')
+        if pathlib.Path(actual['paths']['predictions']).resolve() != PREDICTIONS.resolve():
+            raise ValueError(f'Model {name} used a different prediction directory')
+        if pathlib.Path(run['raw_path']).resolve() != RAW.resolve() or (
+                pathlib.Path(run['interim_path']).resolve() != INTERIM.resolve()):
+            raise ValueError(f'Model {name} used different data paths from this thesis build')
+        cfg['model'][name] = actual['model']
+
+    for name in ('structural_features', 'semantic_features'):
+        actual = runs[name]['config']
+        if any((actual['dev']['nrows'] is not None,
+                actual['dev']['skip_st'], actual['dev']['skip_pos'])):
+            raise ValueError(f'{name} was produced by a development feature run')
+        if pathlib.Path(actual['paths']['raw']).resolve() != RAW.resolve() or (
+                pathlib.Path(actual['paths']['interim']).resolve() != INTERIM.resolve()):
+            raise ValueError(f'{name} used different data paths from this thesis build')
+    cfg['seed'] = reference['seed']
+    cfg['training'] = reference['training']
+    cfg['features'] = runs['semantic_features']['config']['features']
     return cfg
 
 _MISSING = '---'
@@ -193,6 +235,15 @@ def _load() -> dict:
     d['wikipedia'] = _load_json_optional(
         STATS / 'wiki_cs_8k_experiment_results.json',
         'run python -m scripts.wiki.run_experiment first')
+    if d['wikipedia']:
+        wiki_cfg = d['wikipedia'].get('_meta', {}).get('run_config')
+        if wiki_cfg:
+            if (wiki_cfg['features'] != d['cfg']['features'] or
+                    wiki_cfg['models'] != d['cfg']['model']):
+                raise ValueError('Wiki and DSAA results used different feature/model settings; '
+                                 'a shared thesis parameter table would be misleading')
+        else:
+            log.warning('Wiki results have no recorded run configuration; cannot verify shared parameters')
     d['wikipedia_crawl'] = _load_json_optional(
         pathlib.Path('data/raw/wiki_cs_8k/crawl_stats.json'),
         'run python -m scripts.wiki.build_graph first')

@@ -100,7 +100,7 @@ pipeline-wiki:
 	$(RUN) python -m scripts.wiki.build_graph
 	$(RUN) python -m scripts.wiki.fetch_text
 	$(RUN) python -m scripts.wiki.build_dataset
-	$(RUN) python -m scripts.wiki.run_experiment
+	$(RUN) python -m scripts.wiki.run_experiment --rebuild-features
 
 build-thesis:
 	@echo "--- Compiling Thesis Assets & PDF ---"

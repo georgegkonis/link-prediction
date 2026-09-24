@@ -18,7 +18,7 @@ import pandas as pd
 
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('build_wiki_cs_8k_dataset')
+log = setup_logging('wiki_build_dataset')
 
 
 def main():

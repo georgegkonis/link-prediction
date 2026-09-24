@@ -1,8 +1,15 @@
 """
-Evaluate baselines and models on the wiki dataset.
+Evaluate baselines and CascadeLP on the Wiki dataset using shared YAML settings.
+
+Reads:
+    <pairs>, <nodes>, and <config-dir>/{config,features,training,model} YAML files
+Writes:
+    <directory>/feature_cache.json and cached features
+    <predictions>/model_val_predictions.csv and cascade_val_tiers.csv
+    <stats> JSON results with the resolved experiment settings
 
 Usage:
-    python -m scripts.wiki.run_experiment
+    python -m scripts.wiki.run_experiment [--config-dir configs] [--rebuild-features]
 """
 import argparse
 import json
@@ -11,8 +18,10 @@ import time
 
 import numpy as np
 import pandas as pd
+import yaml
 from sklearn.metrics import f1_score, roc_auc_score
 
+from src.data.feature_cache import cache_matches, save_cache_manifest, sha256_file
 from src.data.loader import build_graph, load_edges, load_nodes_for_ids
 from src.data.protocol import prepare_split
 from src.features.embeddings import build_tfidf, clean_wiki_text, compute_embedding_scores, compute_tfidf_scores, encode_nodes
@@ -22,7 +31,7 @@ from src.models.cascade import CascadeLP
 from src.models.svm import EmbeddingClassifier, PosClassifier, StructuralClassifier, SvmClassifier, TfidfClassifier
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('run_wiki_cs_8k_experiment')
+log = setup_logging('wiki_run_experiment')
 
 
 def evaluate(y_true, y_pred, y_score) -> dict:
@@ -77,10 +86,22 @@ def main():
     parser.add_argument('--nodes', default='data/raw/wiki_cs_8k/nodes.tsv')
     parser.add_argument('--predictions', default='outputs/predictions/wiki_cs_8k')
     parser.add_argument('--stats', default='outputs/stats/wiki_cs_8k_experiment_results.json')
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--val-size', type=float, default=0.2)
+    parser.add_argument('--config-dir', default='configs', help='Shared feature/model YAML directory')
+    parser.add_argument('--seed', type=int, help='Defaults to config.yaml seed')
+    parser.add_argument('--val-size', type=float, help='Defaults to training/default.yaml val_size')
+    parser.add_argument('--rebuild-features', action='store_true', help='Replace feature caches and their manifest')
     args = parser.parse_args()
     t0 = time.time()
+    config_dir = pathlib.Path(args.config_dir)
+    base_cfg = yaml.safe_load((config_dir / 'config.yaml').read_text())
+    training_cfg = yaml.safe_load((config_dir / 'training/default.yaml').read_text())
+    feature_cfg = yaml.safe_load((config_dir / 'features/default.yaml').read_text())
+    model_cfg = {
+        name: yaml.safe_load((config_dir / f'model/{name}.yaml').read_text())
+        for name in ('structural', 'tfidf', 'pos', 'embedding', 'svm', 'cascade')
+    }
+    args.seed = base_cfg['seed'] if args.seed is None else args.seed
+    args.val_size = training_cfg['val_size'] if args.val_size is None else args.val_size
 
     pairs = load_edges(args.pairs)
     log.info('Loaded %s pairs', f'{len(pairs):,}')
@@ -92,11 +113,28 @@ def main():
     y = pairs['label'].to_numpy()
     log.info('Train: %s  Val: %s', f'{len(tr):,}', f'{len(val):,}')
 
-    struct_path, tfidf_path, pos_path, st_path = (
-        directory / 'structural.csv', directory / 'tfidf.csv',
-        directory / 'pos.npy', directory / 'sentence_emb.csv')
+    files = {
+        'structural': directory / 'structural.csv',
+        'tfidf': directory / 'tfidf.csv',
+        'pos': directory / 'pos.npy',
+        'sentence_emb': directory / 'sentence_emb.csv',
+    }
+    struct_path, tfidf_path, pos_path, st_path = files.values()
+    request = {
+        'feature_pipeline_version': 1,
+        'split': manifest,
+        'nodes_sha256': sha256_file(pathlib.Path(args.nodes)),
+        'features': feature_cfg,
+        'feature_code_sha256': {
+            name: sha256_file(pathlib.Path(__file__).resolve().parents[2] / 'src/features' / f'{name}.py')
+            for name in ('structural', 'embeddings', 'linguistic')
+        },
+        'loader_code_sha256': sha256_file(
+            pathlib.Path(__file__).resolve().parents[2] / 'src/data/loader.py'),
+    }
+    reuse = False if args.rebuild_features else cache_matches(directory, request, files)
 
-    if struct_path.exists():
+    if reuse:
         log.info('Loading cached structural features')
         structural = pd.read_csv(struct_path, index_col='id')
         graph = build_graph(pairs.iloc[tr])
@@ -110,18 +148,18 @@ def main():
 
     unique_ids = set(pd.unique(pairs[['id1', 'id2']].values.ravel()).tolist())
 
-    if tfidf_path.exists():
+    if reuse:
         log.info('Loading cached TF-IDF scores')
         tfidf_scores = pd.read_csv(tfidf_path, index_col='id')['tfidf_score'].to_numpy()
     else:
         nodes = load_nodes_for_ids(args.nodes, unique_ids)
         log.info('Fitting TF-IDF and scoring pairs...')
         texts = [clean_wiki_text(nodes.loc[i, 'text']) for i in unique_ids if i in nodes.index]
-        vectorizer = build_tfidf(texts)
+        vectorizer = build_tfidf(texts, **feature_cfg['tfidf'])
         tfidf_scores = compute_tfidf_scores(vectorizer, nodes, pairs)
         pd.Series(tfidf_scores, index=pairs.index, name='tfidf_score').to_csv(tfidf_path)
 
-    if pos_path.exists():
+    if reuse:
         log.info('Loading cached POS features')
         pos_features = np.load(pos_path)
     else:
@@ -131,16 +169,19 @@ def main():
         pos_features = compute_pos_features(nodes, pairs)
         np.save(pos_path, pos_features)
 
-    if st_path.exists():
+    if reuse:
         log.info('Loading cached Sentence-Transformer scores')
         st_scores = pd.read_csv(st_path, index_col='id')['st_score'].to_numpy()
     else:
         if 'nodes' not in dir():
             nodes = load_nodes_for_ids(args.nodes, unique_ids)
         log.info('Encoding nodes with Sentence-Transformer...')
-        embeddings = encode_nodes(nodes, list(unique_ids))
+        embeddings = encode_nodes(nodes, list(unique_ids), model_name=feature_cfg['embedding']['model_name'])
         st_scores = compute_embedding_scores(embeddings, pairs)
         pd.Series(st_scores, index=pairs.index, name='st_score').to_csv(st_path)
+
+    if not reuse:
+        save_cache_manifest(directory, request, files)
 
     log.info('Feature computation done (or loaded from cache) at %.1f min', (time.time() - t0) / 60)
 
@@ -153,42 +194,48 @@ def main():
     pred_dir.mkdir(parents=True, exist_ok=True)
 
     log.info('Training StructuralClassifier...')
-    m = StructuralClassifier(random_state=args.seed)
+    m = StructuralClassifier(C=model_cfg['structural']['C'],
+                             max_iter=model_cfg['structural']['max_iter'], random_state=args.seed)
     m.fit(sub(structural, tr), y[tr])
     proba = m.predict_proba(sub(structural, val))
     val_predictions['structural'] = proba.argmax(1)
     results['structural'] = evaluate(y[val], val_predictions['structural'], proba[:, 1])
 
     log.info('Training TfidfClassifier...')
-    m = TfidfClassifier(random_state=args.seed)
+    m = TfidfClassifier(C=model_cfg['tfidf']['C'],
+                        max_iter=model_cfg['tfidf']['max_iter'], random_state=args.seed)
     m.fit(sub(tfidf_scores, tr), y[tr])
     proba = m.predict_proba(sub(tfidf_scores, val))
     val_predictions['tfidf'] = proba.argmax(1)
     results['tfidf'] = evaluate(y[val], val_predictions['tfidf'], proba[:, 1])
 
     log.info('Training PosClassifier...')
-    m = PosClassifier(random_state=args.seed)
+    m = PosClassifier(n_estimators=model_cfg['pos']['n_estimators'],
+                      class_weight=model_cfg['pos']['class_weight'], random_state=args.seed)
     m.fit(sub(pos_features, tr), y[tr])
     proba = m.predict_proba(sub(pos_features, val))
     val_predictions['pos'] = proba.argmax(1)
     results['pos'] = evaluate(y[val], val_predictions['pos'], proba[:, 1])
 
     log.info('Training EmbeddingClassifier...')
-    m = EmbeddingClassifier(random_state=args.seed)
+    m = EmbeddingClassifier(C=model_cfg['embedding']['C'],
+                            max_iter=model_cfg['embedding']['max_iter'], random_state=args.seed)
     m.fit(sub(st_scores, tr), y[tr])
     proba = m.predict_proba(sub(st_scores, val))
     val_predictions['embedding'] = proba.argmax(1)
     results['embedding'] = evaluate(y[val], val_predictions['embedding'], proba[:, 1])
 
     log.info('Training SvmClassifier...')
-    m = SvmClassifier(random_state=args.seed)
+    m = SvmClassifier(C=model_cfg['svm']['C'], gamma=model_cfg['svm']['gamma'],
+                      subsample_size=model_cfg['svm']['subsample_size'], random_state=args.seed)
     m.fit(sub(tfidf_scores, tr), y[tr])
     proba = m.predict_proba(sub(tfidf_scores, val))
     val_predictions['svm'] = proba.argmax(1)
     results['svm'] = evaluate(y[val], val_predictions['svm'], proba[:, 1])
 
     log.info('Training CascadeLP (original, unmodified architecture)...')
-    m = CascadeLP()
+    m = CascadeLP(tier1_threshold=model_cfg['cascade']['tier1_threshold'],
+                  tier2_threshold=model_cfg['cascade']['tier2_threshold'], random_state=args.seed)
     m.fit(sub(structural, tr), sub(pos_features, tr), sub(st_scores, tr), y[tr], pairs.iloc[tr])
     y_pred, tier_used, scores = m.predict(sub(structural, val), sub(pos_features, val), sub(st_scores, val), pairs.iloc[val])
     results['cascade'] = evaluate(y[val], y_pred, scores)
@@ -239,6 +286,9 @@ def main():
         'n_train': int(len(tr)), 'n_val': int(len(val)),
         'graph_nodes': graph.number_of_nodes(), 'graph_edges': graph.number_of_edges(),
         'elapsed_min': (time.time() - t0) / 60,
+        'run_config': {'seed': args.seed, 'val_size': args.val_size,
+                       'features': feature_cfg, 'models': model_cfg},
+        'feature_cache_sha256': sha256_file(directory / 'feature_cache.json'),
     }
 
     log.info('=== Results ===')

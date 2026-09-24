@@ -26,9 +26,15 @@ Make targets and common overrides.
 | `compare_matched_samples` | Compare models on identical 20k-pair samples | `outputs/predictions/graph_holdout_v1/matched_samples_v2/` |
 | `kaggle` | Submit predictions or retrieve competition scores | `outputs/predictions/dsaa/kaggle_scores.csv` |
 
-The feature and model commands use Hydra `key=value` overrides. The legacy DSAA
+The download, feature, and model commands use Hydra `key=value` overrides.
+`paths.raw` and `paths.interim` control feature input/output locations; a
+development run writes under `<paths.interim>/dev_.../`. Feature commands
+and model runs save their resolved settings beside their outputs. The legacy DSAA
 training path and the graph-holdout matched comparison have different protocols;
 the latter is a controlled comparison within the same artifact-affected dataset.
+The protocol audit, threshold sweep, and inference benchmark reuse the recorded
+CascadeLP split and paths when a run snapshot is present. Their default paths
+remain available for older results that predate snapshots.
 
 ## Wikipedia (`scripts.wiki`)
 
@@ -41,6 +47,10 @@ the latter is a controlled comparison within the same artifact-affected dataset.
 
 The SQL parser used by `build_graph` is library code in
 `src/data/mediawiki_sql.py`, not a separate command.
+Wiki commands use `argparse`; `run_experiment` reads feature/model defaults from
+the shared `configs/` YAML directory. It verifies a feature-cache manifest
+before reuse. For caches made before manifests were introduced, use
+`--rebuild-features` once or select a fresh `--directory`.
 
 ## Thesis (`scripts.thesis`)
 

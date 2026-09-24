@@ -73,7 +73,7 @@
     \multicolumn{2}{l}{\texttt{\en{src\slash{}utils\slash{}}}} \\
     \midrule
     \texttt{\en{difficulty.py}} & \texttt{\en{pick\_thresholds()}}, \texttt{\en{label\_difficulty()}}, \texttt{\en{trivial\_mask()}} \\
-    \texttt{\en{metrics.py}} & \texttt{\en{EvalResult}}, \texttt{\en{evaluate()}}, \texttt{\en{evaluate\_by\_group()}}, \texttt{\en{tier\_difficulty\_breakdown()}}, \texttt{\en{cold\_start\_mask()}}, \texttt{\en{timer()}} \\
+    \texttt{\en{metrics.py}} & \texttt{\en{EvalResult}}, \texttt{\en{evaluate()}}, \texttt{\en{evaluate\_by\_group()}}, \texttt{\en{tier\_difficulty\_breakdown()}}, \texttt{\en{cold\_start\_mask()}}, \texttt{\en{zero\_common\_neighbors\_mask()}}, \texttt{\en{timer()}} \\
     \texttt{\en{log\_utils.py}} & \texttt{\en{setup\_logging()}} \\
     \midrule
     \multicolumn{2}{l}{\texttt{\en{scripts\slash{}data\slash{}}}} \\
@@ -187,8 +187,8 @@
     \texttt{\en{outputs\slash{}predictions\slash{}graph\_holdout\_v1\slash{}matched\_samples\_v2}}
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_wiki\_cs\_8k\_experiment}} ---
     Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}wiki\_cs\_8k\_experiment\_results.json}}
-    με αποτελέσματα ανά επίπεδο, διαγνωστικές τομές και ζευγαρωμένο
-    \en{bootstrap}, καθώς και αρχεία προβλέψεων ανά μοντέλο και επίπεδο
+    με αποτελέσματα ανά επίπεδο, διαγνωστικά υποσύνολα και επαναδειγματοληψία
+    \en{paired bootstrap}, καθώς και αρχεία προβλέψεων ανά μοντέλο και επίπεδο
 \end{itemize}
 
 \textit{Παραγωγή Υλικού Διατριβής}

@@ -75,6 +75,26 @@ the split, article text, settings, and file checksums. If you have caches from
 an older run without a manifest, pass `--rebuild-features` once. `make pipeline-wiki`
 already does this.
 
+To run the controlled sparse benchmark from the existing Wiki-CS-8k files
+(no SQL dump or text download required):
+
+```bash
+make pipeline-wiki-sparse
+```
+
+This writes a versioned benchmark under `data/raw/wiki_cs_8k_sparse20/`, caches
+training/node features under `data/interim/wiki_cs_8k_sparse20/`, saves models
+under `outputs/checkpoints/wiki_cs_8k_sparse20/`, and evaluates all withheld
+links in separate random- and hard-negative suites. Direct invocation is:
+
+```bash
+conda run -n link-prediction python -m scripts.wiki.build_dataset \
+  --protocol sparse-holdout --edge-retention 0.2
+conda run -n link-prediction python -m scripts.wiki.run_experiment \
+  --benchmark-manifest data/raw/wiki_cs_8k_sparse20/benchmark.json \
+  --batch-size 10000
+```
+
 ## Running on Kaggle
 
 `notebooks/kaggle_full_pipeline.ipynb` still refers to the former script paths and

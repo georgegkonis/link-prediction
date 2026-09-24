@@ -6,6 +6,12 @@ We use two datasets:
 
 The data pipelines strictly partition files into `dsaa/` and `wiki_cs_8k/` subdirectories.
 
+The generated `wiki_cs_8k_sparse20/` benchmark references the same 8,000
+articles and complete verified edge universe. Its `benchmark.json` records the
+20% observed-edge sample, source/file hashes, and the train, random-test, and
+hard-test pair files. The two test suites share all withheld positive links but
+use disjoint negative pairs.
+
 ## Files
 
 The table below describes the files for a given dataset (substitute `{dataset}` with `dsaa` or `wiki_cs_8k`):

@@ -42,8 +42,8 @@ remain available for older results that predate snapshots.
 |---|---|---|
 | `build_graph` | Read MediaWiki SQL dumps and select the article graph | `data/raw/wiki_cs_8k/positive_edges.csv` and crawl statistics |
 | `fetch_text` | Fetch selected article text | `data/raw/wiki_cs_8k/nodes.tsv` |
-| `build_dataset` | Create labelled pairs with sampled negatives | `data/raw/wiki_cs_8k/train.csv` |
-| `run_experiment` | Extract features, train, and evaluate on the held-out pairs | `outputs/stats/wiki_cs_8k_experiment_results.json` |
+| `build_dataset` | Create the balanced dataset or a sparse graph holdout with random/hard negatives | `data/raw/wiki_cs_8k/train.csv` or `data/raw/wiki_cs_8k_sparse20/benchmark.json` |
+| `run_experiment` | Train and evaluate the original or manifest-defined sparse benchmark | `outputs/stats/wiki_cs_8k_experiment_results.json` or `wiki_cs_8k_sparse20_results.json` |
 
 The SQL parser used by `build_graph` is library code in
 `src/data/mediawiki_sql.py`, not a separate command.
@@ -51,6 +51,12 @@ Wiki commands use `argparse`; `run_experiment` reads feature/model defaults from
 the shared `configs/` YAML directory. It verifies a feature-cache manifest
 before reuse. For caches made before manifests were introduced, use
 `--rebuild-features` once or select a fresh `--directory`.
+
+`make pipeline-wiki-sparse` reuses the complete verified Wiki-CS-8k graph. It
+retains 20% of links as the observed training graph, uses every other link for
+testing, and reports separate random-nonedge and two-hop-hard-nonedge results.
+Test features are assembled in bounded batches; CascadeLP requests POS and
+embedding pair features only for pairs that reach the corresponding tier.
 
 ## Thesis (`scripts.thesis`)
 

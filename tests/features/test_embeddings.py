@@ -6,9 +6,11 @@ from src.features import embeddings as emb
 from src.features.embeddings import (
     build_tfidf,
     clean_wiki_text,
+    compute_cached_tfidf_scores,
     compute_embedding_scores,
     compute_tfidf_scores,
     encode_nodes,
+    encode_tfidf_nodes,
 )
 
 
@@ -136,6 +138,18 @@ def test_compute_tfidf_scores_cleans_markup_before_vectorising():
     }})
     scores = compute_tfidf_scores(vec, nodes, pd.DataFrame({'id1': [1], 'id2': [2]}))
     assert scores[0] == pytest.approx(1.0)
+
+
+def test_tfidf_node_cache_reuses_transformed_articles_across_batches(tfidf_nodes):
+    vec = build_tfidf(CORPUS)
+    cache = encode_tfidf_nodes(vec, tfidf_nodes, [1, 2, 3, 999])
+    first = compute_cached_tfidf_scores(
+        cache, pd.DataFrame({'id1': [1], 'id2': [2]}))
+    second = compute_cached_tfidf_scores(
+        cache, pd.DataFrame({'id1': [1, 999], 'id2': [3, 2]}))
+
+    assert first.tolist() == pytest.approx([1.0])
+    assert second.tolist() == pytest.approx([0.0, 0.0])
 
 
 # ── compute_embedding_scores ─────────────────────────────────────────────────

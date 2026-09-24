@@ -47,15 +47,31 @@ def compute_tfidf_scores(
     Cosine similarity between TF-IDF vectors of id1 and id2 for each pair.
     Returns 0.0 when either node has no text.
     """
-    unique_ids = pd.unique(pairs[['id1', 'id2']].values.ravel())
-    present = [i for i in unique_ids if i in nodes.index]
-    if not present:
-        # TfidfVectorizer.transform([]) raises on an empty document list
-        return np.zeros(len(pairs))
+    cache = encode_tfidf_nodes(vectorizer, nodes, pd.unique(
+        pairs[['id1', 'id2']].values.ravel()))
+    return compute_cached_tfidf_scores(cache, pairs)
 
-    texts  = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
-    matrix = vectorizer.transform(texts)          # sparse (n_nodes, vocab)
-    id_to_row = {node_id: idx for idx, node_id in enumerate(present)}
+
+def encode_tfidf_nodes(
+    vectorizer: TfidfVectorizer,
+    nodes: pd.DataFrame,
+    node_ids,
+):
+    """Transform article text once and retain a sparse node-level cache."""
+    present = [int(i) for i in node_ids if i in nodes.index]
+    if not present:
+        return {}, None
+    texts = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
+    from sklearn.preprocessing import normalize
+    matrix = normalize(vectorizer.transform(texts), norm='l2')
+    return {node_id: idx for idx, node_id in enumerate(present)}, matrix
+
+
+def compute_cached_tfidf_scores(cache, pairs: pd.DataFrame) -> np.ndarray:
+    """Compute pair cosine scores from an ``encode_tfidf_nodes`` cache."""
+    id_to_row, matrix = cache
+    if matrix is None or pairs.empty:
+        return np.zeros(len(pairs))
 
     id1 = pairs['id1'].values
     id2 = pairs['id2'].values
@@ -70,9 +86,7 @@ def compute_tfidf_scores(
     rows2 = [id_to_row[v] for v in id2[mask]]
 
     # element-wise dot product of unit-normed sparse rows = cosine similarity
-    from sklearn.preprocessing import normalize
-    normed = normalize(matrix, norm='l2')
-    dots = np.asarray(normed[rows1].multiply(normed[rows2]).sum(axis=1)).ravel()
+    dots = np.asarray(matrix[rows1].multiply(matrix[rows2]).sum(axis=1)).ravel()
 
     scores = missing.copy()
     scores[mask] = dots

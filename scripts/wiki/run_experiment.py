@@ -172,7 +172,7 @@ def _load_shared_node_cache(directory, request, train_ids):
     embeddings = joblib.load(paths['embedding_nodes'])
     expected = set(map(int, train_ids))
     complete = (
-        set(tfidf_cache[0]) == expected
+        expected.issubset(tfidf_cache[0])
         and expected.issubset(pos_vectors)
         and expected.issubset(embeddings)
     )

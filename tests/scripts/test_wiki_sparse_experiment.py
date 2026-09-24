@@ -61,9 +61,9 @@ def _write_node_cache(path, request):
     path.mkdir()
     values = {
         'tfidf_vectorizer': 'vectorizer',
-        'tfidf_nodes': ({1: 0, 2: 1}, 'matrix'),
-        'pos_nodes': {1: 'pos-1', 2: 'pos-2'},
-        'embedding_nodes': {1: 'emb-1', 2: 'emb-2'},
+        'tfidf_nodes': ({1: 0, 2: 1, 3: 2}, 'matrix'),
+        'pos_nodes': {1: 'pos-1', 2: 'pos-2', 3: 'pos-3'},
+        'embedding_nodes': {1: 'emb-1', 2: 'emb-2', 3: 'emb-3'},
     }
     files = {name: path / f'{name}.joblib' for name in values}
     for name, value in values.items():

@@ -1,10 +1,12 @@
 import json
 
+import joblib
 import pandas as pd
 import pytest
 
 from scripts.wiki.build_dataset import _write_sparse
-from scripts.wiki.run_experiment import _load_sparse_benchmark
+from scripts.wiki.run_experiment import _load_shared_node_cache, _load_sparse_benchmark
+from src.data.feature_cache import save_cache_manifest
 
 
 def _write_source(path):
@@ -53,3 +55,55 @@ def test_sparse_manifest_records_file_hashes(tmp_path):
     assert set(manifest['files']) == {
         'observed_edges', 'train', 'test_random', 'test_hard'}
     assert all(len(item['sha256']) == 64 for item in manifest['files'].values())
+
+
+def _write_node_cache(path, request):
+    path.mkdir()
+    values = {
+        'tfidf_vectorizer': 'vectorizer',
+        'tfidf_nodes': ({1: 0, 2: 1}, 'matrix'),
+        'pos_nodes': {1: 'pos-1', 2: 'pos-2'},
+        'embedding_nodes': {1: 'emb-1', 2: 'emb-2'},
+    }
+    files = {name: path / f'{name}.joblib' for name in values}
+    for name, value in values.items():
+        joblib.dump(value, files[name])
+    save_cache_manifest(path, request, files)
+    return values, files
+
+
+def test_shared_node_cache_requires_matching_provenance_and_nodes(tmp_path):
+    request = {
+        'nodes_sha256': 'nodes',
+        'features': {'tfidf': {'min_df': 2}, 'embedding': {'model_name': 'model'}},
+        'feature_code_sha256': {
+            'structural': 'new-structural',
+            'embeddings': 'embeddings',
+            'linguistic': 'linguistic',
+        },
+    }
+    source_request = {
+        **request,
+        'benchmark_manifest_sha256': 'source-benchmark',
+        'feature_code_sha256': {**request['feature_code_sha256'], 'structural': 'old-structural'},
+    }
+    values, _ = _write_node_cache(tmp_path / 'cache', source_request)
+
+    loaded = _load_shared_node_cache(tmp_path / 'cache', request, [1, 2])
+
+    assert loaded == (
+        values['tfidf_vectorizer'], values['tfidf_nodes'],
+        values['pos_nodes'], values['embedding_nodes'])
+
+
+def test_shared_node_cache_rejects_modified_file(tmp_path):
+    request = {
+        'nodes_sha256': 'nodes',
+        'features': {},
+        'feature_code_sha256': {'embeddings': 'e', 'linguistic': 'l'},
+    }
+    _, files = _write_node_cache(tmp_path / 'cache', request)
+    files['pos_nodes'].write_bytes(b'changed')
+
+    with pytest.raises(ValueError, match='file mismatch'):
+        _load_shared_node_cache(tmp_path / 'cache', request, [1, 2])

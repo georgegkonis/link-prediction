@@ -143,6 +143,44 @@ def _extend_tfidf_cache(vectorizer, nodes, pairs, cache):
     return id_to_row, matrix
 
 
+def _load_shared_node_cache(directory, request, train_ids):
+    """Load article-level features whose text/config provenance still matches."""
+    directory = pathlib.Path(directory)
+    metadata = json.loads((directory / 'feature_cache.json').read_text())
+    source_request = metadata['request']
+    for key in ('nodes_sha256', 'features'):
+        if source_request.get(key) != request[key]:
+            raise ValueError(f'Shared node cache {key} differs from this run')
+    for feature in ('embeddings', 'linguistic'):
+        if source_request.get('feature_code_sha256', {}).get(feature) != \
+                request['feature_code_sha256'][feature]:
+            raise ValueError(f'Shared node cache {feature} code differs from this run')
+    paths = {
+        name: directory / filename for name, filename in {
+            'tfidf_vectorizer': 'tfidf_vectorizer.joblib',
+            'tfidf_nodes': 'tfidf_nodes.joblib',
+            'pos_nodes': 'pos_nodes.joblib',
+            'embedding_nodes': 'embedding_nodes.joblib',
+        }.items()
+    }
+    for name, path in paths.items():
+        if not path.exists() or metadata['files'].get(name) != sha256_file(path):
+            raise ValueError(f'Shared node cache file mismatch: {path}')
+    vectorizer = joblib.load(paths['tfidf_vectorizer'])
+    tfidf_cache = joblib.load(paths['tfidf_nodes'])
+    pos_vectors = joblib.load(paths['pos_nodes'])
+    embeddings = joblib.load(paths['embedding_nodes'])
+    expected = set(map(int, train_ids))
+    complete = (
+        set(tfidf_cache[0]) == expected
+        and expected.issubset(pos_vectors)
+        and expected.issubset(embeddings)
+    )
+    if not complete:
+        raise ValueError('Shared node cache covers a different training-node set')
+    return vectorizer, tfidf_cache, pos_vectors, embeddings
+
+
 def _evaluate_sparse_suite(name, pairs, graph, nodes, tfidf_state, pos_vectors,
                            embeddings, models, batch_size, pred_dir, embedding_model_name):
     started = time.time()
@@ -280,16 +318,21 @@ def _run_sparse_experiment(args, feature_cfg, model_cfg):
         log.info('Computing target-edge-masked training structural features...')
         structural_train = compute_heuristics(graph, train, exclude_target_edge=True)
         structural_train.to_csv(files['structural_train'])
-        texts = [clean_wiki_text(nodes.loc[node_id, 'text']) for node_id in train_ids
-                 if node_id in nodes.index]
-        vectorizer = build_tfidf(texts, **feature_cfg['tfidf'])
-        tfidf_cache = encode_tfidf_nodes(vectorizer, nodes, train_ids)
+        if args.node_cache_directory:
+            log.info('Loading verified article features from %s', args.node_cache_directory)
+            vectorizer, tfidf_cache, pos_vectors, embeddings = _load_shared_node_cache(
+                args.node_cache_directory, request, train_ids)
+        else:
+            texts = [clean_wiki_text(nodes.loc[node_id, 'text']) for node_id in train_ids
+                     if node_id in nodes.index]
+            vectorizer = build_tfidf(texts, **feature_cfg['tfidf'])
+            tfidf_cache = encode_tfidf_nodes(vectorizer, nodes, train_ids)
+            pos_vectors = encode_pos_nodes(nodes, train_ids)
+            embeddings = encode_nodes(
+                nodes, train_ids, model_name=feature_cfg['embedding']['model_name'])
         joblib.dump(vectorizer, files['tfidf_vectorizer'])
         joblib.dump(tfidf_cache, files['tfidf_nodes'])
-        pos_vectors = encode_pos_nodes(nodes, train_ids)
         joblib.dump(pos_vectors, files['pos_nodes'])
-        embeddings = encode_nodes(
-            nodes, train_ids, model_name=feature_cfg['embedding']['model_name'])
         joblib.dump(embeddings, files['embedding_nodes'])
         save_cache_manifest(directory, request, files)
 
@@ -370,7 +413,9 @@ def main():
     parser.add_argument('--stats', default='outputs/stats/wiki_cs_8k_experiment_results.json')
     parser.add_argument('--benchmark-manifest', help='Run an explicit sparse-holdout benchmark')
     parser.add_argument('--batch-size', type=int, default=10_000)
-    parser.add_argument('--checkpoints', default='outputs/checkpoints/wiki_cs_8k_sparse20')
+    parser.add_argument('--checkpoints')
+    parser.add_argument('--node-cache-directory',
+                        help='Verified article-level feature cache from a compatible Wiki run')
     parser.add_argument('--config-dir', default='configs', help='Shared feature/model YAML directory')
     parser.add_argument('--seed', type=int, help='Defaults to config.yaml seed')
     parser.add_argument('--val-size', type=float, help='Defaults to training/default.yaml val_size')
@@ -389,12 +434,15 @@ def main():
     args.val_size = training_cfg['val_size'] if args.val_size is None else args.val_size
 
     if args.benchmark_manifest:
+        benchmark_tag = pathlib.Path(args.benchmark_manifest).parent.name
         if args.directory == 'data/interim/wiki_cs_8k':
-            args.directory = 'data/interim/wiki_cs_8k_sparse20'
+            args.directory = f'data/interim/{benchmark_tag}'
         if args.predictions == 'outputs/predictions/wiki_cs_8k':
-            args.predictions = 'outputs/predictions/wiki_cs_8k_sparse20'
+            args.predictions = f'outputs/predictions/{benchmark_tag}'
         if args.stats == 'outputs/stats/wiki_cs_8k_experiment_results.json':
-            args.stats = 'outputs/stats/wiki_cs_8k_sparse20_results.json'
+            args.stats = f'outputs/stats/{benchmark_tag}_results.json'
+        if args.checkpoints is None:
+            args.checkpoints = f'outputs/checkpoints/{benchmark_tag}'
         _run_sparse_experiment(args, feature_cfg, model_cfg)
         return
 

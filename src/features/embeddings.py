@@ -109,7 +109,11 @@ def encode_nodes(
     """
     import torch
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = SentenceTransformer(model_name, device=device)
+    try:
+        # Avoid a metadata request when the model is already available locally.
+        model = SentenceTransformer(model_name, device=device, local_files_only=True)
+    except (OSError, ValueError):
+        model = SentenceTransformer(model_name, device=device)
     present = [i for i in node_ids if i in nodes.index]
     texts   = [clean_wiki_text(nodes.loc[i, 'text']) for i in present]
 

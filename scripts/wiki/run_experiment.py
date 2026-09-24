@@ -284,12 +284,12 @@ def _run_sparse_experiment(args, feature_cfg, model_cfg):
                  if node_id in nodes.index]
         vectorizer = build_tfidf(texts, **feature_cfg['tfidf'])
         tfidf_cache = encode_tfidf_nodes(vectorizer, nodes, train_ids)
-        pos_vectors = encode_pos_nodes(nodes, train_ids)
-        embeddings = encode_nodes(
-            nodes, train_ids, model_name=feature_cfg['embedding']['model_name'])
         joblib.dump(vectorizer, files['tfidf_vectorizer'])
         joblib.dump(tfidf_cache, files['tfidf_nodes'])
+        pos_vectors = encode_pos_nodes(nodes, train_ids)
         joblib.dump(pos_vectors, files['pos_nodes'])
+        embeddings = encode_nodes(
+            nodes, train_ids, model_name=feature_cfg['embedding']['model_name'])
         joblib.dump(embeddings, files['embedding_nodes'])
         save_cache_manifest(directory, request, files)
 

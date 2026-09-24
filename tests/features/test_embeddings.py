@@ -196,8 +196,12 @@ class _FakeSentenceTransformer:
     seen_kwargs: dict = {}
     init_args: dict = {}
 
-    def __init__(self, model_name, device=None):
-        type(self).init_args = {'model_name': model_name, 'device': device}
+    def __init__(self, model_name, device=None, local_files_only=False):
+        type(self).init_args = {
+            'model_name': model_name,
+            'device': device,
+            'local_files_only': local_files_only,
+        }
 
     def encode(self, texts, **kwargs):
         type(self).seen_texts = list(texts)
@@ -234,6 +238,7 @@ def test_encode_nodes_requests_normalised_embeddings(fake_st, tfidf_nodes):
     assert fake_st.seen_kwargs['convert_to_numpy'] is True
     assert fake_st.seen_kwargs['batch_size'] == 8
     assert fake_st.seen_kwargs['show_progress_bar'] is False
+    assert fake_st.init_args['local_files_only'] is True
 
 
 def test_encode_nodes_output_feeds_compute_embedding_scores(fake_st, tfidf_nodes):

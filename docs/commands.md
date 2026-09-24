@@ -27,6 +27,8 @@ make kaggle-check WAIT=--wait          # Refresh competition scores
 # Rebuild local experiments and thesis artifacts
 make pipeline-dsaa                     # Needs Kaggle data access; does not submit predictions
 make pipeline-wiki                     # Needs MediaWiki SQL dumps in /tmp and Hugging Face access
+make pipeline-wiki-sparse              # Sparse graph; random-negative training
+make pipeline-wiki-sparse-mixed        # Same test suites; mixed-negative training
 make build-thesis                      # Needs completed experiment outputs and Kaggle score log
 
 # Compilation
@@ -94,6 +96,21 @@ conda run -n link-prediction python -m scripts.wiki.run_experiment \
   --benchmark-manifest data/raw/wiki_cs_8k_sparse20/benchmark.json \
   --batch-size 10000
 ```
+
+To measure the effect of training on difficult negatives, run:
+
+```bash
+make pipeline-wiki-sparse-mixed
+```
+
+This creates a second balanced training set whose negative class is split
+between uniform verified non-links and verified two-hop non-links. It preserves
+the observed positive graph and both test files exactly, so the result is a
+controlled training-data comparison. The run rebuilds pair-level structural
+features and every model. It reuses TF-IDF, POS, and embedding node features
+only after checking the article-text hash, feature settings, source-code hashes,
+node coverage, and cache-file checksums. Its outputs use the
+`wiki_cs_8k_sparse20_mixed` suffix and do not replace the random-training run.
 
 ## Running on Kaggle
 

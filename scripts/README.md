@@ -55,8 +55,12 @@ before reuse. For caches made before manifests were introduced, use
 `make pipeline-wiki-sparse` reuses the complete verified Wiki-CS-8k graph. It
 retains 20% of links as the observed training graph, uses every other link for
 testing, and reports separate random-nonedge and two-hop-hard-nonedge results.
-Test features are assembled in bounded batches; CascadeLP requests POS and
-embedding pair features only for pairs that reach the corresponding tier.
+`make pipeline-wiki-sparse-mixed` keeps those test suites fixed while replacing
+half of the uniform training non-links with verified two-hop non-links. It
+stores the second dataset, feature cache, checkpoints, predictions, and results
+under paths ending in `wiki_cs_8k_sparse20_mixed`. Test features are assembled
+in bounded batches; CascadeLP requests POS and embedding pair features only for
+pairs that reach the corresponding tier.
 
 ## Thesis (`scripts.thesis`)
 

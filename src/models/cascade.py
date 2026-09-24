@@ -19,9 +19,9 @@ def cold_start_from_structural(structural: pd.DataFrame) -> np.ndarray:
     identifies a cold-start pair unambiguously, which lets CascadeLP route on
     cold-start without being handed the graph.
 
-    Note this is a stricter notion than ``metrics.cold_start_mask``, which
-    treats any pair with zero common neighbours as cold-start; such a pair can
-    still be in the graph and still carries degree/Adamic-Adar signal.
+    This agrees with ``metrics.cold_start_mask`` for graphs without self-loops.
+    Zero common neighbours is a separate, broader population: both endpoints
+    can still be observed and carry degree or Adamic-Adar evidence.
 
     Returns all-False if the frame does not carry the heuristic columns.
     """
@@ -47,12 +47,13 @@ class CascadeLP:
     and carry no signal to be confident about.
     """
 
-    def __init__(self, tier1_threshold: float = 0.8, tier2_threshold: float = 0.7):
+    def __init__(self, tier1_threshold: float = 0.8, tier2_threshold: float = 0.7,
+                 random_state: int = 42):
         self.tier1_threshold = tier1_threshold
         self.tier2_threshold = tier2_threshold
-        self.tier1 = StructuralClassifier()
-        self.tier2 = PosClassifier()
-        self.tier3 = EmbeddingClassifier()
+        self.tier1 = StructuralClassifier(random_state=random_state)
+        self.tier2 = PosClassifier(random_state=random_state)
+        self.tier3 = EmbeddingClassifier(random_state=random_state)
 
     def fit(
         self,

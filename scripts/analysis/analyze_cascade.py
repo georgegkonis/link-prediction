@@ -68,13 +68,13 @@ def main():
     log.info('=== Tier x difficulty ===\nn:\n%s\n\naccuracy:\n%s',
              piv_n.to_string(), piv_acc.round(4).to_string())
 
-    # Cold-start (zero common neighbours) — join CN by id from structural_train
+    # Legacy zero-common-neighbour diagnostic — join CN by pair id.
     cn = pd.read_csv(f'{INTERIM}/structural_train.csv', index_col='id')['cn']
     df = df.merge(cn.rename('cn'), left_on='id', right_index=True, how='left')
     cs = (df['id1'] != df['id2']) & (df['cn'].fillna(0) == 0)
-    log.info('=== Cold-start subset (CN==0, non-self-loop): %s pairs ===', f'{int(cs.sum()):,}')
-    log.info('Cold-start accuracy : %.4f', accuracy_score(yt[cs.values], yp[cs.values]))
-    log.info('Cold-start macro-F1 : %.4f', _mf1(yt[cs.values], yp[cs.values]))
+    log.info('=== Zero-CN subset (non-self-loop): %s pairs ===', f'{int(cs.sum()):,}')
+    log.info('Zero-CN accuracy : %.4f', accuracy_score(yt[cs.values], yp[cs.values]))
+    log.info('Zero-CN macro-F1 : %.4f', _mf1(yt[cs.values], yp[cs.values]))
     rows = []
     sub = df[cs]
     for t in sorted(sub['tier_used'].unique()):

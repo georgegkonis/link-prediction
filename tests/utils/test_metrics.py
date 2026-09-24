@@ -20,6 +20,8 @@ import pytest
 from src.utils.metrics import (
     EvalResult,
     cold_start_mask,
+    structural_groups,
+    zero_common_neighbors_mask,
     evaluate,
     evaluate_by_group,
     tier_difficulty_breakdown,
@@ -40,11 +42,14 @@ def test_cold_start_mask_hand_computed(tiny_graph):
     )
     mask = cold_start_mask(pairs, tiny_graph)
     # (1,4): common nbrs {2,3}  → warm
-    # (1,5): N(1)={2,3}, N(5)={4} → no common nbr → cold
+    # (1,5): both endpoints observed, but no common neighbour
     # (2,5): common nbr {4}     → warm
     # (1,1): self-loop          → never cold by construction
     # (1,999)/(999,998): node absent from graph → cold
-    assert mask.tolist() == [False, True, False, False, True, True]
+    assert mask.tolist() == [False, False, False, False, True, True]
+    assert zero_common_neighbors_mask(pairs, tiny_graph).tolist() == [
+        False, True, False, False, True, True,
+    ]
     assert mask.dtype == bool
 
 
@@ -52,6 +57,21 @@ def test_cold_start_mask_empty_graph():
     G = nx.Graph()
     pairs = pd.DataFrame({'id1': [1, 2], 'id2': [3, 4]})
     assert cold_start_mask(pairs, G).tolist() == [True, True]
+
+
+def test_cold_start_ignores_isolated_nodes_and_self_edges():
+    graph = nx.Graph([(1, 1), (2, 3)])
+    graph.add_node(4)
+    pairs = pd.DataFrame({'id1': [1, 4, 2, 2, 1], 'id2': [2, 9, 3, 9, 1]})
+
+    assert cold_start_mask(pairs, graph).tolist() == [True, True, False, True, False]
+    assert structural_groups(pairs, graph).tolist() == [
+        'one_unobserved',
+        'both_unobserved',
+        'observed_zero_cn',
+        'one_unobserved',
+        'self_loop',
+    ]
 
 
 # ── evaluate ─────────────────────────────────────────────────────────────────

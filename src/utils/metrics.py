@@ -30,7 +30,24 @@ class EvalResult:
 
 
 def cold_start_mask(pairs: pd.DataFrame, G: nx.Graph) -> np.ndarray:
-    """Boolean mask — True where id1 and id2 share zero common neighbours."""
+    """True when either endpoint has no observed non-self neighbour in ``G``.
+
+    Self-pairs are handled separately. This operational cold-start definition
+    is intentionally narrower than zero common neighbours: two observed nodes
+    may have disjoint neighbourhoods while still carrying structural evidence.
+    """
+    observed = {u for u in G if any(v != u for v in G[u])}
+    return ((pairs['id1'] != pairs['id2']) &
+            (~pairs['id1'].isin(observed) | ~pairs['id2'].isin(observed))).to_numpy(dtype=bool)
+
+
+def zero_common_neighbors_mask(pairs: pd.DataFrame, G: nx.Graph) -> np.ndarray:
+    """True for non-self pairs with zero common neighbours.
+
+    Pairs with an endpoint absent from ``G`` are included because they also
+    have no observable common neighbour. Use :func:`cold_start_mask` when the
+    question is endpoint coverage rather than sparse structural evidence.
+    """
     mask = []
     for _, row in pairs.iterrows():
         u, v = row['id1'], row['id2']
@@ -42,6 +59,22 @@ def cold_start_mask(pairs: pd.DataFrame, G: nx.Graph) -> np.ndarray:
             continue
         mask.append(len(list(nx.common_neighbors(G, u, v))) == 0)
     return np.array(mask)
+
+
+def structural_groups(pairs: pd.DataFrame, G: nx.Graph) -> np.ndarray:
+    """Assign mutually exclusive graph-coverage groups to candidate pairs."""
+    observed = {u for u in G if any(v != u for v in G[u])}
+    first_unobserved = ~pairs['id1'].isin(observed)
+    second_unobserved = ~pairs['id2'].isin(observed)
+    groups = np.where(
+        zero_common_neighbors_mask(pairs, G),
+        'observed_zero_cn',
+        'observed_positive_cn',
+    ).astype(object)
+    groups[(first_unobserved ^ second_unobserved).to_numpy()] = 'one_unobserved'
+    groups[(first_unobserved & second_unobserved).to_numpy()] = 'both_unobserved'
+    groups[(pairs['id1'] == pairs['id2']).to_numpy()] = 'self_loop'
+    return groups
 
 
 def evaluate(

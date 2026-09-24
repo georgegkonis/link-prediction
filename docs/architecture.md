@@ -62,7 +62,9 @@
 | Symbol                                                                     | Purpose                                                                           |
 |----------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
 | `metrics.EvalResult`                                                       | Dataclass: macro_f1, auc_roc, cold_start_f1, latency_ms                           |
-| `metrics.cold_start_mask(pairs, G)`                                        | Boolean mask — True for pairs with zero common neighbours                         |
+| `metrics.cold_start_mask(pairs, G)`                                        | At least one endpoint has no observed non-self neighbour                          |
+| `metrics.zero_common_neighbors_mask(pairs, G)`                             | Broader zero-CN diagnostic, including absent endpoints                            |
+| `metrics.structural_groups(pairs, G)`                                      | Mutually exclusive endpoint-coverage and common-neighbour groups                  |
 | `metrics.evaluate(y_true, y_pred, y_scores, cs_mask)`                      | Full eval including cold-start subset                                             |
 | `metrics.evaluate_by_group(y_true, y_pred, group)`                         | Per-group n/accuracy/macro_f1 (e.g. by tier or difficulty label)                  |
 | `metrics.tier_difficulty_breakdown(y_true, y_pred, tier_used, difficulty)` | Cross-tab of (tier, difficulty) → n/accuracy/macro_f1                             |

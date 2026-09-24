@@ -30,7 +30,13 @@ from src.models.svm import (
     TfidfClassifier,
 )
 from src.utils.difficulty import label_difficulty, pick_thresholds
-from src.utils.metrics import cold_start_mask, evaluate, evaluate_by_group, tier_difficulty_breakdown, timer
+from src.utils.metrics import (
+    evaluate,
+    evaluate_by_group,
+    tier_difficulty_breakdown,
+    timer,
+    zero_common_neighbors_mask,
+)
 
 def _load(model_name: str, raw_path: str, interim_path: str) -> dict:
     train = load_edges(os.path.join(raw_path, 'train.csv'))
@@ -196,8 +202,10 @@ def main(cfg: DictConfig):
         log.info('Saved → %s/%s_val_tiers.csv', predictions_path, name)
 
     G      = build_graph(data['pairs'])
-    cs     = cold_start_mask(data['pairs'].iloc[val], G)
-    result = evaluate(y[val], y_pred, y_scores, cs, latency_ms=t[0] if t else None)
+    # Historical DSAA reports used the broad zero-CN diagnostic. Keep those
+    # values reproducible while naming the population explicitly in code.
+    zero_cn = zero_common_neighbors_mask(data['pairs'].iloc[val], G)
+    result = evaluate(y[val], y_pred, y_scores, zero_cn, latency_ms=t[0] if t else None)
     log.info('Validation — %s\n%s', model_name, result)
 
     pathlib.Path(f'{predictions_path}/{name}_val_metrics.json').write_text(

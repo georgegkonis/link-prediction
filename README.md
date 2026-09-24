@@ -5,7 +5,7 @@ a hyperlink exist between them?
 
 Datasets: DSAA 2023 Kaggle Competition (Wikipedia subgraph link prediction) and `wiki_cs_8k` (a Computer Science connected subgraph of Simple English Wikipedia crawled from SQL dumps).
 
-**Primary metric:** Macro F1-score. Secondary: AUC-ROC, cold-start F1, inference latency.
+**Primary metric:** Macro F1-score. Secondary: AUC-ROC, separate zero-CN and operational cold-start diagnostics, inference latency.
 
 ## CascadeLP
 

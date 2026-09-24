@@ -12,9 +12,13 @@ Writes:
     data/interim/dsaa/sentence_emb_test.csv
     data/interim/dsaa/pos_train.npy
     data/interim/dsaa/pos_test.npy
+    data/interim/dsaa/semantic_config.json
 
 Usage:
     python -m scripts.dsaa.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]
+
+The paths come from configs/config.yaml. Development limits or skipped feature
+families write under <paths.interim>/dev_.../ instead of full-data features.
 """
 
 import hydra
@@ -24,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from src.data.loader import load_edges, load_nodes_for_ids
+from src.data.run_config import dsaa_feature_paths, save_run_config
 from src.features.embeddings import (
     build_tfidf,
     clean_wiki_text,
@@ -34,22 +39,20 @@ from src.features.embeddings import (
 from src.features.linguistic import compute_pos_features
 from src.utils.log_utils import setup_logging
 
-INTERIM = 'data/interim/dsaa'
-
-
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     log = setup_logging('compute_semantic')
+    raw, interim = dsaa_feature_paths(cfg)
     log.info('Loading edges...')
-    train = load_edges('data/raw/dsaa/train.csv', nrows=cfg.dev.nrows)
-    test  = load_edges('data/raw/dsaa/test.csv',  nrows=cfg.dev.nrows)
+    train = load_edges(raw / 'train.csv', nrows=cfg.dev.nrows)
+    test = load_edges(raw / 'test.csv', nrows=cfg.dev.nrows)
 
     all_pairs = pd.concat([train, test])
     unique_ids = set(pd.unique(all_pairs[['id1', 'id2']].values.ravel()).tolist())
     log.info('Unique node IDs across train+test: %s', f'{len(unique_ids):,}')
 
     log.info('Loading nodes for required IDs (streaming)...')
-    nodes = load_nodes_for_ids('data/raw/dsaa/nodes.tsv', unique_ids)
+    nodes = load_nodes_for_ids(raw / 'nodes.tsv', unique_ids)
     log.info('  Loaded %s nodes', f'{len(nodes):,}')
 
     # ── TF-IDF ───────────────────────────────────────────────────────────────
@@ -59,12 +62,12 @@ def main(cfg: DictConfig):
 
     log.info('Computing TF-IDF scores for train pairs...')
     tfidf_train = compute_tfidf_scores(vectorizer, nodes, train)
-    pd.Series(tfidf_train, index=train.index, name='tfidf_score').to_csv(f'{INTERIM}/tfidf_train.csv')
+    pd.Series(tfidf_train, index=train.index, name='tfidf_score').to_csv(interim / 'tfidf_train.csv')
 
     log.info('Computing TF-IDF scores for test pairs...')
     tfidf_test = compute_tfidf_scores(vectorizer, nodes, test)
-    pd.Series(tfidf_test, index=test.index, name='tfidf_score').to_csv(f'{INTERIM}/tfidf_test.csv')
-    log.info('  Saved → %s/tfidf_{train,test}.csv', INTERIM)
+    pd.Series(tfidf_test, index=test.index, name='tfidf_score').to_csv(interim / 'tfidf_test.csv')
+    log.info('  Saved → %s/tfidf_{train,test}.csv', interim)
 
     # ── Sentence Transformers ─────────────────────────────────────────────────
     if not cfg.dev.skip_st:
@@ -74,23 +77,26 @@ def main(cfg: DictConfig):
 
         log.info('Computing embedding scores for train pairs...')
         st_train = compute_embedding_scores(embeddings, train)
-        pd.Series(st_train, index=train.index, name='st_score').to_csv(f'{INTERIM}/sentence_emb_train.csv')
+        pd.Series(st_train, index=train.index, name='st_score').to_csv(interim / 'sentence_emb_train.csv')
 
         log.info('Computing embedding scores for test pairs...')
         st_test = compute_embedding_scores(embeddings, test)
-        pd.Series(st_test, index=test.index, name='st_score').to_csv(f'{INTERIM}/sentence_emb_test.csv')
-        log.info('  Saved → %s/sentence_emb_{train,test}.csv', INTERIM)
+        pd.Series(st_test, index=test.index, name='st_score').to_csv(interim / 'sentence_emb_test.csv')
+        log.info('  Saved → %s/sentence_emb_{train,test}.csv', interim)
 
     # ── POS features ──────────────────────────────────────────────────────────
     if not cfg.dev.skip_pos:
         log.info('Computing POS features for train pairs...')
         pos_train = compute_pos_features(nodes, train)
-        np.save(f'{INTERIM}/pos_train.npy', pos_train)
+        np.save(interim / 'pos_train.npy', pos_train)
 
         log.info('Computing POS features for test pairs...')
         pos_test = compute_pos_features(nodes, test)
-        np.save(f'{INTERIM}/pos_test.npy', pos_test)
-        log.info('  Saved → %s/pos_{train,test}.npy', INTERIM)
+        np.save(interim / 'pos_test.npy', pos_test)
+        log.info('  Saved → %s/pos_{train,test}.npy', interim)
+
+    save_run_config(cfg, interim / 'semantic_config.json',
+                    train_rows=len(train), test_rows=len(test))
 
     log.info('Done.')
 

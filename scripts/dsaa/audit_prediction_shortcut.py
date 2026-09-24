@@ -20,7 +20,7 @@ from sklearn.metrics import f1_score
 from src.data.loader import load_edges
 from src.utils.log_utils import setup_logging
 
-log = setup_logging('audit_hub_in_predictions')
+log = setup_logging('audit_prediction_shortcut')
 
 
 def main():

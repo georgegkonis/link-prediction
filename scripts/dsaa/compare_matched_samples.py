@@ -7,6 +7,13 @@ Cached text/POS features are reused because they do not contain edge labels.
 
 The experiment controls training-set size inside DSAA; it does not repair the
 dataset's negative-sampling artifact.
+
+Reads:
+    DSAA training pairs, cached text/POS features, and the graph-holdout split
+Writes:
+    <output>/protocol.json, sample_*.csv, and metrics.csv
+Usage:
+    python -m scripts.dsaa.compare_matched_samples [--size 20000] [--output PATH]
 """
 
 import argparse

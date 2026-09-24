@@ -1,13 +1,17 @@
 """
 Compute separability metrics and difficulty categories.
 
+Reads:
+    data/raw/dsaa/{train,test}.csv
+    data/interim/dsaa/{structural,tfidf}_{train,test}.csv
 Writes:
     outputs/analyze_dataset-results.txt
     data/interim/dsaa/difficulty_train.csv
     data/interim/dsaa/difficulty_test.csv
+    data/interim/dsaa/difficulty_thresholds.json
 
 Usage:
-    python -m scripts.dsaa.label_difficulty
+    python -m scripts.dsaa.label_difficulty [--fpr 0.01]
 """
 
 import argparse
@@ -25,7 +29,9 @@ OUTPUTS = 'outputs'
 
 
 def main(cn_threshold: float | None, tfidf_threshold: float | None, fpr: float):
-    log = setup_logging('analyze_dataset')
+    pathlib.Path(OUTPUTS).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(INTERIM).mkdir(parents=True, exist_ok=True)
+    log = setup_logging('label_difficulty')
     log.info('Loading edges and features...')
     train = load_edges('data/raw/dsaa/train.csv')
     test = load_edges('data/raw/dsaa/test.csv')

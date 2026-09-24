@@ -1,8 +1,15 @@
 """
-Train and validate a model on precomputed features.
+Train and validate a model on precomputed features using the Hydra configuration.
+
+Reads:
+    <paths.raw>/train.csv and model-specific files in <paths.interim>/
+Writes:
+    <paths.checkpoints>/<model[_tag]>.joblib
+    <paths.predictions>/<model[_tag]>_val_metrics.json
+    <paths.predictions>/<model[_tag]>_run_config.json
 
 Usage:
-    python -m scripts.dsaa.train model=cascade
+    python -m scripts.dsaa.train model=cascade [tag=NAME]
 """
 
 import json
@@ -21,6 +28,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from src.data.loader import build_graph, load_edges
+from src.data.run_config import save_run_config
 from src.models.cascade import CascadeLP
 from src.models.svm import (
     EmbeddingClassifier,
@@ -42,23 +50,29 @@ def _load(model_name: str, raw_path: str, interim_path: str) -> dict:
     train = load_edges(os.path.join(raw_path, 'train.csv'))
     data  = {'pairs': train, 'y': train['label'].values}
 
+    def aligned_csv(filename: str) -> pd.DataFrame:
+        frame = pd.read_csv(f'{interim_path}/{filename}', index_col='id')
+        if not frame.index.equals(train.index):
+            raise ValueError(f'Feature pair IDs do not match {raw_path}/train.csv: {filename}')
+        return frame
+
     if model_name in ('structural', 'cascade'):
-        data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
+        data['structural'] = aligned_csv('structural_train.csv')
 
     if model_name == 'svm':
         # cn only, for per-pair difficulty labeling of the error-by-difficulty export below
-        data['structural'] = pd.read_csv(f'{interim_path}/structural_train.csv', index_col='id')
+        data['structural'] = aligned_csv('structural_train.csv')
 
     if model_name in ('tfidf', 'svm', 'cascade'):
-        data['tfidf_scores'] = pd.read_csv(
-            f'{interim_path}/tfidf_train.csv', index_col='id')['tfidf_score'].values
+        data['tfidf_scores'] = aligned_csv('tfidf_train.csv')['tfidf_score'].values
 
     if model_name in ('pos', 'cascade'):
         data['pos_features'] = np.load(f'{interim_path}/pos_train.npy')
+        if len(data['pos_features']) != len(train):
+            raise ValueError('POS feature row count does not match DSAA training pairs')
 
     if model_name in ('embedding', 'cascade'):
-        data['st_scores'] = pd.read_csv(
-            f'{interim_path}/sentence_emb_train.csv', index_col='id')['st_score'].values
+        data['st_scores'] = aligned_csv('sentence_emb_train.csv')['st_score'].values
 
     return data
 
@@ -221,6 +235,9 @@ def main(cfg: DictConfig):
     out = f'{checkpoints_path}/{name}.joblib'
     model.save(out)
     log.info('Saved → %s', out)
+    save_run_config(cfg, pathlib.Path(predictions_path) / f'{name}_run_config.json',
+                    checkpoint=out, raw_path=raw_path, interim_path=interim_path,
+                    n_train=len(tr), n_val=len(val))
 
 
 if __name__ == '__main__':

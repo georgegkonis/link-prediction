@@ -1,12 +1,19 @@
 """
-Run a trained model on the test set and produce a Kaggle submission CSV.
+Run a trained model on the configured test set and produce a Kaggle submission.
+
+Reads:
+    <paths.raw>/test.csv, <paths.interim>/ features, and a checkpoint
+Writes:
+    <paths.predictions>/<model[_tag]>_submission.csv
+    <paths.predictions>/<model[_tag]>_test_config.json
 
 Usage:
-    python -m scripts.dsaa.predict_test model=structural
+    python -m scripts.dsaa.predict_test model=structural [tag=NAME]
 """
 
 import logging
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -17,6 +24,7 @@ from omegaconf import DictConfig
 log = logging.getLogger(__name__)
 
 from src.data.loader import load_edges
+from src.data.run_config import save_run_config
 from src.models.cascade import CascadeLP
 from src.models.svm import (
     EmbeddingClassifier,
@@ -41,13 +49,15 @@ _MODEL_CLS = {
 @hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     model_name = cfg.model.name
+    tag = cfg.get('tag')
+    name = f'{model_name}_{tag}' if tag else model_name
     raw_path = to_absolute_path(cfg.paths.raw)
     interim_path = to_absolute_path(cfg.paths.interim)
     predictions_path = to_absolute_path(cfg.paths.predictions)
 
     ckpt_path = cfg.get('eval_checkpoint')
     if not ckpt_path:
-        ckpt_path = to_absolute_path(f'{cfg.paths.checkpoints}/{model_name}.joblib')
+        ckpt_path = to_absolute_path(f'{cfg.paths.checkpoints}/{name}.joblib')
     else:
         ckpt_path = to_absolute_path(ckpt_path)
 
@@ -58,17 +68,23 @@ def main(cfg: DictConfig):
 
     test = load_edges(f'{raw_path}/test.csv')
 
+    def aligned_csv(filename: str) -> pd.DataFrame:
+        frame = pd.read_csv(f'{interim_path}/{filename}', index_col='id')
+        if not frame.index.equals(test.index):
+            raise ValueError(f'Feature pair IDs do not match {raw_path}/test.csv: {filename}')
+        return frame
+
     log.info('Loading test features...')
     if model_name in ('structural', 'cascade'):
-        structural = pd.read_csv(f'{interim_path}/structural_test.csv', index_col='id')
+        structural = aligned_csv('structural_test.csv')
     if model_name in ('tfidf', 'svm', 'cascade'):
-        tfidf_scores = pd.read_csv(
-            f'{interim_path}/tfidf_test.csv', index_col='id')['tfidf_score'].values
+        tfidf_scores = aligned_csv('tfidf_test.csv')['tfidf_score'].values
     if model_name in ('pos', 'cascade'):
         pos_features = np.load(f'{interim_path}/pos_test.npy')
+        if len(pos_features) != len(test):
+            raise ValueError('POS feature row count does not match DSAA test pairs')
     if model_name in ('embedding', 'cascade'):
-        st_scores = pd.read_csv(
-            f'{interim_path}/sentence_emb_test.csv', index_col='id')['st_score'].values
+        st_scores = aligned_csv('sentence_emb_test.csv')['st_score'].values
 
     log.info('Running inference...')
     with timer() as t:
@@ -89,9 +105,6 @@ def main(cfg: DictConfig):
                 log.info('  %s: %s pairs (%.1f%%)', tier, f"{stats['n']:,}", stats['pct'])
 
     log.info('Inference time: %.1f ms  (%.3f ms/pair)', t[0], t[0] / len(test))
-
-    tag = cfg.get('tag')
-    name = f'{model_name}_{tag}' if tag else model_name
 
     if model_name == 'cascade':
         cn_thr, tfidf_thr = cfg.training.cn_threshold, cfg.training.tfidf_threshold
@@ -117,6 +130,8 @@ def main(cfg: DictConfig):
     submission = pd.DataFrame({'id': test.index, 'label': y_pred})
     submission.to_csv(out, index=False)
     log.info('Saved → %s  (%s rows)', out, f'{len(submission):,}')
+    save_run_config(cfg, Path(predictions_path) / f'{name}_test_config.json',
+                    checkpoint=ckpt_path, n_test=len(test))
 
 
 if __name__ == '__main__':

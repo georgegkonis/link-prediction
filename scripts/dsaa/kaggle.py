@@ -1,6 +1,8 @@
 """
 Submit predictions to Kaggle and log results.
 
+Reads:
+    Submission CSV (--file), configs/config.yaml, and KAGGLE_API_TOKEN
 Writes:
     outputs/predictions/dsaa/kaggle_scores.csv
 
@@ -25,7 +27,7 @@ from omegaconf import OmegaConf
 from src.utils.log_utils import setup_logging
 
 cfg = OmegaConf.load(pathlib.Path(__file__).resolve().parents[2] / 'configs' / 'config.yaml')
-log = setup_logging('submit_kaggle')
+log = setup_logging('kaggle')
 COMPETITION = cfg.kaggle.competition
 LOG_PATH = cfg.paths.log_path
 LOG_COLUMNS = ['ref', 'date', 'file_name', 'description', 'status', 'public_score', 'private_score']
@@ -39,6 +41,7 @@ from kagglesdk.competitions.types.competition_api_service import (  # noqa: E402
 
 
 def _log_upsert(subs) -> pd.DataFrame:
+    pathlib.Path(LOG_PATH).parent.mkdir(parents=True, exist_ok=True)
     rows = {
         str(s.ref): {
             'ref': str(s.ref), 'date': str(s.date), 'file_name': s.file_name,

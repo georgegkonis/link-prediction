@@ -9,6 +9,13 @@ extraction and no retraining.
 
 Adapted from the earlier graph-holdout revision for this branch's cached DSAA
 features and CascadeLP.predict() signature.
+
+Reads:
+    DSAA raw pairs, cached features and predictions, and cascade.joblib
+Writes:
+    outputs/stats/supervisor_audit.json by default
+Usage:
+    python -m scripts.dsaa.audit_protocol --swap [--output PATH]
 """
 import argparse
 import hashlib
@@ -22,6 +29,7 @@ from sklearn.model_selection import train_test_split
 
 from src.data.loader import load_edges
 from src.data.protocol import fingerprint, pair_keys
+from src.data.run_config import load_model_run
 
 
 def swap_pos(features):
@@ -42,17 +50,26 @@ def swap_summary(original, reversed_, probability, reversed_probability):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--raw', default='data/raw/dsaa')
-    parser.add_argument('--interim', default='data/interim/dsaa')
-    parser.add_argument('--checkpoints', default='outputs/checkpoints/dsaa')
+    parser.add_argument('--raw', help='Defaults to the cascade training run path')
+    parser.add_argument('--interim', help='Defaults to the cascade training run path')
+    parser.add_argument('--checkpoints', help='Defaults to the cascade checkpoint directory')
     parser.add_argument('--predictions', default='outputs/predictions/dsaa')
-    parser.add_argument('--val-size', type=float, default=0.2)
-    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--val-size', type=float, help='Defaults to the cascade training split')
+    parser.add_argument('--seed', type=int, help='Defaults to the cascade training seed')
     parser.add_argument('--output', default='outputs/stats/supervisor_audit.json')
     parser.add_argument('--swap', action='store_true', help='Run cached model inference; never extracts features')
     parser.add_argument('--limit', type=int, default=None, help='Limit swap inference only; default full validation')
     parser.add_argument('--pairs-output', default=None, help='Optional CSV of original/reversed predictions')
     args = parser.parse_args()
+    run = load_model_run(Path(args.predictions), 'cascade')
+    config = run['config'] if run else None
+    args.raw = args.raw or (run['raw_path'] if run else 'data/raw/dsaa')
+    args.interim = args.interim or (run['interim_path'] if run else 'data/interim/dsaa')
+    args.checkpoints = args.checkpoints or (
+        str(Path(run['checkpoint']).parent) if run else 'outputs/checkpoints/dsaa')
+    args.val_size = args.val_size if args.val_size is not None else (
+        config['training']['val_size'] if config else 0.2)
+    args.seed = args.seed if args.seed is not None else (config['seed'] if config else 42)
 
     pairs = load_edges(f'{args.raw}/train.csv')
     h = pd.read_csv(f'{args.interim}/structural_train.csv', index_col='id')
@@ -63,6 +80,7 @@ def main():
                                 random_state=args.seed)
     vp = pairs.iloc[val]
     report = {'protocol': 'legacy_row_split_full_positive_graph', 'pairs_sha256': fingerprint(pairs),
+              'seed': args.seed, 'val_size': args.val_size,
               'n_train': len(tr), 'n_val': len(val), 'validation_positives_in_graph': int(vp.label.sum()),
               'cross_split_unordered_groups': len(pair_keys(pairs.iloc[tr]).intersection(pair_keys(vp))),
               'zero_cn_count': int((h.iloc[val].cn == 0).sum())}
@@ -115,7 +133,9 @@ def main():
     out = Path(args.output)
     if out.exists() and not args.swap:
         previous = json.loads(out.read_text())
-        if previous.get('pairs_sha256') == report['pairs_sha256'] and 'swap' in previous:
+        if (previous.get('pairs_sha256') == report['pairs_sha256']
+                and previous.get('seed') == args.seed
+                and previous.get('val_size') == args.val_size and 'swap' in previous):
             report['swap'] = previous['swap']
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + '\n')

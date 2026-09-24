@@ -8,15 +8,17 @@ Writes:
     outputs/predictions/dsaa/hard_residual_analysis.json
 
 Usage:
-    python -m scripts.dsaa.analyze_hard_residual
+    python -m scripts.dsaa.analyze_hard_residual [--predictions PATH] [--raw PATH]
 """
 
+import argparse
 import json
 import pathlib
 
 import pandas as pd
 
 from src.data.loader import load_nodes_for_ids
+from src.data.run_config import load_model_run
 from src.utils.log_utils import setup_logging
 
 RAW = 'data/raw/dsaa'
@@ -24,15 +26,21 @@ PREDICTIONS = 'outputs/predictions/dsaa'
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--predictions', default=PREDICTIONS)
+    parser.add_argument('--raw', help='Defaults to the cascade training run path')
+    args = parser.parse_args()
     log = setup_logging('analyze_hard_residual')
-    vt = pd.read_csv(f'{PREDICTIONS}/cascade_val_tiers.csv')
+    run = load_model_run(pathlib.Path(args.predictions), 'cascade')
+    raw = args.raw or (run['raw_path'] if run else RAW)
+    vt = pd.read_csv(pathlib.Path(args.predictions) / 'cascade_val_tiers.csv')
     hard_res = vt[(vt['tier_used'] == 3) & (vt['difficulty'] == 'hard')].copy()
     n_hr = len(hard_res)
     log.info('Hard residual: %d pairs', n_hr)
 
     node_ids = set(hard_res['id1'].tolist()) | set(hard_res['id2'].tolist())
     log.info('Streaming nodes.tsv for %d node ids...', len(node_ids))
-    nodes = load_nodes_for_ids(f'{RAW}/nodes.tsv', node_ids)
+    nodes = load_nodes_for_ids(f'{raw}/nodes.tsv', node_ids)
 
     def has_text(node_id) -> bool:
         if node_id not in nodes.index:
@@ -80,7 +88,7 @@ def main():
         'top_node_pairs': top_node_pairs,
         'top_node_pred_pos_pct': top_node_pred_pos_pct,
     }
-    out_path = pathlib.Path(PREDICTIONS) / 'hard_residual_analysis.json'
+    out_path = pathlib.Path(args.predictions) / 'hard_residual_analysis.json'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(out, indent=2))
     log.info('Saved → %s', out_path)

@@ -1,11 +1,13 @@
 """
 Audit the negative sampling distribution in the dataset.
 
+Reads:
+    data/raw/dsaa/{train,test}.csv by default
 Writes:
     outputs/stats/negative_sampling_audit.json
 
 Usage:
-    python -m scripts.dsaa.audit_negative_sampling
+    python -m scripts.dsaa.audit_negative_sampling [--train PATH] [--test PATH] [--output PATH]
 """
 import argparse
 import json

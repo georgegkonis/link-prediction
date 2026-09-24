@@ -1,15 +1,18 @@
 """
 Audit train/test data leakage.
 
+Reads:
+    data/raw/dsaa/{train,test}.csv by default; --train and --test override them
 Writes:
     outputs/leakage_audit-results.txt
     data/interim/dsaa/leakage_pairs.csv
 
 Usage:
-    python -m scripts.dsaa.audit_pairs
+    python -m scripts.dsaa.audit_pairs [--train PATH] [--test PATH]
 """
 
 import argparse
+from pathlib import Path
 
 import pandas as pd
 
@@ -62,7 +65,9 @@ def self_loop_report(df: pd.DataFrame, name: str) -> dict:
 
 
 def main(train_path: str, test_path: str):
-    log = setup_logging('audit_leakage')
+    Path(OUTPUTS).mkdir(parents=True, exist_ok=True)
+    Path(INTERIM).mkdir(parents=True, exist_ok=True)
+    log = setup_logging('audit_pairs')
     log.info('Loading edges...')
     train = load_edges(train_path)
     test = load_edges(test_path)

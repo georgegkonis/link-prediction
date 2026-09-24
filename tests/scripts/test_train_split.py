@@ -1,7 +1,7 @@
 """Tests for scripts.dsaa.train._split — the train/val partitioning logic.
 
-Only the pure helper is exercised; `main()` is a hydra entry point that reads
-`data/interim/dsaa/` and writes checkpoints.
+The split helper and cached-feature alignment are exercised without fitting
+models or writing checkpoints.
 """
 
 import math
@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.dsaa.train import _split
+from scripts.dsaa.train import _load, _split
 
 
 @pytest.fixture
@@ -90,3 +90,16 @@ def test_split_indices_are_positional_not_label_based(data):
     idx = np.concatenate([tr, val])
     sub_pairs = data['pairs'].iloc[idx]
     assert (sub_pairs['id1'] != sub_pairs['id2']).all()
+
+
+def test_train_rejects_features_for_a_different_pair_order(tmp_path):
+    raw, interim = tmp_path / 'raw', tmp_path / 'interim'
+    raw.mkdir()
+    interim.mkdir()
+    pairs = pd.DataFrame({'id1': [1, 2], 'id2': [2, 3], 'label': [1, 0]},
+                         index=pd.Index([10, 11], name='id'))
+    pairs.to_csv(raw / 'train.csv')
+    structural = pd.DataFrame({'cn': [1, 0]}, index=pd.Index([11, 10], name='id'))
+    structural.to_csv(interim / 'structural_train.csv')
+    with pytest.raises(ValueError, match='Feature pair IDs do not match'):
+        _load('structural', str(raw), str(interim))

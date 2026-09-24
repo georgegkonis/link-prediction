@@ -62,20 +62,39 @@ def compute_pos_features(
     id1 and id2.  Shape: (n_pairs, 2 * n_pos_tags).
     Missing nodes get a zero vector.
     """
-    ensure_nltk_data()
-
     unique_ids = pd.unique(pairs[['id1', 'id2']].values.ravel())
+    node_vecs = encode_pos_nodes(nodes, unique_ids, show_progress=show_progress)
+    return assemble_pos_features(node_vecs, pairs)
+
+
+def encode_pos_nodes(
+    nodes: pd.DataFrame,
+    node_ids,
+    show_progress: bool = True,
+) -> dict[int, np.ndarray]:
+    """Compute one reusable POS-frequency vector per requested article."""
+    ensure_nltk_data()
     node_vecs: dict[int, np.ndarray] = {}
 
-    for node_id in tqdm(unique_ids, desc='POS tagging', disable=not show_progress):
+    for node_id in tqdm(node_ids, desc='POS tagging', disable=not show_progress):
+        node_id = int(node_id)
         if node_id in nodes.index:
             node_vecs[node_id] = pos_frequency_vector(nodes.loc[node_id, 'text'])
         else:
             node_vecs[node_id] = np.zeros(len(_POS_TAGS))
+    return node_vecs
+
+
+def assemble_pos_features(
+    node_vecs: dict[int, np.ndarray],
+    pairs: pd.DataFrame,
+) -> np.ndarray:
+    """Concatenate cached endpoint vectors for a batch of pairs."""
+    if pairs.empty:
+        return np.empty((0, 2 * len(_POS_TAGS)))
 
     zero = np.zeros(len(_POS_TAGS))
-    features = np.vstack([
-        np.concatenate([node_vecs.get(r['id1'], zero), node_vecs.get(r['id2'], zero)])
-        for _, r in pairs.iterrows()
+    return np.vstack([
+        np.concatenate([node_vecs.get(int(u), zero), node_vecs.get(int(v), zero)])
+        for u, v in pairs[['id1', 'id2']].itertuples(index=False, name=None)
     ])
-    return features

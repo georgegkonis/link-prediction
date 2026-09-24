@@ -100,6 +100,44 @@ class CascadeLP:
                       pair (1.0 for Tier-0 self-loops), for AUC-ROC/confidence
                       analysis
         """
+        return self._predict(
+            structural,
+            pairs,
+            pos_provider=lambda idx, _: pos_features[idx],
+            embedding_provider=lambda idx, _: st_scores[idx],
+            cold_start=cold_start,
+        )
+
+    def predict_lazy(
+        self,
+        structural: pd.DataFrame,
+        pairs: pd.DataFrame,
+        pos_provider,
+        embedding_provider,
+        cold_start: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Predict while requesting semantic features only for unresolved pairs.
+
+        Each provider receives a pair frame in original row order. The POS
+        provider must return a two-dimensional feature matrix; the embedding
+        provider returns one similarity score per pair.
+        """
+        return self._predict(
+            structural,
+            pairs,
+            pos_provider=lambda _idx, subset: pos_provider(subset),
+            embedding_provider=lambda _idx, subset: embedding_provider(subset),
+            cold_start=cold_start,
+        )
+
+    def _predict(
+        self,
+        structural: pd.DataFrame,
+        pairs: pd.DataFrame,
+        pos_provider,
+        embedding_provider,
+        cold_start: np.ndarray | None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         n = len(pairs)
         predictions = np.zeros(n, dtype=int)
         tier_used   = np.full(n, -1, dtype=int)
@@ -141,12 +179,18 @@ class CascadeLP:
 
         # Tier 2 — POS
         if len(idx):
-            proba2    = self.tier2.predict_proba(pos_features[idx])
+            pos_features = np.asarray(pos_provider(idx, pairs.iloc[idx]))
+            if len(pos_features) != len(idx):
+                raise ValueError('POS provider returned the wrong number of rows')
+            proba2    = self.tier2.predict_proba(pos_features)
             idx       = _route(idx, proba2, self.tier2_threshold, 2)
 
         # Tier 3 — embedding (handles all remaining; no threshold needed)
         if len(idx):
-            proba3 = self.tier3.predict_proba(st_scores[idx])
+            st_scores = np.asarray(embedding_provider(idx, pairs.iloc[idx]))
+            if len(st_scores) != len(idx):
+                raise ValueError('Embedding provider returned the wrong number of rows')
+            proba3 = self.tier3.predict_proba(st_scores)
             predictions[idx] = proba3.argmax(axis=1)
             tier_used[idx]   = 3
             scores[idx]      = proba3[:, 1]

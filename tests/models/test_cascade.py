@@ -172,6 +172,39 @@ def test_only_undecided_rows_are_passed_downstream(scenario):
     assert m.tier3.calls[0][1] == pytest.approx([0.30, 0.80])
 
 
+def test_lazy_prediction_matches_eager_and_requests_only_unresolved_pairs(scenario):
+    pairs, structural, pos, st = scenario
+    eager = _stubbed().predict(structural, pos, st, pairs)
+    calls = {'pos': [], 'embedding': []}
+
+    def pos_provider(subset):
+        calls['pos'].append(subset.index.tolist())
+        return pos[pairs.index.get_indexer(subset.index)]
+
+    def embedding_provider(subset):
+        calls['embedding'].append(subset.index.tolist())
+        return st[pairs.index.get_indexer(subset.index)]
+
+    lazy = _stubbed().predict_lazy(
+        structural, pairs, pos_provider=pos_provider,
+        embedding_provider=embedding_provider)
+
+    np.testing.assert_array_equal(lazy[0], eager[0])
+    np.testing.assert_array_equal(lazy[1], eager[1])
+    np.testing.assert_allclose(lazy[2], eager[2])
+    assert calls['pos'] == [[103, 104, 105]]
+    assert calls['embedding'] == [[104, 105]]
+
+
+def test_lazy_prediction_validates_provider_row_counts():
+    pairs = pd.DataFrame({'id1': [1], 'id2': [2]})
+    structural = pd.DataFrame({'p': [0.5]})
+    with pytest.raises(ValueError, match='POS provider'):
+        _stubbed().predict_lazy(
+            structural, pairs, pos_provider=lambda _: np.empty((0, 3)),
+            embedding_provider=lambda _: np.empty(0))
+
+
 def test_downstream_tiers_are_not_called_when_tier_one_resolves_everything():
     pairs = pd.DataFrame({'id1': [1, 1], 'id2': [2, 3]})
     m = _stubbed()

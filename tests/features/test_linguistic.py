@@ -12,7 +12,9 @@ import pytest
 from src.features.linguistic import (
     _POS_TAGS,
     _TAG_INDEX,
+    assemble_pos_features,
     compute_pos_features,
+    encode_pos_nodes,
     pos_frequency_vector,
 )
 
@@ -157,9 +159,17 @@ def test_compute_pos_features_self_pair(pos_nodes):
     assert feats[0, :N_TAGS].tolist() == pytest.approx(feats[0, N_TAGS:].tolist())
 
 
-def test_compute_pos_features_empty_pairs_raises(pos_nodes):
-    """`np.vstack([])` on an empty pair set raises; callers must not pass empty
-    frames. Pinned so the failure mode stays visible."""
-    with pytest.raises(ValueError):
-        compute_pos_features(pos_nodes, pd.DataFrame({'id1': [], 'id2': []}),
-                             show_progress=False)
+def test_compute_pos_features_empty_pairs_returns_typed_matrix(pos_nodes):
+    result = compute_pos_features(pos_nodes, pd.DataFrame({'id1': [], 'id2': []}),
+                                  show_progress=False)
+    assert result.shape == (0, 2 * N_TAGS)
+
+
+def test_node_pos_cache_can_be_reused_across_pair_batches(pos_nodes):
+    vectors = encode_pos_nodes(pos_nodes, [1, 2, 3], show_progress=False)
+    first = assemble_pos_features(vectors, pd.DataFrame({'id1': [1], 'id2': [2]}))
+    second = assemble_pos_features(vectors, pd.DataFrame({'id1': [2], 'id2': [1]}))
+
+    assert set(vectors) == {1, 2, 3}
+    np.testing.assert_allclose(first[0, :N_TAGS], second[0, N_TAGS:])
+    np.testing.assert_allclose(first[0, N_TAGS:], second[0, :N_TAGS])

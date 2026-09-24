@@ -72,3 +72,38 @@ def test_sparse_pair_tables_are_balanced_and_indexed():
         assert counts[0] == counts[1]
     assert meta['protocol'] == 'wiki_sparse_holdout_v1'
     assert meta['counts']['held_out_positive_edges'] * 2 == len(frames['test_random'])
+
+
+def test_mixed_training_changes_only_training_negatives():
+    positives, nodes = _source_graph()
+    random_frames, _ = build_sparse_benchmark(
+        positives, nodes, edge_retention=0.8, seed=42, train_negatives='random')
+    mixed_frames, metadata = build_sparse_benchmark(
+        positives, nodes, edge_retention=0.8, seed=42, train_negatives='mixed')
+
+    for name in ('observed_edges', 'test_random', 'test_hard'):
+        pd.testing.assert_frame_equal(random_frames[name], mixed_frames[name])
+    assert _pairs(random_frames['train'].query('label == 1')) == \
+        _pairs(mixed_frames['train'].query('label == 1'))
+    assert _pairs(random_frames['train'].query('label == 0')) != \
+        _pairs(mixed_frames['train'].query('label == 0'))
+    counts = metadata['counts']
+    assert counts['train_random_negatives'] + counts['train_hard_negatives'] == \
+        counts['observed_positive_edges']
+    assert abs(counts['train_random_negatives'] - counts['train_hard_negatives']) == 1
+
+
+def test_mixed_hard_training_negatives_are_verified_two_hop_pairs():
+    positives, nodes = _source_graph()
+    frames, metadata = build_sparse_benchmark(
+        positives, nodes, edge_retention=0.8, seed=42, train_negatives='mixed')
+    graph = nx.from_pandas_edgelist(frames['observed_edges'], source='id1', target='id2')
+    full_positive = _pairs(positives)
+    mixed_negatives = _pairs(frames['train'].query('label == 0'))
+    two_hop = {
+        pair for pair in mixed_negatives
+        if set(graph.neighbors(pair[0])) & set(graph.neighbors(pair[1]))
+    }
+
+    assert not mixed_negatives & full_positive
+    assert len(two_hop) >= metadata['counts']['train_hard_negatives']

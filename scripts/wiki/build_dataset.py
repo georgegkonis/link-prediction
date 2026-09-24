@@ -123,10 +123,13 @@ def build_sparse_benchmark(
     node_ids: np.ndarray,
     edge_retention: float = 0.2,
     seed: int = 42,
+    train_negatives: str = 'random',
 ) -> tuple[dict[str, pd.DataFrame], dict]:
     """Create one training set and random/hard held-out evaluation suites."""
     if not 0 < edge_retention < 1:
         raise ValueError('edge_retention must be strictly between 0 and 1')
+    if train_negatives not in {'random', 'mixed'}:
+        raise ValueError("train_negatives must be 'random' or 'mixed'")
     positives = _canonical_pairs(positives)
     if positives.empty:
         raise ValueError('At least one positive edge is required')
@@ -144,12 +147,26 @@ def build_sparse_benchmark(
     observed = positives.loc[observed_mask].reset_index(drop=True)
     held_out = positives.loc[~observed_mask].reset_index(drop=True)
 
-    train_neg = _sample_random_nonedges(node_ids, positive_set, len(observed), rng)
+    base_train_neg = _sample_random_nonedges(node_ids, positive_set, len(observed), rng)
     random_test_neg = _sample_random_nonedges(
-        node_ids, positive_set, len(held_out), rng, forbidden=train_neg)
+        node_ids, positive_set, len(held_out), rng, forbidden=base_train_neg)
     hard_test_neg = _sample_hard_nonedges(
         observed, positive_set, len(held_out), rng,
-        forbidden=train_neg | random_test_neg)
+        forbidden=base_train_neg | random_test_neg)
+
+    if train_negatives == 'mixed':
+        n_random = (len(observed) + 1) // 2
+        candidates = sorted(base_train_neg)
+        chosen = np.sort(rng.choice(len(candidates), size=n_random, replace=False))
+        train_random_neg = {candidates[index] for index in chosen}
+        train_hard_neg = _sample_hard_nonedges(
+            observed, positive_set, len(observed) - n_random, rng,
+            forbidden=train_random_neg | random_test_neg | hard_test_neg)
+        train_neg = train_random_neg | train_hard_neg
+    else:
+        train_random_neg = base_train_neg
+        train_hard_neg = set()
+        train_neg = base_train_neg
 
     graph = nx.from_pandas_edgelist(observed, source='id1', target='id2')
     frames = {
@@ -164,7 +181,8 @@ def build_sparse_benchmark(
         'edge_retention': edge_retention,
         'undirected': True,
         'negative_sampling': {
-            'train': 'uniform_verified_nonedge',
+            'train': ('half_uniform_half_observed_two_hop_verified_nonedge'
+                      if train_negatives == 'mixed' else 'uniform_verified_nonedge'),
             'test_random': 'uniform_verified_nonedge',
             'test_hard': 'verified_nonedge_with_observed_common_neighbour',
         },
@@ -173,6 +191,8 @@ def build_sparse_benchmark(
             'all_positive_edges': int(len(positives)),
             'observed_positive_edges': int(len(observed)),
             'held_out_positive_edges': int(len(held_out)),
+            'train_random_negatives': int(len(train_random_neg)),
+            'train_hard_negatives': int(len(train_hard_neg)),
             'train_pairs': int(len(frames['train'])),
             'test_random_pairs': int(len(frames['test_random'])),
             'test_hard_pairs': int(len(frames['test_hard'])),
@@ -186,12 +206,14 @@ def build_sparse_benchmark(
     return frames, metadata
 
 
-def _write_sparse(source: pathlib.Path, output: pathlib.Path, edge_retention: float, seed: int) -> None:
+def _write_sparse(source: pathlib.Path, output: pathlib.Path, edge_retention: float,
+                  seed: int, train_negatives: str = 'random') -> None:
     positives_path = source / 'positive_edges.csv'
     nodes_path = source / 'nodes.tsv'
     positives = pd.read_csv(positives_path)
     node_ids = pd.read_csv(nodes_path, sep='\t', usecols=['id'])['id'].to_numpy()
-    frames, metadata = build_sparse_benchmark(positives, node_ids, edge_retention, seed)
+    frames, metadata = build_sparse_benchmark(
+        positives, node_ids, edge_retention, seed, train_negatives=train_negatives)
     output.mkdir(parents=True, exist_ok=True)
     paths = {name: output / f'{name}.csv' for name in frames}
     for name, frame in frames.items():
@@ -233,13 +255,16 @@ def main():
     parser.add_argument('--output')
     parser.add_argument('--neg-ratio', type=float, default=1.0)
     parser.add_argument('--edge-retention', type=float, default=0.2)
+    parser.add_argument('--train-negatives', choices=('random', 'mixed'), default='random')
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
     source = pathlib.Path(args.source)
+    sparse_output = ('data/raw/wiki_cs_8k_sparse20_mixed'
+                     if args.train_negatives == 'mixed' else 'data/raw/wiki_cs_8k_sparse20')
     output = pathlib.Path(args.output or (
-        'data/raw/wiki_cs_8k_sparse20' if args.protocol == 'sparse-holdout' else args.source))
+        sparse_output if args.protocol == 'sparse-holdout' else args.source))
     if args.protocol == 'sparse-holdout':
-        _write_sparse(source, output, args.edge_retention, args.seed)
+        _write_sparse(source, output, args.edge_retention, args.seed, args.train_negatives)
     else:
         _write_balanced(output, args.neg_ratio, args.seed)
 

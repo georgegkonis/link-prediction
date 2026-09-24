@@ -96,6 +96,7 @@
     \texttt{\en{ablate\_cascade\_thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
     \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
     \texttt{\en{benchmark\_throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
+    \texttt{\en{compare\_matched\_samples.py}} & σύγκριση μοντέλων με ίδιο πλήθος ζευγών και ίδιο προϋπολογισμό επισημασμένων ζευγών για το γράφημα \\
     \texttt{\en{run\_dsaa\_train.py}} & εκπαίδευση και επικύρωση των μοντέλων στο \en{DSAA 2023} \\
     \texttt{\en{run\_dsaa\_evaluate.py}} & παραγωγή προβλέψεων στο σύνολο ελέγχου \en{DSAA} \\
     \texttt{\en{submit\_dsaa\_kaggle.py}} & υποβολή/\allowbreak{}έλεγχος κατάστασης στο \en{Kaggle} (\S\ref{sec:kaggle-submit}) \\
@@ -179,6 +180,11 @@
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_cascade\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.benchmark\_throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
+  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.compare\_matched\_samples}} ---
+    Εκπαιδεύει \en{TF-IDF + LR}, \en{TF-IDF + SVM}, \en{POS} και
+    \en{CascadeLP} στα ίδια δείγματα \MatchedSampleSize{} ζευγών και γράφει τα
+    αποτελέσματα στο
+    \texttt{\en{outputs\slash{}predictions\slash{}graph\_holdout\_v1\slash{}matched\_samples\_v2}}
   \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_wiki\_cs\_8k\_experiment}} ---
     Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}wiki\_cs\_8k\_experiment\_results.json}}
     με αποτελέσματα ανά επίπεδο, διαγνωστικές τομές και ζευγαρωμένο

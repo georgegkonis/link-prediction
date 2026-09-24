@@ -22,6 +22,7 @@ Reads:
     outputs/predictions/dsaa/throughput_benchmark.json
     outputs/predictions/dsaa/tier2_confidence_saturation.json
     outputs/predictions/dsaa/embedding_val_metrics.json
+    outputs/predictions/graph_holdout_v1/matched_samples_v2/metrics.csv
 Writes:
     latex/shared/results/summary_stats.json
 
@@ -46,6 +47,8 @@ log = setup_logging('compute_summary_stats')
 INTERIM     = pathlib.Path('data/interim/dsaa')
 RAW         = pathlib.Path('data/raw/dsaa')
 PREDICTIONS = pathlib.Path('outputs/predictions/dsaa')
+MATCHED_PREDICTIONS = pathlib.Path(
+    'outputs/predictions/graph_holdout_v1/matched_samples_v2')
 STATS       = pathlib.Path('outputs/stats')
 CONFIGS     = pathlib.Path('configs')
 PUBLISHED_RESULTS = pathlib.Path('latex/shared/results')
@@ -173,6 +176,9 @@ def _load() -> dict:
             f'run make train MODEL={name} first')
         for name in _MODEL_NAMES
     }
+    d['matched_samples'] = _load_csv_optional(
+        MATCHED_PREDICTIONS / 'metrics.csv',
+        'run make compare-matched first')
 
     # ---- Negative-sampling artifact audit (explains the near-perfect DSAA 2023 score) ----
     d['neg_sampling_audit'] = _load_json_optional(
@@ -444,8 +450,8 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
                 m[f'Tier{tier_name}{diff_name}Acc'] = _MISSING
 
     # ---- Historically named cold-start metric: zero common neighbours ----
-    # This reproduces metrics.cold_start_mask. It is broader than operational
-    # cold-start because both endpoints may be present in the graph.
+    # This preserves the historical DSAA diagnostic. It is broader than
+    # operational cold-start because both endpoints may be present in the graph.
     zero_cn = d['struct_train'].loc[vt['id'].to_numpy(), 'cn'].fillna(0).to_numpy() == 0
     cs_count  = int(zero_cn.sum())
     cs_pct    = 100 * cs_count / n_vt
@@ -580,6 +586,40 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
         m['SvmAuc']     = _MISSING
         m['SvmCsFone']  = _MISSING
         m['SvmLatency'] = _MISSING
+
+    # ---- Equal-training-size DSAA comparison (three matched 20k samples) ----
+    matched = d['matched_samples']
+    matched_names = {
+        'tfidf_lr': 'MatchedTfidfLr',
+        'tfidf_svm': 'MatchedTfidfSvm',
+        'pos_rf': 'MatchedPos',
+        'cascade': 'MatchedCascade',
+    }
+    if matched is not None:
+        required = {'model', 'sample_seed', 'n_train', 'n_val', 'graph_label_budget',
+                    'macro_f1', 'auc_roc'}
+        missing = required - set(matched.columns)
+        if missing:
+            raise ValueError(f'Matched-sample metrics lack columns: {sorted(missing)}')
+        if set(matched['model']) != set(matched_names):
+            raise ValueError('Matched-sample metrics do not contain exactly the expected models')
+        if matched[['n_train', 'n_val', 'graph_label_budget']].nunique().max() != 1:
+            raise ValueError('Matched-sample rows do not share one training/validation/graph budget')
+
+        m['MatchedSampleSize'] = gint(matched['n_train'].iloc[0])
+        m['MatchedValSize'] = gint(matched['n_val'].iloc[0])
+        m['MatchedNSeeds'] = str(matched['sample_seed'].nunique())
+        for model, prefix in matched_names.items():
+            rows = matched[matched['model'] == model]
+            m[f'{prefix}Fone'] = gfloat(rows['macro_f1'].mean(), 4)
+            m[f'{prefix}FoneStd'] = gfloat(rows['macro_f1'].std(ddof=1), 4)
+            m[f'{prefix}Auc'] = gfloat(rows['auc_roc'].mean(), 4)
+    else:
+        m['MatchedSampleSize'] = m['MatchedValSize'] = m['MatchedNSeeds'] = _MISSING
+        for prefix in matched_names.values():
+            m[f'{prefix}Fone'] = _MISSING
+            m[f'{prefix}FoneStd'] = _MISSING
+            m[f'{prefix}Auc'] = _MISSING
 
 
     # ---- Ablation grid ----

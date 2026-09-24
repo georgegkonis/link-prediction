@@ -1,7 +1,7 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV) --no-capture-output
 
-.PHONY: help env env-update run train predict-test dsaa-train-all compare-matched kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets build-thesis pipeline-dsaa pipeline-wiki latex-compile latex-clean test jupyter
+.PHONY: help env env-update run train predict-test dsaa-train-all compare-matched kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets build-thesis pipeline-dsaa pipeline-wiki pipeline-wiki-sparse latex-compile latex-clean test jupyter
 
 help:
 	@echo "Usage:"
@@ -19,6 +19,7 @@ help:
 	@echo "  make latex-clean DOC=thesis           Clean LaTeX aux files"
 	@echo "  make pipeline-dsaa                    Rebuild local DSAA results (Kaggle scores are external)"
 	@echo "  make pipeline-wiki                    Rebuild Wiki results (requires SQL dumps and text access)"
+	@echo "  make pipeline-wiki-sparse             Run sparse Wiki benchmark from existing Wiki-CS-8k data"
 	@echo "  make test                             Run tests"
 
 env:
@@ -101,6 +102,11 @@ pipeline-wiki:
 	$(RUN) python -m scripts.wiki.fetch_text
 	$(RUN) python -m scripts.wiki.build_dataset
 	$(RUN) python -m scripts.wiki.run_experiment --rebuild-features
+
+pipeline-wiki-sparse:
+	@echo "--- Running Sparse Wiki-CS-8k Benchmark ---"
+	$(RUN) python -m scripts.wiki.build_dataset --protocol sparse-holdout --edge-retention 0.2
+	$(RUN) python -m scripts.wiki.run_experiment --benchmark-manifest data/raw/wiki_cs_8k_sparse20/benchmark.json --rebuild-features
 
 build-thesis:
 	@echo "--- Compiling Thesis Assets & PDF ---"

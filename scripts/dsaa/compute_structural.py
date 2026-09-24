@@ -9,7 +9,7 @@ Writes:
     data/interim/dsaa/structural_test.csv
 
 Usage:
-    python -m scripts.data.compute_structural [dev.nrows=N]
+    python -m scripts.dsaa.compute_structural [dev.nrows=N]
 """
 
 import hydra

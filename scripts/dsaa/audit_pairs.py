@@ -6,7 +6,7 @@ Writes:
     data/interim/dsaa/leakage_pairs.csv
 
 Usage:
-    python -m scripts.analysis.audit_leakage
+    python -m scripts.dsaa.audit_pairs
 """
 
 import argparse

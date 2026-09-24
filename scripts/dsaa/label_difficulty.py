@@ -7,7 +7,7 @@ Writes:
     data/interim/dsaa/difficulty_test.csv
 
 Usage:
-    python -m scripts.analysis.analyze_dataset
+    python -m scripts.dsaa.label_difficulty
 """
 
 import argparse

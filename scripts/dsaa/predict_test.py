@@ -2,7 +2,7 @@
 Run a trained model on the test set and produce a Kaggle submission CSV.
 
 Usage:
-    python -m scripts.analysis.run_dsaa_evaluate model=structural
+    python -m scripts.dsaa.predict_test model=structural
 """
 
 import logging
@@ -38,7 +38,7 @@ _MODEL_CLS = {
 }
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="config")
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     model_name = cfg.model.name
     raw_path = to_absolute_path(cfg.paths.raw)

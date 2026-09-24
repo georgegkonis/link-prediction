@@ -1,14 +1,14 @@
 """
 Cached-data protocol audit for the DSAA 2023 legacy row-split/full-positive-graph
-protocol used by ``make train``/``make evaluate`` (Chapter 4, S:data-splits): how many
+protocol used by ``make train``/``make predict-test`` (Chapter 4, S:data-splits): how many
 validation positives already contributed edges to the structural graph before the
 split, and (with --swap) how sensitive the trained CascadeLP checkpoint is to
 endpoint order. Reads only cached features/checkpoints already produced by
-``make features-structural``/``make train MODEL=cascade``; performs no feature
+``make run SCRIPT=dsaa.compute_structural``/``make train MODEL=cascade``; performs no feature
 extraction and no retraining.
 
-Ported from revision/graph-holdout-v1's scripts/analysis/audit_protocol.py, adjusted
-to this branch's data/interim/dsaa layout and unmodified CascadeLP.predict() signature.
+Adapted from the earlier graph-holdout revision for this branch's cached DSAA
+features and CascadeLP.predict() signature.
 """
 import argparse
 import hashlib

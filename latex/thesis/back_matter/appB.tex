@@ -10,12 +10,12 @@
 \label{sec:kaggle-submit}
 
 Η επιβεβαίωση του σκορ \en{Macro F1-score} \texttt{\KaggleBaselinePublic{}} στο δημόσιο \en{leaderboard} του \en{Kaggle} απαιτεί φυσικά μία πραγματική υποβολή στον διαγωνισμό \en{DSAA 2023}.
-Για την κάλυψη αυτής της ανάγκης γράφτηκε το \texttt{\en{scripts\slash{}analysis\slash{}submit\_dsaa\_kaggle.py}}: ένα βοηθητικό \en{script} που αναλαμβάνει ολόκληρο τον κύκλο υποβολής, από τη μεταφόρτωση του αρχείου προβλέψεων στους εξυπηρετητές του \en{Kaggle} έως την ανάκτηση και καταγραφή του τελικού βαθμού.
+Για την κάλυψη αυτής της ανάγκης γράφτηκε το \texttt{\en{scripts\slash{}dsaa\slash{}kaggle.py}}: ένα βοηθητικό \en{script} που αναλαμβάνει ολόκληρο τον κύκλο υποβολής, από τη μεταφόρτωση του αρχείου προβλέψεων στους εξυπηρετητές του \en{Kaggle} έως την ανάκτηση και καταγραφή του τελικού βαθμού.
 
 Το \en{script} εκτίθεται μέσω δύο στόχων του \texttt{\en{Makefile}}.
 Ο \texttt{\en{make kaggle-\allowbreak{}submit FILE=<path> MSG=<text>}} μεταφορτώνει ένα αρχείο \en{CSV} απευθείας στον διαγωνισμό.
 Ο \texttt{\en{make kaggle-\allowbreak{}check}} αναζητά και εκτυπώνει την κατάσταση και το δημόσιο σκορ των πιο πρόσφατων υποβολών.
-Και οι δύο στόχοι δέχονται προαιρετικά τη σημαία \texttt{\en{--wait}}, η οποία κρατά το \en{script} σε αναμονή έως ότου η βαθμολόγηση ολοκληρωθεί ασύγχρονα από τους εξυπηρετητές.
+Και στους δύο στόχους μπορεί να δοθεί \texttt{\en{WAIT=--wait}}, ώστε το \en{script} να περιμένει έως ότου ολοκληρωθεί η ασύγχρονη βαθμολόγηση.
 
 Η πιστοποίηση γίνεται αποκλειστικά μέσω του \en{token} \texttt{\en{KAGGLE\_API\_TOKEN}}, αποθηκευμένου στο αρχείο \texttt{.env}.
 Δεν απαιτείται ξεχωριστό ζεύγος ονόματος χρήστη και κλειδιού \en{API}.
@@ -23,7 +23,7 @@
 
 Κάθε υποβολή καταγράφεται αυτόματα στο αρχείο \texttt{\en{outputs\slash{}predictions\slash{}dsaa\slash{}kaggle\_scores.csv}}, με πρωτεύον κλειδί τον μοναδικό αναγνωριστή \texttt{\en{ref}} που αποδίδει το \en{Kaggle} σε κάθε υποβολή.
 Η επιλογή αυτή εξασφαλίζει ότι κάθε βαθμός αντιστοιχεί με ακρίβεια στο αρχείο που το παρήγαγε, ανεξάρτητα από περιγραφές ή σειρά εμφάνισης.
-Το ίδιο \en{token} καλύπτει και τη λήψη του συνόλου δεδομένων μέσω \texttt{\en{make run SCRIPT=data.download\_data}}, οπότε μία μοναδική διαπίστευση επαρκεί για ολόκληρο τον κύκλο αναπαραγωγιμότητας: από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ στο \en{leaderboard}.
+Το ίδιο \en{token} καλύπτει και τη λήψη του συνόλου δεδομένων μέσω \texttt{\en{make run SCRIPT=dsaa.download}}, οπότε μία μοναδική διαπίστευση επαρκεί για ολόκληρο τον κύκλο αναπαραγωγιμότητας: από τη λήψη των δεδομένων έως την τελική επιβεβαίωση του σκορ στο \en{leaderboard}.
 
 
 \section{Δομή Καταλόγων Κώδικα}
@@ -58,6 +58,7 @@
     \midrule
     \texttt{\en{loader.py}} & \texttt{\en{load\_edges()}}, \texttt{\en{load\_nodes()}}, \texttt{\en{load\_nodes\_for\_ids()}}, \texttt{\en{build\_graph()}} \\
     \texttt{\en{protocol.py}} & \texttt{\en{grouped\_split()}}, \texttt{\en{prepare\_split()}}, \texttt{\en{load\_split()}}, \texttt{\en{load\_structural()}} \\
+    \texttt{\en{mediawiki\_sql.py}} & \texttt{\en{iter\_insert\_rows()}} για αρχεία \en{MediaWiki SQL} \\
     \midrule
     \multicolumn{2}{l}{\texttt{\en{src\slash{}features\slash{}}}} \\
     \midrule
@@ -76,36 +77,35 @@
     \texttt{\en{metrics.py}} & \texttt{\en{EvalResult}}, \texttt{\en{evaluate()}}, \texttt{\en{evaluate\_by\_group()}}, \texttt{\en{tier\_difficulty\_breakdown()}}, \texttt{\en{cold\_start\_mask()}}, \texttt{\en{zero\_common\_neighbors\_mask()}}, \texttt{\en{timer()}} \\
     \texttt{\en{log\_utils.py}} & \texttt{\en{setup\_logging()}} \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}data\slash{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}dsaa\slash{}}}} \\
     \midrule
-    \texttt{\en{download\_data.py}} & λήψη του συνόλου δεδομένων του διαγωνισμού από το \en{Kaggle} \\
-    \texttt{\en{compute\_structural.py}} & \en{CLI} για \texttt{\en{compute\_heuristics}} \\
-    \texttt{\en{compute\_semantic.py}} & \en{CLI} για \en{TF-IDF}/\allowbreak{}\en{Sentence-Transformer}/\allowbreak{}\en{POS} χαρακτηριστικά \\
-    \texttt{\en{build\_from\_wikidump.py}} & εξαγωγή κόμβων και πραγματικών υπερσυνδέσμων από αρχεία \en{SQL dump} \\
-    \texttt{\en{build\_wiki\_cs\_8k\_dataset.py}} & δειγματοληψία τυχαίων μη ακμών και δημιουργία του νέου \texttt{\en{train.csv}} \\
-    \texttt{\en{fetch\_wiki\_cs\_8k\_text.py}} & ανάκτηση κειμένου για τους κόμβους του νέου συνόλου \\
-    \texttt{\en{mysql\_dump.py}} & ρέουσα ανάλυση πλειάδων από συμπιεσμένα αρχεία \en{MySQL} \\
+    \texttt{\en{download.py}} & λήψη δεδομένων \en{DSAA} από το \en{Kaggle} \\
+    \texttt{\en{compute\_structural.py}} & δομικά χαρακτηριστικά του αρχικού πρωτοκόλλου \en{DSAA} \\
+    \texttt{\en{compute\_semantic.py}} & χαρακτηριστικά \en{TF-IDF}, \en{Sentence-Transformer} και \en{POS} \\
+    \texttt{\en{label\_difficulty.py}} & κατηγορίες δυσκολίας και όρια διαχωρισιμότητας \\
+    \texttt{\en{train.py}} & εκπαίδευση και επικύρωση των έξι μοντέλων \\
+    \texttt{\en{predict\_test.py}} & προβλέψεις στο σύνολο ελέγχου χωρίς δημόσιες ετικέτες \\
+    \texttt{\en{audit\_pairs.py}} & επικάλυψη ζευγών, διπλότυπα και αυτοβρόχοι \\
+    \texttt{\en{audit\_negative\_sampling.py}} & στρέβλωση στη δειγματοληψία αρνητικών \\
+    \texttt{\en{audit\_prediction\_shortcut.py}} & σύγκριση προβλέψεων με τον κανόνα πρώτου άκρου \\
+    \texttt{\en{audit\_protocol.py}} & διαρροή ακμών επικύρωσης και αντιστροφή άκρων \\
+    \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση δύσκολων ζευγών του Επιπέδου~3 \\
+    \texttt{\en{sweep\_routing\_thresholds.py}} & ανάλυση ευαισθησίας των $\tau_1$ και $\tau_2$ \\
+    \texttt{\en{benchmark\_inference.py}} & χρόνος πρόβλεψης σε ήδη υπολογισμένα χαρακτηριστικά \\
+    \texttt{\en{compare\_matched\_samples.py}} & σύγκριση μοντέλων με ίσο πλήθος ζευγών εκπαίδευσης \\
+    \texttt{\en{kaggle.py}} & υποβολή και ανάκτηση βαθμολογιών διαγωνισμού \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}analysis\slash{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}wiki\slash{}}}} \\
     \midrule
-    \texttt{\en{audit\_leakage.py}} & έλεγχος διαρροής εκπαίδευσης--ελέγχου και αυτοβρόχων \\
-    \texttt{\en{audit\_negative\_sampling.py}} & έλεγχος συγκέντρωσης αρνητικών και κανόνας αναζήτησης πρώτου άκρου \\
-    \texttt{\en{audit\_hub\_in\_predictions.py}} & σύγκριση του κανόνα αναζήτησης με τις προβλέψεις \en{CascadeLP} \\
-    \texttt{\en{analyze\_dataset.py}} & χαρακτηρισμός διαχωρισιμότητας και ορίων $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ \\
-    \texttt{\en{analyze\_cascade.py}} & ανάλυση \en{CascadeLP} ανά επίπεδο και δυσκολία \\
-    \texttt{\en{ablate\_cascade\_thresholds.py}} & σάρωση πλέγματος $\tau_1$/\allowbreak{}$\tau_2$ \\
-    \texttt{\en{analyze\_hard\_residual.py}} & ανάλυση του \en{hard residual} του Επιπέδου~3 \\
-    \texttt{\en{benchmark\_throughput.py}} & μέτρηση απόδοσης συμπερασμού σε \en{CPU} \\
-    \texttt{\en{compare\_matched\_samples.py}} & σύγκριση μοντέλων με ίδιο πλήθος ζευγών και ίδιο προϋπολογισμό επισημασμένων ζευγών για το γράφημα \\
-    \texttt{\en{run\_dsaa\_train.py}} & εκπαίδευση και επικύρωση των μοντέλων στο \en{DSAA 2023} \\
-    \texttt{\en{run\_dsaa\_evaluate.py}} & παραγωγή προβλέψεων στο σύνολο ελέγχου \en{DSAA} \\
-    \texttt{\en{submit\_dsaa\_kaggle.py}} & υποβολή/\allowbreak{}έλεγχος κατάστασης στο \en{Kaggle} (\S\ref{sec:kaggle-submit}) \\
-    \texttt{\en{run\_wiki\_cs\_8k\_experiment.py}} & κοινή εκπαίδευση βασικών γραμμών και \en{CascadeLP} στο νέο σύνολο \\
+    \texttt{\en{build\_graph.py}} & εξαγωγή υπερσυνδέσμων από \en{MediaWiki SQL dumps} \\
+    \texttt{\en{fetch\_text.py}} & ανάκτηση κειμένου για τους κόμβους \\
+    \texttt{\en{build\_dataset.py}} & δειγματοληψία αρνητικών ζευγών και δημιουργία \texttt{\en{train.csv}} \\
+    \texttt{\en{run\_experiment.py}} & χαρακτηριστικά, εκπαίδευση και αξιολόγηση στο δεύτερο σύνολο \\
     \midrule
-    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}paper\slash{}}}} \\
+    \multicolumn{2}{l}{\texttt{\en{scripts\slash{}thesis\slash{}}}} \\
     \midrule
-    \texttt{\en{compute\_summary\_stats.py}} & επιμελημένο στιγμιότυπο αποτελεσμάτων προς \texttt{\en{latex\slash{}shared\slash{}results\slash{}summary\_stats.json}} \\
-    \texttt{\en{generate\_macros.py}} & παραγωγή \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}} \\
+    \texttt{\en{compute\_summary\_stats.py}} & συγκέντρωση αποτελεσμάτων στο \texttt{\en{summary\_stats.json}} \\
+    \texttt{\en{generate\_macros.py}} & παραγωγή \texttt{\en{generated\_macros.tex}} \\
     \texttt{\en{generate\_figures.py}} & παραγωγή διανυσματικών σχημάτων στο \texttt{\en{latex\slash{}shared\slash{}figures\slash{}}} \\
 \end{longtable}
 \normalsize
@@ -125,26 +125,26 @@
 \textit{Δεδομένα}
 
 \begin{itemize}
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.download\_data}} --- Έξοδος:
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.download}} --- Έξοδος:
     \texttt{\en{data\slash{}raw\slash{}dsaa\slash{}\{train,\allowbreak{}test,\allowbreak{}nodes,\allowbreak{}sample\_submission\}.*}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_structural}} --- Σημαίες:
-    \texttt{\en{--nrows N}}.
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.compute\_structural}} --- Σημαίες:
+    \texttt{\en{dev.nrows=N}}.
     Έξοδος:
     \texttt{\en{structural\_\{train,\allowbreak{}test\}.csv}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.compute\_semantic}} --- Σημαίες:
-    \texttt{\en{--nrows N}}, \texttt{\en{--model NAME}}, \texttt{\en{--skip-\allowbreak{}st}}, \texttt{\en{--skip-\allowbreak{}pos}}.
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.compute\_semantic}} --- Σημαίες:
+    \texttt{\en{dev.nrows=N}}, \texttt{\en{features.embedding.model\_name=NAME}}, \texttt{\en{dev.skip\_st=true}}, \texttt{\en{dev.skip\_pos=true}}.
     Έξοδος: \texttt{\en{tfidf\_\{train,\allowbreak{}test\}.csv}}, \texttt{\en{sentence\_emb\_\{train,\allowbreak{}test\}.csv}},
     \texttt{\en{pos\_\{train,\allowbreak{}test\}.npy}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.build\_from\_wikidump}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.wiki.build\_graph}} --- Σημαίες:
     \texttt{\en{--dump-\allowbreak{}dir PATH}}, \texttt{\en{--seed TITLE}},
     \texttt{\en{--target N}}, \texttt{\en{--output PATH}}.
     Έξοδος: κόμβοι,
     πραγματικές ακμές και στατιστικά διάσχισης του νέου συνόλου
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.fetch\_wiki\_cs\_8k\_text}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.wiki.fetch\_text}} --- Σημαίες:
     \texttt{\en{--output PATH}}, \texttt{\en{--config NAME}}.
     Έξοδος:
     \texttt{\en{data\slash{}raw\slash{}wiki\_cs\_8k\slash{}nodes.tsv}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.data.build\_wiki\_cs\_8k\_dataset}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.wiki.build\_dataset}} --- Σημαίες:
     \texttt{\en{--output PATH}}, \texttt{\en{--neg-\allowbreak{}ratio X}},
     \texttt{\en{--seed N}}.
     Έξοδος: \texttt{\en{data\slash{}raw\slash{}wiki\_cs\_8k\slash{}train.csv}}
@@ -153,12 +153,12 @@
 \textit{Εκπαίδευση /\allowbreak{} Αξιολόγηση} (\en{Hydra}, \texttt{\en{key=value}} \en{overrides})
 
 \begin{itemize}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_dsaa\_train model=<name>}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.train model=<name>}} --- Σημαίες:
     \texttt{\en{model=\{structural,\allowbreak{}tfidf,\allowbreak{}pos,\allowbreak{}embedding,\allowbreak{}svm,\allowbreak{}cascade\}}}, \texttt{\en{model.tier1\_threshold=}},
     \texttt{\en{model.tier2\_threshold=}}.
     Έξοδος:
     \texttt{\en{outputs\slash{}checkpoints\slash{}dsaa\slash{}<name>.joblib}}, \texttt{\en{cascade\_val\_tiers.csv}} (μόνο \en{cascade})
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_dsaa\_evaluate model=<name>}} --- Σημαίες: ίδιες \en{overrides}.
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.predict\_test model=<name>}} --- Σημαίες: ίδιες \en{overrides}.
   Έξοδος:
     \texttt{\en{<name>\_submission.csv}}, \texttt{\en{cascade\_test\_tiers.csv}} (μόνο \en{cascade})
 \end{itemize}
@@ -166,26 +166,27 @@
 \textit{Ανάλυση}
 
 \begin{itemize}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_leakage}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.audit\_pairs}} --- Σημαίες:
     \texttt{\en{--train PATH}}, \texttt{\en{--test PATH}}.
     Έξοδος: αναφορά διαρροής
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_negative\_sampling}} ---
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.audit\_negative\_sampling}} ---
     Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}negative\_sampling\_audit.json}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.audit\_hub\_in\_predictions}} ---
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.audit\_prediction\_shortcut}} ---
     Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}hub\_in\_predictions\_audit.json}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_dataset}} --- Σημαίες:
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.label\_difficulty}} --- Σημαίες:
     \texttt{\en{--cn-\allowbreak{}threshold X}}, \texttt{\en{--tfidf-\allowbreak{}threshold X}}, \texttt{\en{--fpr X}} (προεπ.\ 0{,}01).
     Έξοδος: στατιστικά τετριμμένων ζευγών
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_cascade}} --- Έξοδος: ανάλυση ανά επίπεδο/\allowbreak{}δυσκολία
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.ablate\_cascade\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.benchmark\_throughput}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.compare\_matched\_samples}} ---
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.audit\_protocol --swap}} --- Έξοδος:
+    \texttt{\en{outputs\slash{}stats\slash{}supervisor\_audit.json}}
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.sweep\_routing\_thresholds}} --- Έξοδος: σάρωση $\tau_1$/\allowbreak{}$\tau_2$
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.analyze\_hard\_residual}} --- Έξοδος: \en{hard residual} Επιπέδου~3
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.benchmark\_inference}} --- Έξοδος: απόδοση συμπερασμού \en{CPU}
+  \item \texttt{\en{python -\allowbreak{}m scripts.dsaa.compare\_matched\_samples}} ---
     Εκπαιδεύει \en{TF-IDF + LR}, \en{TF-IDF + SVM}, \en{POS} και
     \en{CascadeLP} στα ίδια δείγματα \MatchedSampleSize{} ζευγών και γράφει τα
     αποτελέσματα στο
     \texttt{\en{outputs\slash{}predictions\slash{}graph\_holdout\_v1\slash{}matched\_samples\_v2}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.analysis.run\_wiki\_cs\_8k\_experiment}} ---
+  \item \texttt{\en{python -\allowbreak{}m scripts.wiki.run\_experiment}} ---
     Έξοδος: \texttt{\en{outputs\slash{}stats\slash{}wiki\_cs\_8k\_experiment\_results.json}}
     με αποτελέσματα ανά επίπεδο, διαγνωστικά υποσύνολα και επαναδειγματοληψία
     \en{paired bootstrap}, καθώς και αρχεία προβλέψεων ανά μοντέλο και επίπεδο
@@ -194,11 +195,11 @@
 \textit{Παραγωγή Υλικού Διατριβής}
 
 \begin{itemize}
-  \item \texttt{\en{python -\allowbreak{}m scripts.paper.compute\_summary\_stats}} --- Έξοδος:
+  \item \texttt{\en{python -\allowbreak{}m scripts.thesis.compute\_summary\_stats}} --- Έξοδος:
     \texttt{\en{latex\slash{}shared\slash{}results\slash{}summary\_stats.json}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_macros}} --- Έξοδος:
+  \item \texttt{\en{python -\allowbreak{}m scripts.thesis.generate\_macros}} --- Έξοδος:
     \texttt{\en{latex\slash{}shared\slash{}generated\_macros.tex}}
-  \item \texttt{\en{python -\allowbreak{}m scripts.paper.generate\_figures}} --- Έξοδος:
+  \item \texttt{\en{python -\allowbreak{}m scripts.thesis.generate\_figures}} --- Έξοδος:
     \texttt{\en{latex\slash{}shared\slash{}figures\slash{}*.pdf}}
 \end{itemize}
 
@@ -281,13 +282,17 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 πίνακες~\ref{tab:hyperparam-classifiers} και~\ref{tab:hyperparam-features} ως \en{macros}, ώστε να
 παραμένουν αυτόματα συγχρονισμένες με τα ίδια τα αρχεία \en{YAML}.
 
-Η σειρά αναπαραγωγής ολόκληρου του \en{pipeline} από ένα καθαρό \en{checkout}, όπως
-τεκμηριώνεται στην κεφαλίδα σχολίων του ίδιου του \texttt{\en{Makefile}}, είναι:
+Η σειρά αναπαραγωγής των πειραμάτων και της διατριβής από ένα καθαρό \en{checkout},
+με τις απαραίτητες εξωτερικές εισόδους διαθέσιμες, είναι:
 
 \begin{enumerate}
   \item \texttt{\en{make pipeline-dsaa}} για λήψη δεδομένων, χαρακτηριστικά,
-        ελέγχους, εκπαίδευση και αξιολόγηση
-  \item \texttt{\en{make pipeline-paper}} για συγκεντρωτικά στατιστικά, σχήματα
+        ελέγχους, εκπαίδευση και τοπική αξιολόγηση
+  \item \texttt{\en{make pipeline-wiki}} για το δεύτερο σύνολο δεδομένων,
+        αφού εξασφαλιστούν τα απαιτούμενα \en{SQL dumps} και η πρόσβαση στα κείμενα
+  \item Υποβολή στο \en{Kaggle} και καταγραφή της εξωτερικής βαθμολογίας, εφόσον
+        χρειάζεται πλήρης αναπαραγωγή του πειράματος \en{DSAA}
+  \item \texttt{\en{make build-thesis}} για συγκεντρωτικά στατιστικά, σχήματα
         και μεταγλώττιση της διατριβής
 \end{enumerate}
 
@@ -302,9 +307,9 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 Με αυτά διαθέσιμα, η σειρά είναι
 \texttt{\en{make pipeline-wiki}}.
 Ο στόχος εκτελεί διαδοχικά τα
-\texttt{\en{build\_from\_wikidump}}, \texttt{\en{fetch\_wiki\_cs\_8k\_text}},
-\texttt{\en{build\_wiki\_cs\_8k\_dataset}} και
-\texttt{\en{run\_wiki\_cs\_8k\_experiment}}.
+\texttt{\en{scripts.wiki.build\_graph}}, \texttt{\en{scripts.wiki.fetch\_text}},
+\texttt{\en{scripts.wiki.build\_dataset}} και
+\texttt{\en{scripts.wiki.run\_experiment}}.
 Το τελευταίο βήμα αποθηκεύει και
 επαναχρησιμοποιεί τη διαίρεση μαζί με \en{fingerprints} εισόδου στο
 \texttt{\en{data\slash{}interim\slash{}wiki\_cs\_8k}}, ώστε να μην μπορεί να
@@ -315,7 +320,7 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 \label{sec:protocol-audit-appendix}
 
 Ο πίνακας~\ref{tab:protocol-audit} συνοψίζει τις ωμές τιμές του
-\texttt{\en{scripts\slash{}analysis\slash{}audit\_protocol.py}}, του \en{script} που παράγει τους
+\texttt{\en{scripts\slash{}dsaa\slash{}audit\_protocol.py}}, του \en{script} που παράγει τους
 αριθμούς διαρροής μέσω κατασκευής γραφήματος (\S\ref{subsec:data-splits}) και
 ευαισθησίας στη σειρά άκρων (\S\ref{sec:endpoint-swap}). Το \en{script} δεν
 εξάγει κανένα νέο χαρακτηριστικό ούτε επανεκπαιδεύει κανένα μοντέλο: διαβάζει
@@ -325,7 +330,7 @@ $\theta_{\mathrm{CN}}$/\allowbreak{}$\theta_{\mathrm{TF\text{-}IDF}}$ (\texttt{\
 μη-αντεστραμμένες προβλέψεις του αναπαράγουν επακριβώς το αποθηκευμένο
 \texttt{\en{cascade\_val\_tiers.csv}} πριν υπολογίσει οτιδήποτε άλλο.
 Εκτελείται με
-\texttt{\en{python -m scripts.analysis.audit\_protocol --swap}} και γράφει
+\texttt{\en{python -m scripts.dsaa.audit\_protocol --swap}} και γράφει
 \texttt{\en{outputs\slash{}stats\slash{}supervisor\_audit.json}}, το οποίο διαβάζεται στη
 συνέχεια από το \texttt{\en{compute\_summary\_stats.py}} (\S\ref{sec:code-layout}) για την
 παραγωγή των \en{macros} \texttt{\en{Audit*}}/\texttt{\en{Swap*}} που αναφέρονται στο κύριο κείμενο.

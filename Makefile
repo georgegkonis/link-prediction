@@ -1,24 +1,24 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV) --no-capture-output
 
-.PHONY: help env env-update run train evaluate compare-matched kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets latex-compile latex-clean test jupyter
+.PHONY: help env env-update run train predict-test dsaa-train-all compare-matched kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets build-thesis pipeline-dsaa pipeline-wiki latex-compile latex-clean test jupyter
 
 help:
 	@echo "Usage:"
 	@echo "  make env / env-update                 Manage conda environment"
-	@echo "  make run SCRIPT=data.download_data    Run any python script in scripts/"
+	@echo "  make run SCRIPT=dsaa.download         Run any Python entry point in scripts/"
 	@echo "  make train MODEL=cascade              Train a DSAA model"
-	@echo "  make evaluate MODEL=cascade           Evaluate a DSAA model"
+	@echo "  make predict-test MODEL=cascade       Write DSAA test predictions"
+	@echo "  make dsaa-train-all                   Train all six DSAA models"
 	@echo "  make compare-matched                  Compare DSAA models on equal 20k samples"
-	@echo "  make kaggle-submit FILE=.. MSG=..     Submit predictions to Kaggle"
-	@echo "  make kaggle-check                     Check recent Kaggle scores"
+	@echo "  make kaggle-submit FILE=.. MSG=..     Submit predictions to Kaggle (WAIT=--wait optional)"
+	@echo "  make kaggle-check                     Check recent Kaggle scores (WAIT=--wait optional)"
 	@echo "  make thesis-assets                    Regenerate committed macros and vector figures"
+	@echo "  make build-thesis                     Build thesis from existing experiment results"
 	@echo "  make latex-compile DOC=thesis         Compile thesis/paper/presentation PDF"
 	@echo "  make latex-clean DOC=thesis           Clean LaTeX aux files"
-	@echo "  make pipeline-dsaa                    Run entire DSAA pipeline"
-	@echo "  make pipeline-wiki                    Run entire Wiki pipeline"
-	@echo "  make pipeline-paper                   Build stats, figures, and thesis PDF"
-	@echo "  make pipeline-all                     Run EVERYTHING end-to-end"
+	@echo "  make pipeline-dsaa                    Rebuild local DSAA results (Kaggle scores are external)"
+	@echo "  make pipeline-wiki                    Rebuild Wiki results (requires SQL dumps and text access)"
 	@echo "  make test                             Run tests"
 
 env:
@@ -31,28 +31,36 @@ run:
 	$(RUN) python -m scripts.$(SCRIPT)
 
 train:
-	$(RUN) python -m scripts.analysis.run_dsaa_train model=$(MODEL)
+	$(RUN) python -m scripts.dsaa.train model=$(MODEL)
 
-evaluate:
-	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=$(MODEL)
+predict-test:
+	$(RUN) python -m scripts.dsaa.predict_test model=$(MODEL)
+
+dsaa-train-all:
+	$(MAKE) train MODEL=structural
+	$(MAKE) train MODEL=tfidf
+	$(MAKE) train MODEL=pos
+	$(MAKE) train MODEL=embedding
+	$(MAKE) train MODEL=svm
+	$(MAKE) train MODEL=cascade
 
 compare-matched:
-	$(RUN) python -m scripts.analysis.compare_matched_samples
+	$(RUN) python -m scripts.dsaa.compare_matched_samples
 
 kaggle-submit:
-	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --file $(FILE) --message "$(MSG)"
+	$(RUN) python -m scripts.dsaa.kaggle --file $(FILE) --message "$(MSG)" $(WAIT)
 
 kaggle-check:
-	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --check
+	$(RUN) python -m scripts.dsaa.kaggle --check $(WAIT)
 
 compute-stats:
-	$(RUN) python -m scripts.paper.compute_summary_stats
+	$(RUN) python -m scripts.thesis.compute_summary_stats
 
 thesis-macros:
-	$(RUN) python -m scripts.paper.generate_macros
+	$(RUN) python -m scripts.thesis.generate_macros
 
 thesis-figures:
-	MPLCONFIGDIR=/tmp/matplotlib-link-prediction $(RUN) python -m scripts.paper.generate_figures
+	MPLCONFIGDIR=/tmp/matplotlib-link-prediction $(RUN) python -m scripts.thesis.generate_figures
 
 thesis-assets: thesis-macros thesis-figures
 
@@ -71,30 +79,31 @@ jupyter:
 
 # Full Automation Pipelines
 pipeline-dsaa:
-	@echo "--- Running Full DSAA Pipeline ---"
-	$(RUN) python -m scripts.data.download_data
-	$(RUN) python -m scripts.data.compute_structural
-	$(RUN) python -m scripts.data.compute_semantic
-	$(RUN) python -m scripts.analysis.audit_leakage
-	$(RUN) python -m scripts.analysis.analyze_dataset
-	$(RUN) python -m scripts.analysis.run_dsaa_train model=cascade
-	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=cascade
-	$(RUN) python -m scripts.analysis.analyze_cascade
-	$(RUN) python -m scripts.analysis.analyze_hard_residual
-	$(RUN) python -m scripts.analysis.benchmark_throughput
-	$(RUN) python -m scripts.analysis.ablate_cascade_thresholds
+	@echo "--- Rebuilding local DSAA results; Kaggle scores require a separate submission ---"
+	$(RUN) python -m scripts.dsaa.download
+	$(RUN) python -m scripts.dsaa.compute_structural
+	$(RUN) python -m scripts.dsaa.compute_semantic
+	$(RUN) python -m scripts.dsaa.audit_pairs
+	$(RUN) python -m scripts.dsaa.label_difficulty
+	$(RUN) python -m scripts.dsaa.audit_negative_sampling
+	$(MAKE) dsaa-train-all
+	$(MAKE) predict-test MODEL=cascade
+	$(RUN) python -m scripts.dsaa.audit_prediction_shortcut
+	$(RUN) python -m scripts.dsaa.audit_protocol --swap
+	$(RUN) python -m scripts.dsaa.analyze_hard_residual
+	$(RUN) python -m scripts.dsaa.benchmark_inference
+	$(RUN) python -m scripts.dsaa.sweep_routing_thresholds
+	$(MAKE) compare-matched
 
 pipeline-wiki:
 	@echo "--- Running Full Wiki-CS-8k Pipeline ---"
-	$(RUN) python -m scripts.data.build_from_wikidump
-	$(RUN) python -m scripts.data.fetch_wiki_cs_8k_text
-	$(RUN) python -m scripts.data.build_wiki_cs_8k_dataset
-	$(RUN) python -m scripts.analysis.run_wiki_cs_8k_experiment
+	$(RUN) python -m scripts.wiki.build_graph
+	$(RUN) python -m scripts.wiki.fetch_text
+	$(RUN) python -m scripts.wiki.build_dataset
+	$(RUN) python -m scripts.wiki.run_experiment
 
-pipeline-paper:
+build-thesis:
 	@echo "--- Compiling Thesis Assets & PDF ---"
 	$(MAKE) compute-stats
 	$(MAKE) thesis-assets
 	$(MAKE) latex-compile DOC=thesis
-
-pipeline-all: pipeline-dsaa pipeline-wiki pipeline-paper

@@ -5,7 +5,7 @@ Writes:
     outputs/predictions/dsaa/throughput_benchmark.json
 
 Usage:
-    python -m scripts.analysis.benchmark_throughput
+    python -m scripts.dsaa.benchmark_inference
 """
 
 import json

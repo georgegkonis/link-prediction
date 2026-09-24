@@ -5,7 +5,7 @@ Writes:
     outputs/predictions/dsaa/kaggle_scores.csv
 
 Usage:
-    python -m scripts.analysis.submit_dsaa_kaggle --file outputs/predictions/dsaa/cascade_submission.csv
+    python -m scripts.dsaa.kaggle --file outputs/predictions/dsaa/cascade_submission.csv
 """
 
 import argparse
@@ -24,14 +24,11 @@ from omegaconf import OmegaConf
 
 from src.utils.log_utils import setup_logging
 
-cfg = OmegaConf.load(pathlib.Path(__file__).parent.parent / 'configs' / 'config.yaml')
+cfg = OmegaConf.load(pathlib.Path(__file__).resolve().parents[2] / 'configs' / 'config.yaml')
 log = setup_logging('submit_kaggle')
 COMPETITION = cfg.kaggle.competition
 LOG_PATH = cfg.paths.log_path
 LOG_COLUMNS = ['ref', 'date', 'file_name', 'description', 'status', 'public_score', 'private_score']
-
-if not os.environ.get('KAGGLE_API_TOKEN'):
-    sys.exit('KAGGLE_API_TOKEN not set in .env. See kaggle.com/settings > API.')
 
 from kagglesdk import KaggleClient  # noqa: E402
 from kagglesdk.competitions.types.competition_api_service import (  # noqa: E402
@@ -66,8 +63,14 @@ def _list(api) -> list:
     return api.list_submissions(req).submissions
 
 
+def _client():
+    if not os.environ.get('KAGGLE_API_TOKEN'):
+        sys.exit('KAGGLE_API_TOKEN not set in .env. See kaggle.com/settings > API.')
+    return KaggleClient()
+
+
 def submit(file_path: str, message: str, wait: bool):
-    client = KaggleClient()
+    client = _client()
     api = client.competitions.competition_api_client
     file_name = os.path.basename(file_path)
 
@@ -112,7 +115,7 @@ def submit(file_path: str, message: str, wait: bool):
 
 
 def check(wait: bool = False):
-    client = KaggleClient()
+    client = _client()
     api = client.competitions.competition_api_client
 
     while True:

@@ -2,7 +2,7 @@
 Evaluate baselines and models on the wiki dataset.
 
 Usage:
-    python -m scripts.analysis.run_wiki_cs_8k_experiment
+    python -m scripts.wiki.run_experiment
 """
 import argparse
 import json

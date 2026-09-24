@@ -5,7 +5,7 @@ Writes:
     data/raw/dsaa/
 
 Usage:
-    python -m scripts.data.download_data
+    python -m scripts.dsaa.download
 """
 
 import os

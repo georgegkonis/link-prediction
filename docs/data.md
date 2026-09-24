@@ -24,7 +24,7 @@ The table below describes the files for a given dataset (substitute `{dataset}` 
 
 ## Key Facts
 
-Verified via `make run SCRIPT=analysis.audit_leakage`:
+Verified via `make run SCRIPT=dsaa.audit_pairs`:
 
 - Train/test pair overlap is negligible (exact and reversed)
 - A small number of self-loops appear in both splits; nearly all are positive (one is labeled negative — a label anomaly)
@@ -32,7 +32,7 @@ Verified via `make run SCRIPT=analysis.audit_leakage`:
 
 ## Separability
 
-From `make run SCRIPT=analysis.analyze_dataset`:
+From `make run SCRIPT=dsaa.label_difficulty`:
 
 - The majority of pairs fail the selected simple separability criteria; this does not prove that they require semantic reasoning
 - A significant minority are trivially resolvable via structural or text-similarity features

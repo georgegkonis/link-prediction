@@ -159,7 +159,7 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 72-διάστατο διάνυσμα συχνοτήτων μερών του λόγου μέσω \texttt{\en{compute\_pos\_features()}},
 συνενώνοντας τα 36-διάστατα ιστογράμματα (\texttt{\en{pos\_frequency\_vector()}}) των δύο τελικών
 κόμβων.
-Τα \texttt{\en{scripts\slash{}data\slash{}compute\_structural.py}} και \texttt{\en{compute\_semantic.py}} είναι τα σημεία
+Τα \texttt{\en{scripts\slash{}dsaa\slash{}compute\_structural.py}} και \texttt{\en{compute\_semantic.py}} είναι τα σημεία
 εισόδου \en{CLI} που καλούν αυτές τις συναρτήσεις και αποθηκεύουν το αποτέλεσμα ως
 \en{CSV} στο \texttt{\en{data\slash{}interim\slash{}}}, ώστε να υπολογίζονται μία φορά και να επαναχρησιμοποιούνται
 σε κάθε πείραμα εκπαίδευσης.
@@ -183,7 +183,7 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 επίπεδο, και η \texttt{\en{.save()}}/\texttt{\en{.load()}} σειριοποιούν ολόκληρο το αντικείμενο μέσω
 \texttt{\en{joblib}} στο \texttt{\en{outputs\slash{}checkpoints\slash{}}}.
 
-Για το αρχικό πείραμα \en{DSAA}, το \texttt{\en{scripts\slash{}analysis\slash{}run\_dsaa\_train.py}} συνδέει τα παραπάνω: φορτώνει τα
+Για το αρχικό πείραμα \en{DSAA}, το \texttt{\en{scripts\slash{}dsaa\slash{}train.py}} συνδέει τα παραπάνω: φορτώνει τα
 ήδη υπολογισμένα χαρακτηριστικά από το \texttt{\en{data\slash{}interim\slash{}dsaa\slash{}}}, διαχωρίζει σε υποσύνολα
 εκπαίδευσης/επικύρωσης με στρωματοποίηση ως προς την ετικέτα
 (\texttt{\en{train\_test\_split(...,\allowbreak{} stratify=y)}}), και εφαρμόζει το ίδιο κλείσιμο \texttt{\en{sub()}} σε
@@ -196,12 +196,12 @@ Coefficient}, \en{Adamic-Adar Index} και \en{Preferential Attachment}). Εί�
 \texttt{\en{src\slash{}utils\slash{}metrics.py}}, και εξάγει ανά-ζεύγος στήλες
 \texttt{\en{(tier\_used,\allowbreak{} difficulty,\allowbreak{} y\_pred)}} στο \texttt{\en{outputs\slash{}predictions\slash{}dsaa\slash{}cascade\_val\_tiers.csv}}.
 Το
-\texttt{\en{scripts\slash{}analysis\slash{}run\_dsaa\_evaluate.py}} επαναλαμβάνει την ίδια διασταύρωση στο σύνολο ελέγχου,
-παράγοντας το αντίστοιχο \texttt{\en{cascade\_test\_tiers.csv}}.
+\texttt{\en{scripts\slash{}dsaa\slash{}predict\_test.py}} φορτώνει το ήδη εκπαιδευμένο μοντέλο και
+παράγει προβλέψεις για το σύνολο ελέγχου, μαζί με το \texttt{\en{cascade\_test\_tiers.csv}}.
 Οι αναλύσεις ανά
 επίπεδο και δυσκολία του \en{DSAA} προέρχονται από αυτά τα αρχεία.
 Για το νέο
-σύνολο, το \texttt{\en{scripts\slash{}analysis\slash{}run\_wiki\_cs\_8k\_experiment.py}}
+σύνολο, το \texttt{\en{scripts\slash{}wiki\slash{}run\_experiment.py}}
 χρησιμοποιεί την ομαδοποιημένη διαίρεση του \texttt{\en{src\slash{}data\slash{}protocol.py}},
 κατασκευάζει γράφημα μόνο από το τμήμα εκπαίδευσης και αποθηκεύει τις μετρικές στο
 \texttt{\en{outputs\slash{}stats\slash{}wiki\_cs\_8k\_experiment\_results.json}}.

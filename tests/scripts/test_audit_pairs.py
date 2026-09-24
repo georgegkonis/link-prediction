@@ -1,9 +1,9 @@
-"""Tests for the pure audit helpers in scripts/analysis/audit_leakage.py."""
+"""Tests for the pure audit helpers in scripts/dsaa/audit_pairs.py."""
 
 import pandas as pd
 import pytest
 
-from scripts.analysis.audit_leakage import (
+from scripts.dsaa.audit_pairs import (
     _undirected_key,
     intra_train_duplicates,
     pair_overlap,

@@ -8,7 +8,7 @@ Writes:
     outputs/predictions/dsaa/hard_residual_analysis.json
 
 Usage:
-    python -m scripts.analysis.analyze_hard_residual
+    python -m scripts.dsaa.analyze_hard_residual
 """
 
 import json

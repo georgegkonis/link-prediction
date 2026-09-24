@@ -44,7 +44,7 @@ def _split_row(tuple_str: str) -> list:
 
 
 def iter_insert_rows(path: str, table: str):
-    """Yield each row (list of string fields, NULL -> None) from `INSERT INTO \`table\` VALUES (...);` lines."""
+    """Yield rows (string fields, NULL as None) from MediaWiki INSERT statements."""
     opener = gzip.open if path.endswith('.gz') else open
     prefix = f"INSERT INTO `{table}` VALUES "
     with opener(path, 'rt', encoding='utf-8', errors='replace') as f:

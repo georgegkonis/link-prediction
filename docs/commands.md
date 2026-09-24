@@ -8,18 +8,26 @@ All `make` targets invoke `conda run -n link-prediction` internally — no manua
 make env                               # Create conda environment
 make env-update                        # Update from environment.yml
 
-# Run any script via 'make run SCRIPT=...'
-make run SCRIPT=data.download_data     # Pull DSAA 2023 dataset from Kaggle
-make run SCRIPT=data.compute_structural # Compute structural features
-make run SCRIPT=data.compute_semantic  # Compute semantic features
-make run SCRIPT=analysis.analyze_dataset # Run separability characterization
-make run SCRIPT=paper.generate_figures # Generate thesis figures
+# Run an individual entry point
+make run SCRIPT=dsaa.download           # Pull DSAA 2023 dataset from Kaggle
+make run SCRIPT=dsaa.compute_structural # Compute original-protocol graph features
+make run SCRIPT=dsaa.compute_semantic   # Compute text features
+make run SCRIPT=dsaa.label_difficulty   # Label difficulty categories
+make run SCRIPT=thesis.generate_figures # Generate thesis figures from summary_stats.json
 
 # Dedicated Training Targets
 make train MODEL=structural            # Train a baseline model
 make train MODEL=cascade               # Train CascadeLP
-make evaluate MODEL=cascade            # Run inference on test set
+make predict-test MODEL=cascade         # Write predictions for unlabelled DSAA test pairs
+make dsaa-train-all                     # Train all six DSAA models
 make compare-matched                   # Equal-size DSAA comparison (3 x 20k samples)
+make kaggle-submit FILE=path.csv MSG=run WAIT=--wait # Optional score polling
+make kaggle-check WAIT=--wait          # Refresh competition scores
+
+# Rebuild local experiments and thesis artifacts
+make pipeline-dsaa                     # Needs Kaggle data access; does not submit predictions
+make pipeline-wiki                     # Needs MediaWiki SQL dumps in /tmp and Hugging Face access
+make build-thesis                      # Needs completed experiment outputs and Kaggle score log
 
 # Compilation
 make latex-compile DOC=thesis          # Compile thesis PDF
@@ -36,24 +44,25 @@ For fast iteration without running full feature computation:
 ```bash
 
 # Skip Sentence-Transformer (slow model download + inference)
-conda run -n link-prediction python -m scripts.data.compute_semantic --nrows 300 --skip-st
+conda run -n link-prediction python -m scripts.dsaa.compute_semantic dev.nrows=300 dev.skip_st=true
 ```
 
 ## Wiki-CS-8k Pipeline
 
-For the Wiki-CS-8k dataset, the following parallel pipeline of scripts is used:
+For Wiki-CS-8k, run these steps in order after placing the MediaWiki SQL dumps in `/tmp`:
 
 ```bash
-conda run -n link-prediction python -m scripts.data.build_from_wikidump
-conda run -n link-prediction python -m scripts.data.fetch_wiki_cs_8k_text
-conda run -n link-prediction python -m scripts.data.build_wiki_cs_8k_dataset
-conda run -n link-prediction python -m scripts.analysis.run_wiki_cs_8k_experiment
+conda run -n link-prediction python -m scripts.wiki.build_graph
+conda run -n link-prediction python -m scripts.wiki.fetch_text
+conda run -n link-prediction python -m scripts.wiki.build_dataset
+conda run -n link-prediction python -m scripts.wiki.run_experiment
 ```
 
 ## Running on Kaggle
 
-`notebooks/kaggle_full_pipeline.ipynb` runs the whole pipeline (features → analysis → train all
-six models → evaluate → submission) inside a Kaggle notebook session. Import it, then:
+`notebooks/kaggle_full_pipeline.ipynb` still refers to the former script paths and
+needs updating before it can be run. The current command-line entry points above
+are the supported path for this branch. When the notebook is updated, it will need:
 
 1. **Accelerator:** GPU (the sentence-transformer encoder uses it).
 2. **Internet:** on — required for `git clone`, `pip install`, and the NLTK/HuggingFace downloads.
@@ -61,7 +70,6 @@ six models → evaluate → submission) inside a Kaggle notebook session. Import
 4. **Secret:** Add-ons → Secrets → `GITHUB_PAT`, a GitHub token with `repo` read scope. The
    notebook clones this repo, so any local change must be pushed before it will be picked up.
 
-The notebook is a thin driver — it symlinks `data/raw/dsaa`, `data/interim/dsaa` and `outputs/checkpoints/dsaa`
-onto Kaggle paths and then calls the same `python -m scripts.…` entry points as the make targets.
-Set `SAMPLE_ROWS` in the first cell to truncate `train.csv`/`test.csv` for a minutes-long smoke
-test before committing to a multi-hour full run.
+The former notebook symlinked `data/raw/dsaa`, `data/interim/dsaa` and
+`outputs/checkpoints/dsaa` onto Kaggle paths. Its Python module calls must be
+updated before restoring that workflow.

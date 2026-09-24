@@ -18,7 +18,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from src.data.loader import build_graph, load_edges
-from src.data.protocol import load_split
+from src.data.protocol import prepare_split
 from src.features.structural import compute_heuristics
 from src.models.cascade import CascadeLP
 from src.models.svm import PosClassifier, SvmClassifier, TfidfClassifier
@@ -48,12 +48,25 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    pairs = load_edges(args.raw)
+    partition, split_meta = prepare_split(pairs, args.split_directory)
     output = Path(args.output)
     if output.exists():
-        raise FileExistsError(f'Choose a fresh output directory; already exists: {output}')
-
-    pairs = load_edges(args.raw)
-    partition, split_meta = load_split(pairs, args.split_directory)
+        protocol_path = output / 'protocol.json'
+        metrics_path = output / 'metrics.csv'
+        if protocol_path.exists() and metrics_path.exists():
+            previous = json.loads(protocol_path.read_text())
+            metrics = pd.read_csv(metrics_path)
+            expected = {(seed, model) for seed in args.seeds for model in MODELS}
+            actual = set(zip(metrics['sample_seed'], metrics['model']))
+            if (previous.get('split') == split_meta
+                    and previous.get('sample_size') == args.size
+                    and previous.get('seeds') == args.seeds
+                    and previous.get('models') == list(MODELS)
+                    and len(metrics) == len(expected) and actual == expected):
+                print(f'Reusing completed matched comparison: {output}')
+                return
+        raise FileExistsError(f'Existing matched comparison is incomplete or differs: {output}; choose a fresh --output')
     train_idx = np.flatnonzero(partition.to_numpy() == 'train')
     val_idx = np.flatnonzero(partition.to_numpy() == 'val')
     labels = pairs['label'].to_numpy()

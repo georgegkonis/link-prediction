@@ -1,4 +1,4 @@
-"""Tests for scripts/run_dsaa_train.py::_split — the train/val partitioning logic.
+"""Tests for scripts.dsaa.train._split — the train/val partitioning logic.
 
 Only the pure helper is exercised; `main()` is a hydra entry point that reads
 `data/interim/dsaa/` and writes checkpoints.
@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from scripts.analysis.run_dsaa_train import _split
+from scripts.dsaa.train import _split
 
 
 @pytest.fixture

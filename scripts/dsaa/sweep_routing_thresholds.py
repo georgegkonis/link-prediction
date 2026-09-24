@@ -2,7 +2,7 @@
 Ablate cascade thresholds to measure performance changes.
 
 Usage:
-    python -m scripts.analysis.ablate_cascade_thresholds
+    python -m scripts.dsaa.sweep_routing_thresholds
 """
 
 import json

@@ -8,7 +8,7 @@ Writes:
     <output>/text_fetch_stats.json
 
 Usage:
-    python -m scripts.data.fetch_wiki_cs_8k_text --output data/raw/wiki_cs_8k
+    python -m scripts.wiki.fetch_text --output data/raw/wiki_cs_8k
 """
 import argparse
 import json

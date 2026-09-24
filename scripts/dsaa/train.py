@@ -2,7 +2,7 @@
 Train and validate a model on precomputed features.
 
 Usage:
-    python -m scripts.analysis.run_dsaa_train model=cascade
+    python -m scripts.dsaa.train model=cascade
 """
 
 import json
@@ -79,7 +79,7 @@ def _split(data: dict, model_name: str, val_size: float, seed: int):
     return tr, val, sub
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="config")
+@hydra.main(version_base=None, config_path="../../configs", config_name="config")
 def main(cfg: DictConfig):
     model_name = cfg.model.name
     tag = cfg.get('tag')

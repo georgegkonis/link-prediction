@@ -14,7 +14,7 @@ Writes:
     data/interim/dsaa/pos_test.npy
 
 Usage:
-    python -m scripts.data.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]
+    python -m scripts.dsaa.compute_semantic [dev.nrows=N] [dev.skip_st=true] [dev.skip_pos=true]
 """
 
 import hydra

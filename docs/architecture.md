@@ -10,9 +10,9 @@
 │   ├── models/                 Classifiers and CascadeLP orchestrator
 │   └── utils/                  Evaluation metrics, difficulty labeling, helpers
 ├── scripts/                    CLI entry points
-│   ├── data/                   download_data, compute_structural, compute_semantic, build_from_wikidump, fetch_wiki_cs_8k_text, build_wiki_cs_8k_dataset
-│   ├── analysis/               run_dsaa_train, run_dsaa_evaluate, submit_dsaa_kaggle, run_wiki_cs_8k_experiment, audit_leakage, analyze_dataset, analyze_cascade, ablations
-│   └── paper/                  generate_macros, generate_figures
+│   ├── dsaa/                   DSAA download, features, models, audits, and Kaggle integration
+│   ├── wiki/                   Wikipedia graph, text, labeled pairs, and experiment
+│   └── thesis/                 Aggregate results, generate macros and vector figures
 ├── data/
 │   ├── raw/                    Source data (subdirs: dsaa/, wiki_cs_8k/)
 │   └── interim/                Generated features (subdirs: dsaa/, wiki_cs_8k/)

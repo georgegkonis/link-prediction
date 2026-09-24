@@ -8,7 +8,7 @@ Writes:
     <output>/train.csv
 
 Usage:
-    python -m scripts.data.build_wiki_cs_8k_dataset --output data/raw/wiki_cs_8k
+    python -m scripts.wiki.build_dataset --output data/raw/wiki_cs_8k
 """
 import argparse
 import pathlib

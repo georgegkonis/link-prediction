@@ -8,7 +8,7 @@ Writes:
     latex/shared/figures/
 
 Usage:
-    python -m scripts.paper.generate_figures
+    python -m scripts.thesis.generate_figures
 """
 
 import json

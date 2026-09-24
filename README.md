@@ -39,25 +39,23 @@ All `make` targets invoke `conda run -n link-prediction` internally.
 # 1. Create environment
 conda env create -f environment.yml
 
-# 2. Download dataset (requires KAGGLE_USERNAME / KAGGLE_KEY in .env)
-make run SCRIPT=data.download_data
+# 2. Download dataset (requires Kaggle access)
+make run SCRIPT=dsaa.download
 
 # 3. Compute features
-make run SCRIPT=data.compute_structural
-make run SCRIPT=data.compute_semantic
+make run SCRIPT=dsaa.compute_structural
+make run SCRIPT=dsaa.compute_semantic
 
 # 4. Train and evaluate
 make train MODEL=cascade
-make evaluate MODEL=cascade
+make predict-test MODEL=cascade
 
 # 5. Compile thesis
 make latex-compile DOC=thesis
 ```
 
-To run the whole pipeline on Kaggle instead of locally, import
-[`notebooks/kaggle_full_pipeline.ipynb`](notebooks/kaggle_full_pipeline.ipynb). It needs a GPU
-accelerator, Internet enabled, the `dsaa-2023-competition` data attached, and a `GITHUB_PAT`
-secret (it clones this repo). See [docs/commands.md](docs/commands.md#running-on-kaggle).
+The Kaggle notebook still uses the former script paths and needs updating before reuse.
+See [docs/commands.md](docs/commands.md#running-on-kaggle).
 
 ## Documentation
 
@@ -66,12 +64,13 @@ secret (it clones this repo). See [docs/commands.md](docs/commands.md#running-on
 | [docs/architecture.md](docs/architecture.md) | Repository layout, module reference          |
 | [docs/data.md](docs/data.md)                 | Data files, key facts, separability stats    |
 | [docs/commands.md](docs/commands.md)         | All make targets and dev flags               |
+| [scripts/README.md](scripts/README.md)       | Purpose and output of every script           |
 | [docs/design.md](docs/design.md)             | CascadeLP architecture, key design decisions |
 
 ## Troubleshooting
 
-- **Kaggle download fails:** Check `~/.kaggle/kaggle.json` or set `KAGGLE_USERNAME`/`KAGGLE_KEY` in `.env`
-- **Sentence-Transformer hangs:** Use `--skip-st` dev flag
+- **Kaggle download fails:** Check Kaggle credentials and competition access.
+- **Sentence-Transformer takes too long during development:** Use `dev.skip_st=true` with `scripts.dsaa.compute_semantic`.
 - **LaTeX build fails:** Run `make latex-clean DOC=thesis` and retry; check `latex/thesis/thesis.log`
 
 ## Author

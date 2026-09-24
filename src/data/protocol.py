@@ -82,8 +82,8 @@ def load_structural(pairs, directory, metadata, split='train'):
     directory = Path(directory)
     if not (directory / 'features.json').exists():
         raise FileNotFoundError(
-            'Revised structural features have not been prepared. The separate, potentially lengthy '
-            'step is: python -m scripts.data.compute_holdout_structural. Legacy caches cannot be used.')
+            f'Revised structural features are missing from {directory}. Generate features for this '
+            'split before loading them; legacy DSAA caches cannot be used.')
     feature_meta = json.loads((directory / 'features.json').read_text())
     if feature_meta['split'] != metadata:
         raise ValueError('Structural features belong to a different split/protocol')

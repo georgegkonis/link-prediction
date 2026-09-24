@@ -8,7 +8,7 @@ Writes:
     outputs/stats/hub_in_predictions_audit.json
 
 Usage:
-    python -m scripts.analysis.audit_hub_in_predictions
+    python -m scripts.dsaa.audit_prediction_shortcut
 """
 import argparse
 import json

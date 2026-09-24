@@ -11,14 +11,14 @@ Writes:
     <output>/crawl_stats.json
 
 Usage:
-    python -m scripts.data.build_from_wikidump --dump-dir /tmp --seed "Computer_science" --target 8000
+    python -m scripts.wiki.build_graph --dump-dir /tmp --seed "Computer_science" --target 8000
 """
 import argparse
 import json
 import pathlib
 from collections import deque, defaultdict
 
-from scripts.data.mysql_dump import iter_insert_rows
+from src.data.mediawiki_sql import iter_insert_rows
 
 
 def main():

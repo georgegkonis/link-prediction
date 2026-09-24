@@ -1,7 +1,7 @@
 ENV = link-prediction
 RUN = conda run -n $(ENV) --no-capture-output
 
-.PHONY: help env env-update run train evaluate kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets latex-compile latex-clean test jupyter
+.PHONY: help env env-update run train evaluate compare-matched kaggle-submit kaggle-check compute-stats thesis-macros thesis-figures thesis-assets latex-compile latex-clean test jupyter
 
 help:
 	@echo "Usage:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make run SCRIPT=data.download_data    Run any python script in scripts/"
 	@echo "  make train MODEL=cascade              Train a DSAA model"
 	@echo "  make evaluate MODEL=cascade           Evaluate a DSAA model"
+	@echo "  make compare-matched                  Compare DSAA models on equal 20k samples"
 	@echo "  make kaggle-submit FILE=.. MSG=..     Submit predictions to Kaggle"
 	@echo "  make kaggle-check                     Check recent Kaggle scores"
 	@echo "  make thesis-assets                    Regenerate committed macros and vector figures"
@@ -34,6 +35,9 @@ train:
 
 evaluate:
 	$(RUN) python -m scripts.analysis.run_dsaa_evaluate model=$(MODEL)
+
+compare-matched:
+	$(RUN) python -m scripts.analysis.compare_matched_samples
 
 kaggle-submit:
 	$(RUN) python -m scripts.analysis.submit_dsaa_kaggle --file $(FILE) --message "$(MSG)"

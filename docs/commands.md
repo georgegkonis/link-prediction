@@ -19,6 +19,7 @@ make run SCRIPT=paper.generate_figures # Generate thesis figures
 make train MODEL=structural            # Train a baseline model
 make train MODEL=cascade               # Train CascadeLP
 make evaluate MODEL=cascade            # Run inference on test set
+make compare-matched                   # Equal-size DSAA comparison (3 x 20k samples)
 
 # Compilation
 make latex-compile DOC=thesis          # Compile thesis PDF

@@ -54,9 +54,6 @@ make predict-test MODEL=cascade
 make latex-compile DOC=thesis
 ```
 
-The Kaggle notebook still uses the former script paths and needs updating before reuse.
-See [docs/commands.md](docs/commands.md#running-on-kaggle).
-
 ## Documentation
 
 | Doc                                          | Contents                                     |

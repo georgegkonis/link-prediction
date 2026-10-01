@@ -111,19 +111,3 @@ features and every model. It reuses TF-IDF, POS, and embedding node features
 only after checking the article-text hash, feature settings, source-code hashes,
 node coverage, and cache-file checksums. Its outputs use the
 `wiki_cs_8k_sparse20_mixed` suffix and do not replace the random-training run.
-
-## Running on Kaggle
-
-`notebooks/kaggle_full_pipeline.ipynb` still refers to the former script paths and
-needs updating before it can be run. The current command-line entry points above
-are the supported path for this branch. When the notebook is updated, it will need:
-
-1. **Accelerator:** GPU (the sentence-transformer encoder uses it).
-2. **Internet:** on — required for `git clone`, `pip install`, and the NLTK/HuggingFace downloads.
-3. **Input:** attach the `dsaa-2023-competition` competition data.
-4. **Secret:** Add-ons → Secrets → `GITHUB_PAT`, a GitHub token with `repo` read scope. The
-   notebook clones this repo, so any local change must be pushed before it will be picked up.
-
-The former notebook symlinked `data/raw/dsaa`, `data/interim/dsaa` and
-`outputs/checkpoints/dsaa` onto Kaggle paths. Its Python module calls must be
-updated before restoring that workflow.

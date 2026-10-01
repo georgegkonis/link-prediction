@@ -71,5 +71,4 @@ pairs that reach the corresponding tier.
 | `generate_figures` | Render vector figures | `latex/shared/figures/*.pdf` |
 
 Run `make build-thesis` after the DSAA and Wikipedia results and Kaggle score
-log are available. The Kaggle notebook still uses old entry points and is left
-for its planned rewrite.
+log are available.

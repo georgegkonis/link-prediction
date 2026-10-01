@@ -3,7 +3,7 @@ name: Release Paper
 on:
   push:
     tags:
-      - "v*"
+      - "paper-v*"
 
 permissions:
   contents: write

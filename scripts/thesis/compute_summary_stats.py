@@ -25,6 +25,8 @@ Reads:
     outputs/predictions/graph_holdout_v1/matched_samples_v2/metrics.csv
     outputs/stats/{negative_sampling_audit,hub_in_predictions_audit,supervisor_audit}.json
     outputs/stats/wiki_cs_8k_experiment_results.json
+    outputs/stats/wiki_cs_8k_sparse20{,_mixed}_results.json
+    outputs/predictions/wiki_cs_8k_sparse20_mixed/test_hard_predictions.csv
     data/raw/wiki_cs_8k/{crawl_stats,text_fetch_stats}.json
     configs/{config,features,training,model} YAML defaults for legacy results
     DSAA feature/model run configuration snapshots when available
@@ -58,6 +60,9 @@ MATCHED_PREDICTIONS = pathlib.Path(
 STATS       = pathlib.Path('outputs/stats')
 CONFIGS     = pathlib.Path('configs')
 PUBLISHED_RESULTS = pathlib.Path('latex/shared/results')
+SPARSE_RANDOM = 'wiki_cs_8k_sparse20'
+SPARSE_MIXED = 'wiki_cs_8k_sparse20_mixed'
+SPARSE_BOOTSTRAP_RESAMPLES = 500
 
 
 def _load_configs() -> dict:
@@ -160,6 +165,72 @@ def _load_csv_optional(path: pathlib.Path, hint: str) -> pd.DataFrame | None:
     return None
 
 
+def _sparse_results() -> tuple[dict, dict]:
+    """Load comparable sparse Wiki runs and verify their fixed test suites."""
+    runs = []
+    for name in (SPARSE_RANDOM, SPARSE_MIXED):
+        path = STATS / f'{name}_results.json'
+        if not path.exists():
+            raise FileNotFoundError(f'{path} not found — run make pipeline-wiki-sparse'
+                                    ' and make pipeline-wiki-sparse-mixed first')
+        runs.append(json.loads(path.read_text()))
+    random_run, mixed_run = runs
+    a, b = random_run['benchmark'], mixed_run['benchmark']
+    if a['protocol'] != b['protocol'] or a['protocol'] != 'wiki_sparse_holdout_v1':
+        raise ValueError('Sparse Wiki runs have different protocols')
+    for key in ('seed', 'edge_retention', 'source'):
+        if a[key] != b[key]:
+            raise ValueError(f'Sparse Wiki runs differ on {key}')
+    for key in ('observed_edges', 'test_random', 'test_hard'):
+        if a['files'][key]['sha256'] != b['files'][key]['sha256']:
+            raise ValueError(f'Sparse Wiki runs have different {key} files')
+    for key in ('observed_positive_edges', 'held_out_positive_edges',
+                'train_pairs', 'test_random_pairs', 'test_hard_pairs'):
+        if a['counts'][key] != b['counts'][key]:
+            raise ValueError(f'Sparse Wiki runs differ on {key}')
+    if (a['negative_sampling']['train'] != 'uniform_verified_nonedge' or
+            b['negative_sampling']['train'] !=
+            'half_uniform_half_observed_two_hop_verified_nonedge'):
+        raise ValueError('Sparse Wiki training-negative protocols are unexpected')
+    if random_run['_meta']['run_config'] != mixed_run['_meta']['run_config']:
+        raise ValueError('Sparse Wiki runs used different model or feature settings')
+    return random_run, mixed_run
+
+
+def _paired_sparse_hard_delta(
+    mixed_run: dict, n_boot: int = SPARSE_BOOTSTRAP_RESAMPLES,
+) -> tuple[float, float, float]:
+    """Compare CascadeLP with embeddings on the same hard-test rows."""
+    path = pathlib.Path('outputs/predictions') / SPARSE_MIXED / 'test_hard_predictions.csv'
+    predictions = pd.read_csv(path, usecols=['y_true', 'cascade_pred', 'embedding_pred'])
+    y = predictions['y_true'].to_numpy(dtype=np.int8)
+    cascade = predictions['cascade_pred'].to_numpy(dtype=np.int8)
+    embedding = predictions['embedding_pred'].to_numpy(dtype=np.int8)
+    expected = mixed_run['suites']['test_hard']
+    if (len(y) != expected['cascade']['n'] or
+            not set(np.unique(np.concatenate((y, cascade, embedding)))) <= {0, 1}):
+        raise ValueError('Sparse hard-test predictions have unexpected size or labels')
+    cascade_f1 = f1_score(y, cascade, average='macro')
+    embedding_f1 = f1_score(y, embedding, average='macro')
+    if (not np.isclose(cascade_f1, expected['cascade']['macro_f1']) or
+            not np.isclose(embedding_f1, expected['embedding']['macro_f1'])):
+        raise ValueError('Sparse hard-test predictions disagree with the result summary')
+
+    codes = [2 * y + model for model in (cascade, embedding)]
+    rng = np.random.default_rng(mixed_run['benchmark']['seed'])
+    deltas = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, len(y), len(y))
+        scores = []
+        for code in codes:
+            tn, fp, fn, tp = np.bincount(code[idx], minlength=4)
+            scores.append(0.5 * (2 * tn / (2 * tn + fp + fn) +
+                                 2 * tp / (2 * tp + fp + fn)))
+        deltas[i] = scores[0] - scores[1]
+    lo, hi = np.quantile(deltas, [0.025, 0.975])
+    return cascade_f1 - embedding_f1, float(lo), float(hi)
+
+
 # ---------------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------------
@@ -235,6 +306,7 @@ def _load() -> dict:
     d['wikipedia'] = _load_json_optional(
         STATS / 'wiki_cs_8k_experiment_results.json',
         'run python -m scripts.wiki.run_experiment first')
+    d['wiki_sparse_random'], d['wiki_sparse_mixed'] = _sparse_results()
     if d['wikipedia']:
         wiki_cfg = d['wikipedia'].get('_meta', {}).get('run_config')
         if wiki_cfg:
@@ -901,6 +973,43 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
         for k in ('WfTrainSplitSize', 'WfValSplitSize', 'WfGraphNodes', 'WfGraphEdges', 'WfMeanDegree'):
             m[k] = _MISSING
+
+    # ---- Sparse Wiki stress test: fixed graph/test sets, changed training negatives ----
+    sparse_random = d['wiki_sparse_random']
+    sparse_mixed = d['wiki_sparse_mixed']
+    sparse_counts = sparse_random['benchmark']['counts']
+    m['WsRetentionPct'] = gpct(100 * sparse_random['benchmark']['edge_retention'], 1)
+    m['WsObservedEdges'] = gint(sparse_counts['observed_positive_edges'])
+    m['WsHeldOutEdges'] = gint(sparse_counts['held_out_positive_edges'])
+    m['WsTrainPairs'] = gint(sparse_counts['train_pairs'])
+    m['WsTestPairs'] = gint(sparse_counts['test_hard_pairs'])
+    m['WsMixedRandomTrainNegatives'] = gint(
+        sparse_mixed['benchmark']['counts']['train_random_negatives'])
+    m['WsMixedHardTrainNegatives'] = gint(
+        sparse_mixed['benchmark']['counts']['train_hard_negatives'])
+    for run, prefix in ((sparse_random, 'WsRandom'), (sparse_mixed, 'WsMixed')):
+        for suite, suffix in (('test_random', 'Random'), ('test_hard', 'Hard')):
+            results = run['suites'][suite]
+            m[f'{prefix}{suffix}CascadeFone'] = gfloat(results['cascade']['macro_f1'], 4)
+            m[f'{prefix}{suffix}CascadeAuc'] = gfloat(results['cascade']['auc_roc'], 4)
+            m[f'{prefix}{suffix}EmbeddingFone'] = gfloat(results['embedding']['macro_f1'], 4)
+            m[f'{prefix}{suffix}TierOnePct'] = gpct(
+                results['cascade']['tier_stats']['tier1']['pct'], 1)
+            m[f'{prefix}{suffix}TierThreePct'] = gpct(
+                results['cascade']['tier_stats']['tier3']['pct'], 1)
+            m[f'{prefix}{suffix}TierOneErrors'] = gint(
+                results['cascade']['tier_performance']['tier1']['errors'])
+    random_hard = sparse_random['suites']['test_hard']['cascade']['macro_f1']
+    mixed_hard = sparse_mixed['suites']['test_hard']['cascade']['macro_f1']
+    random_random = sparse_random['suites']['test_random']['cascade']['macro_f1']
+    mixed_random = sparse_mixed['suites']['test_random']['cascade']['macro_f1']
+    m['WsHardGain'] = gfloat(mixed_hard - random_hard, 4)
+    m['WsRandomCost'] = gfloat(random_random - mixed_random, 4)
+    delta, lo, hi = _paired_sparse_hard_delta(sparse_mixed)
+    m['WsMixedHardDeltaEmbedding'] = gfloat(delta, 4)
+    m['WsMixedHardDeltaEmbeddingCiLow'] = gfloat(lo, 4)
+    m['WsMixedHardDeltaEmbeddingCiHigh'] = gfloat(hi, 4)
+    m['WsBootstrapResamples'] = gint(SPARSE_BOOTSTRAP_RESAMPLES)
 
     # ---- Fresh dataset: crawl + text-fetch provenance (dataset construction methodology) ----
     wc = d['wikipedia_crawl']

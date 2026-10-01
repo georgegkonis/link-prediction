@@ -1,9 +1,9 @@
-name: Release Paper
+name: Release Thesis
 
 on:
   push:
     tags:
-      - "paper-v*"
+      - "thesis-*"
 
 permissions:
   contents: write
@@ -19,16 +19,18 @@ jobs:
       - name: Compile thesis
         run: |
           cd latex/thesis
-          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
+          xelatex -interaction=nonstopmode thesis.tex
           biber thesis
-          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
-          xelatex -interaction=nonstopmode -jobname=thesis "\def\draftversion{${{ github.ref_name }}}\input{thesis.tex}"
+          xelatex -interaction=nonstopmode thesis.tex
+          xelatex -interaction=nonstopmode thesis.tex
+          mv thesis.pdf "thesis-${GITHUB_REF_NAME#thesis-}.pdf"
 
       - name: Compile presentation
         run: |
           cd latex/presentation
           xelatex -interaction=nonstopmode presentation.tex
           xelatex -interaction=nonstopmode presentation.tex
+          mv presentation.pdf "presentation-${GITHUB_REF_NAME#thesis-}.pdf"
 
       - name: Compile paper
         run: |
@@ -37,13 +39,15 @@ jobs:
           biber paper
           xelatex -interaction=nonstopmode paper.tex
           xelatex -interaction=nonstopmode paper.tex
+          mv paper.pdf "paper-${GITHUB_REF_NAME#thesis-}.pdf"
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
           files: |
-            latex/thesis/thesis.pdf
-            latex/presentation/presentation.pdf
-            latex/paper/paper.pdf
+            latex/thesis/thesis-*.pdf
+            latex/presentation/presentation-*.pdf
+            latex/paper/paper-*.pdf

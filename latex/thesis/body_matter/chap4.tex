@@ -643,6 +643,72 @@ $\tau_2 = \TauTwoDefault$· βλ.\ \S\ref{sec:ablation} για την ευαισ
 \end{figure}
 
 
+\subsection{Έλεγχος με Αραιό Γράφημα και Δύσκολα Αρνητικά Ζεύγη}
+\label{subsec:wiki-sparse-stress-test}
+
+Η προηγούμενη αξιολόγηση χρησιμοποιεί ομοιόμορφα τυχαία αρνητικά ζεύγη.
+Για να ελεγχθεί η ευαισθησία σε αυτή την επιλογή, κατασκευάζεται δεύτερο πρωτόκολλο
+από το ίδιο υπογράφημα: το \WsRetentionPct\% των πραγματικών ακμών
+(\WsObservedEdges{}) παραμένει στο παρατηρούμενο γράφημα και οι υπόλοιπες
+\WsHeldOutEdges{} αποτελούν κοινά θετικά παραδείγματα για δύο σύνολα ελέγχου.
+Κάθε σύνολο περιέχει \WsTestPairs{} ισοζυγισμένα ζεύγη. Στο πρώτο, τα αρνητικά
+είναι ομοιόμορφα τυχαία μη συνδεδεμένα ζεύγη· στο δεύτερο, κάθε αρνητικό ζεύγος
+μοιράζεται έναν γείτονα στο παρατηρούμενο γράφημα. Όλα ελέγχονται έναντι του
+πλήρους συνόλου γνωστών ακμών του υπογραφήματος, ώστε καμία παρακρατημένη
+θετική ακμή να μη χαρακτηριστεί αρνητική.
+
+Η εκπαίδευση επαναλαμβάνεται με την ίδια αρχιτεκτονική και τις ίδιες
+υπερπαραμέτρους σε \WsTrainPairs{} ζεύγη. Η πρώτη εκδοχή χρησιμοποιεί μόνο
+τυχαία αρνητικά· η δεύτερη τα αντικαθιστά εν μέρει με
+\WsMixedHardTrainNegatives{} δύσκολα αρνητικά, διατηρώντας
+\WsMixedRandomTrainNegatives{} τυχαία. Το παρατηρούμενο γράφημα, οι θετικές
+ακμές εκπαίδευσης και αμφότερα τα σύνολα ελέγχου παραμένουν ίδια.
+Κατά την εξαγωγή δομικών χαρακτηριστικών στην εκπαίδευση αποκρύπτεται η
+εκάστοτε θετική ακμή-στόχος. Ο Πίνακας~\ref{tab:wiki-sparse-results}
+παρουσιάζει τα αποτελέσματα· η επίδοση με \en{Embedding} είναι ανεξάρτητο
+μοντέλο αναφοράς στο ίδιο δείγμα.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{llrrrr}
+    \toprule
+    \textbf{Αρνητικά εκπαίδευσης} & \textbf{Αρνητικά ελέγχου} &
+    \textbf{\en{CascadeLP Macro F1}} & \textbf{\en{AUC-ROC}} &
+    \textbf{\en{Embedding Macro F1}} & \textbf{Επίπεδο~3 (\%)} \\
+    \midrule
+    Τυχαία & Τυχαία & \WsRandomRandomCascadeFone{} & \WsRandomRandomCascadeAuc{} &
+      \WsRandomRandomEmbeddingFone{} & \WsRandomRandomTierThreePct{} \\
+    Τυχαία & Δύσκολα & \WsRandomHardCascadeFone{} & \WsRandomHardCascadeAuc{} &
+      \WsRandomHardEmbeddingFone{} & \WsRandomHardTierThreePct{} \\
+    Μικτά & Τυχαία & \WsMixedRandomCascadeFone{} & \WsMixedRandomCascadeAuc{} &
+      \WsMixedRandomEmbeddingFone{} & \WsMixedRandomTierThreePct{} \\
+    Μικτά & Δύσκολα & \textbf{\WsMixedHardCascadeFone{}} & \WsMixedHardCascadeAuc{} &
+      \WsMixedHardEmbeddingFone{} & \WsMixedHardTierThreePct{} \\
+    \bottomrule
+  \end{tabular}}
+  \caption{Έλεγχος στο αραιό παρατηρούμενο γράφημα. Οι δύο εκδοχές εκπαίδευσης
+  αξιολογούνται στα ίδια σταθερά σύνολα ελέγχου, με κοινές παρακρατημένες
+  θετικές ακμές αλλά διαφορετική δειγματοληψία αρνητικών.}
+  \label{tab:wiki-sparse-results}
+\end{table}
+
+Με αποκλειστικά τυχαία αρνητικά στην εκπαίδευση, το \en{Macro F1} του
+\en{CascadeLP} πέφτει από \WsRandomRandomCascadeFone{} στα τυχαία αρνητικά
+σε \WsRandomHardCascadeFone{} στα δύσκολα, κάτω από το αυτόνομο μοντέλο
+\en{Embedding} (\WsRandomHardEmbeddingFone{}).
+Η μικτή εκπαίδευση αυξάνει την επίδοση στα δύσκολα αρνητικά κατά
+\WsHardGain{} μονάδες σε \WsMixedHardCascadeFone{}, με απώλεια
+\WsRandomCost{} μονάδων στα τυχαία. Στο δύσκολο σύνολο υπερβαίνει το
+αυτόνομο \en{Embedding} κατά \WsMixedHardDeltaEmbedding{} μονάδες· σε
+\WsBootstrapResamples{} ζευγαρωμένες επαναδειγματοληψίες των ίδιων ζευγών,
+το 95\% διάστημα της διαφοράς είναι
+[\WsMixedHardDeltaEmbeddingCiLow{}, \WsMixedHardDeltaEmbeddingCiHigh{}].
+Το διάστημα αφορά το συγκεκριμένο σταθερό γράφημα, τη διαίρεση και τις
+εκπαιδευμένες εκδοχές των μοντέλων.
+
+
 \section{Σύγκριση με Μοντέλο Αναφοράς \en{SVM}}
 \label{sec:svm-results}
 

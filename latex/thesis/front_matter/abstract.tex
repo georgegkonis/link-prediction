@@ -48,6 +48,10 @@
     σύνολο δεδομένων πραγματικών υπερσυνδέσμων της Απλής Αγγλικής \en{Wikipedia}, όπου
     πετυχαίνει \en{Macro F1} = \WfCascadeFone{} ξεπερνώντας κάθε
     μεμονωμένη οικογένεια χαρακτηριστικών.
+    Σε συμπληρωματικό έλεγχο με αραιό γράφημα, το \en{Macro F1} στα δύσκολα
+    αρνητικά ζεύγη είναι \WsRandomHardCascadeFone{} με τυχαία αρνητικά στην
+    εκπαίδευση και \WsMixedHardCascadeFone{} με μικτά αρνητικά. Η διαφορά
+    καταδεικνύει την ευαισθησία του συμπεράσματος στην κατασκευή του συνόλου.
 
     \begin{keywords}
         Πρόβλεψη ακμών, γραφήματα με κειμενικά χαρακτηριστικά, δρομολόγηση βάσει αξιοπιστίας,
@@ -88,7 +92,10 @@
         leaving open whether CascadeLP learned genuine relational prediction. We answer this by
         retraining the same, unmodified CascadeLP on a second, independently built dataset of
         real Simple English Wikipedia hyperlinks, where it reaches Macro F1 = \WfCascadeFone{}, outperforming
-        every individual feature family. }
+        every individual feature family. A sparse-graph stress test reduces Macro F1 on
+        two-hop hard negatives to \WsRandomHardCascadeFone{} with random-negative training;
+        mixed-negative training raises it to \WsMixedHardCascadeFone{}. This shows how strongly
+        the evaluation depends on negative-sampling design. }
 
     \begin{keywordseng}
         \en{Link prediction, text-attributed graphs, confidence routing, language models,

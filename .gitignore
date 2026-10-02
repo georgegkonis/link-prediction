@@ -193,6 +193,8 @@ outputs/
 *.bcf
 *.run.xml
 *.idx
+*.nav
+*.snm
 
 # Vector publication figures are source-controlled LaTeX assets, unlike compiled documents.
 !latex/shared/figures/*.pdf

@@ -62,14 +62,18 @@ outside the default output directory.
 
 ## Wiki-CS-8k Pipeline
 
-For Wiki-CS-8k, run these steps in order after placing the MediaWiki SQL dumps in `/tmp`:
+Dataset construction uses the external `wikilinkgen` package. For Wiki-CS-8k, run these
+steps in order after placing the MediaWiki SQL dumps in `/tmp` (or fetch them with
+`wikilinkgen download --dump-dir /tmp --date <YYYYMMDD>`):
 
 ```bash
-conda run -n link-prediction python -m scripts.wiki.build_graph
-conda run -n link-prediction python -m scripts.wiki.fetch_text
-conda run -n link-prediction python -m scripts.wiki.build_dataset
+conda run -n link-prediction wikilinkgen graph --dump-dir /tmp --out data/raw/wiki_cs_8k
+conda run -n link-prediction wikilinkgen text --dir data/raw/wiki_cs_8k
+conda run -n link-prediction wikilinkgen pairs --source data/raw/wiki_cs_8k
 conda run -n link-prediction python -m scripts.wiki.run_experiment
 ```
+
+`make pipeline-wiki WIKI_DUMPS=<dir> WIKI_DATE=<YYYYMMDD>` runs the same steps.
 
 The Wiki experiment reads shared feature/model YAML settings from `configs/`
 (`--config-dir` selects another directory). It checks cached features against
@@ -90,8 +94,8 @@ under `outputs/checkpoints/wiki_cs_8k_sparse20/`, and evaluates all withheld
 links in separate random- and hard-negative suites. Direct invocation is:
 
 ```bash
-conda run -n link-prediction python -m scripts.wiki.build_dataset \
-  --protocol sparse-holdout --edge-retention 0.2
+conda run -n link-prediction wikilinkgen pairs --source data/raw/wiki_cs_8k \
+  --out data/raw/wiki_cs_8k_sparse20 --protocol sparse-holdout --edge-retention 0.2
 conda run -n link-prediction python -m scripts.wiki.run_experiment \
   --benchmark-manifest data/raw/wiki_cs_8k_sparse20/benchmark.json \
   --batch-size 10000

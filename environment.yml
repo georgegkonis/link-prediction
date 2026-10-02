@@ -38,6 +38,7 @@ dependencies:
       - transformers>=4.40
       - sentence-transformers>=3.0
       - datasets
+      - wikilinkgen @ git+https://github.com/georgegkonis/wikilinkgen@v0.1.0
       - torch-geometric
       - kagglehub
       - kagglesdk

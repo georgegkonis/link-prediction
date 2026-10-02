@@ -97,21 +97,27 @@ pipeline-dsaa:
 	$(RUN) python -m scripts.dsaa.sweep_routing_thresholds
 	$(MAKE) compare-matched
 
+WIKI_DUMPS ?= /tmp
+WIKI_DATE ?= latest
+WIKI_DIR = data/raw/wiki_cs_8k
+
 pipeline-wiki:
 	@echo "--- Running Full Wiki-CS-8k Pipeline ---"
-	$(RUN) python -m scripts.wiki.build_graph
-	$(RUN) python -m scripts.wiki.fetch_text
-	$(RUN) python -m scripts.wiki.build_dataset
+	$(RUN) wikilinkgen graph --dump-dir $(WIKI_DUMPS) --date $(WIKI_DATE) --out $(WIKI_DIR)
+	$(RUN) wikilinkgen text --dir $(WIKI_DIR)
+	$(RUN) wikilinkgen pairs --source $(WIKI_DIR)
 	$(RUN) python -m scripts.wiki.run_experiment --rebuild-features
 
 pipeline-wiki-sparse:
 	@echo "--- Running Sparse Wiki-CS-8k Benchmark ---"
-	$(RUN) python -m scripts.wiki.build_dataset --protocol sparse-holdout --edge-retention 0.2
+	$(RUN) wikilinkgen pairs --source $(WIKI_DIR) --out $(WIKI_DIR)_sparse20 \
+	  --protocol sparse-holdout --edge-retention 0.2
 	$(RUN) python -m scripts.wiki.run_experiment --benchmark-manifest data/raw/wiki_cs_8k_sparse20/benchmark.json --rebuild-features
 
 pipeline-wiki-sparse-mixed:
 	@echo "--- Retraining Sparse Wiki-CS-8k with Random and Hard Negatives ---"
-	$(RUN) python -m scripts.wiki.build_dataset --protocol sparse-holdout --edge-retention 0.2 --train-negatives mixed
+	$(RUN) wikilinkgen pairs --source $(WIKI_DIR) --out $(WIKI_DIR)_sparse20_mixed \
+	  --protocol sparse-holdout --edge-retention 0.2 --train-negatives mixed
 	$(RUN) python -m scripts.wiki.run_experiment \
 	  --benchmark-manifest data/raw/wiki_cs_8k_sparse20_mixed/benchmark.json \
 	  --node-cache-directory data/interim/wiki_cs_8k_sparse20 \

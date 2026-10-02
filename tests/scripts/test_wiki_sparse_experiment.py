@@ -4,9 +4,9 @@ import joblib
 import pandas as pd
 import pytest
 
-from scripts.wiki.build_dataset import _write_sparse
 from scripts.wiki.run_experiment import _load_shared_node_cache, _load_sparse_benchmark
 from src.data.feature_cache import save_cache_manifest
+from wikilinkgen.pairs import write_sparse
 
 
 def _write_source(path):
@@ -23,7 +23,7 @@ def test_sparse_manifest_round_trip_validates_sources_and_partitions(tmp_path):
     source = tmp_path / 'source'
     output = tmp_path / 'benchmark'
     _write_source(source)
-    _write_sparse(source, output, edge_retention=0.8, seed=42)
+    write_sparse(source, output, edge_retention=0.8, seed=42)
 
     manifest, frames, nodes = _load_sparse_benchmark(output / 'benchmark.json')
 
@@ -37,7 +37,7 @@ def test_sparse_manifest_rejects_modified_pair_file(tmp_path):
     source = tmp_path / 'source'
     output = tmp_path / 'benchmark'
     _write_source(source)
-    _write_sparse(source, output, edge_retention=0.8, seed=42)
+    write_sparse(source, output, edge_retention=0.8, seed=42)
     with (output / 'test_random.csv').open('a') as stream:
         stream.write('999,1,2,0\n')
 
@@ -49,7 +49,7 @@ def test_sparse_manifest_records_file_hashes(tmp_path):
     source = tmp_path / 'source'
     output = tmp_path / 'benchmark'
     _write_source(source)
-    _write_sparse(source, output, edge_retention=0.8, seed=42)
+    write_sparse(source, output, edge_retention=0.8, seed=42)
 
     manifest = json.loads((output / 'benchmark.json').read_text())
     assert set(manifest['files']) == {

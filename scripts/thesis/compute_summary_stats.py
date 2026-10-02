@@ -319,10 +319,10 @@ def _load() -> dict:
             log.warning('Wiki results have no recorded run configuration; cannot verify shared parameters')
     d['wikipedia_crawl'] = _load_json_optional(
         pathlib.Path('data/raw/wiki_cs_8k/crawl_stats.json'),
-        'run python -m scripts.wiki.build_graph first')
+        'run wikilinkgen graph first')
     d['wikipedia_text'] = _load_json_optional(
         pathlib.Path('data/raw/wiki_cs_8k/text_fetch_stats.json'),
-        'run python -m scripts.wiki.fetch_text first')
+        'run wikilinkgen text first')
 
     return d
 

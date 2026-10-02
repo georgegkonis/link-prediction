@@ -38,15 +38,20 @@ remain available for older results that predate snapshots.
 
 ## Wikipedia (`scripts.wiki`)
 
+Dataset construction lives in the separate
+[`wikilinkgen`](https://github.com/georgegkonis/wikilinkgen) package (installed by
+`environment.yml`):
+
+| Command | Purpose | Main output |
+|---|---|---|
+| `wikilinkgen graph` | Read MediaWiki SQL dumps and select the article graph | `data/raw/wiki_cs_8k/positive_edges.csv` and crawl statistics |
+| `wikilinkgen text` | Fetch selected article text | `data/raw/wiki_cs_8k/nodes.tsv` |
+| `wikilinkgen pairs` | Create the balanced dataset or a sparse graph holdout with random/hard negatives | `data/raw/wiki_cs_8k/train.csv` or `data/raw/wiki_cs_8k_sparse20/benchmark.json` |
+
 | Module | Purpose | Main output |
 |---|---|---|
-| `build_graph` | Read MediaWiki SQL dumps and select the article graph | `data/raw/wiki_cs_8k/positive_edges.csv` and crawl statistics |
-| `fetch_text` | Fetch selected article text | `data/raw/wiki_cs_8k/nodes.tsv` |
-| `build_dataset` | Create the balanced dataset or a sparse graph holdout with random/hard negatives | `data/raw/wiki_cs_8k/train.csv` or `data/raw/wiki_cs_8k_sparse20/benchmark.json` |
 | `run_experiment` | Train and evaluate the original or manifest-defined sparse benchmark | `outputs/stats/wiki_cs_8k_experiment_results.json` or `wiki_cs_8k_sparse20_results.json` |
 
-The SQL parser used by `build_graph` is library code in
-`src/data/mediawiki_sql.py`, not a separate command.
 Wiki commands use `argparse`; `run_experiment` reads feature/model defaults from
 the shared `configs/` YAML directory. It verifies a feature-cache manifest
 before reuse. For caches made before manifests were introduced, use

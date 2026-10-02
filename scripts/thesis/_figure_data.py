@@ -182,6 +182,8 @@ def _compute_figures(d: dict, shared: dict) -> dict:
                 'mean_abs_probability_change': swap['mean_abs_probability_change'],
             }
 
+    figs.update(_sparse_figures(d))
+
     wikipedia = d['wikipedia']
     dsaa_metrics = d['baseline_metrics']
     if wikipedia and all(dsaa_metrics.get(name) for name in _MODEL_NAMES):
@@ -208,4 +210,30 @@ def _compute_figures(d: dict, shared: dict) -> dict:
             for key in ('zero_cn', 'functional_cold_start', 'missing_text')
         }
 
+    return figs
+
+
+def _sparse_figures(d: dict) -> dict:
+    """Per-condition model scores and CascadeLP routing for the sparse Wiki stress test."""
+    sparse_random, sparse_mixed = d.get('wiki_sparse_random'), d.get('wiki_sparse_mixed')
+    if not (sparse_random and sparse_mixed):
+        return {}
+    conditions = []
+    for run, train in ((sparse_random, 'random'), (sparse_mixed, 'mixed')):
+        for suite, test in (('test_random', 'random'), ('test_hard', 'hard')):
+            results = run['suites'][suite]
+            tiers = results['cascade']['tier_stats']
+            conditions.append({
+                'train': train,
+                'test': test,
+                'macro_f1': [results[name]['macro_f1'] for name in _MODEL_NAMES],
+                'tier_pct': [tiers[f'tier{tier}']['pct'] for tier in range(4)],
+                'tier1_errors': results['cascade']['tier_performance']['tier1']['errors'],
+            })
+    figs = {'sparse_stress': {'models': list(_MODEL_NAMES), 'conditions': conditions}}
+    wikipedia = d.get('wikipedia')
+    if wikipedia:
+        wiki_tiers = wikipedia['cascade']['tier_stats']
+        figs['sparse_stress']['dense_tier_pct'] = [
+            wiki_tiers[f'tier{tier}']['pct'] for tier in range(4)]
     return figs

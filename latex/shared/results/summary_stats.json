@@ -338,7 +338,40 @@
     "WfTextMatchPct": "93{,}1",
     "WfTextEmptyN": "554",
     "KaggleBaselinePublic": "0{,}99831",
-    "KaggleBaselinePrivate": "0{,}99828"
+    "KaggleBaselinePrivate": "0{,}99828",
+    "WsObservedMeanDegree": "10{,}8",
+    "WsRandomRandomStructuralFone": "0{,}7837",
+    "WsRandomRandomTfidfFone": "0{,}8208",
+    "WsRandomRandomPosFone": "0{,}7760",
+    "WsRandomRandomSvmFone": "0{,}8212",
+    "WsRandomRandomBestBaselineFone": "0{,}8212",
+    "WsRandomRandomCascadeDeltaBest": "0{,}0418",
+    "WsRandomRandomTierTwoPct": "26{,}3",
+    "WsRandomRandomTierOneFone": "0{,}4934",
+    "WsRandomHardStructuralFone": "0{,}2385",
+    "WsRandomHardTfidfFone": "0{,}6687",
+    "WsRandomHardPosFone": "0{,}5964",
+    "WsRandomHardSvmFone": "0{,}6716",
+    "WsRandomHardBestBaselineFone": "0{,}6926",
+    "WsRandomHardCascadeDeltaBest": "-0{,}1577",
+    "WsRandomHardTierTwoPct": "11{,}5",
+    "WsRandomHardTierOneFone": "0{,}3245",
+    "WsMixedRandomStructuralFone": "0{,}7273",
+    "WsMixedRandomTfidfFone": "0{,}8158",
+    "WsMixedRandomPosFone": "0{,}7610",
+    "WsMixedRandomSvmFone": "0{,}8161",
+    "WsMixedRandomBestBaselineFone": "0{,}8161",
+    "WsMixedRandomCascadeDeltaBest": "0{,}0163",
+    "WsMixedRandomTierTwoPct": "21{,}7",
+    "WsMixedRandomTierOneFone": "0{,}7182",
+    "WsMixedHardStructuralFone": "0{,}5807",
+    "WsMixedHardTfidfFone": "0{,}6933",
+    "WsMixedHardPosFone": "0{,}6656",
+    "WsMixedHardSvmFone": "0{,}6929",
+    "WsMixedHardBestBaselineFone": "0{,}7041",
+    "WsMixedHardCascadeDeltaBest": "0{,}0333",
+    "WsMixedHardTierTwoPct": "15{,}0",
+    "WsMixedHardTierOneFone": "0{,}8584"
   },
   "figures": {
     "separability": {
@@ -2463,6 +2496,100 @@
         "macro_f1": 0.9563256584968738,
         "positive_recall": 0.9239625167336011
       }
+    },
+    "sparse_stress": {
+      "models": [
+        "structural",
+        "tfidf",
+        "pos",
+        "embedding",
+        "svm",
+        "cascade"
+      ],
+      "conditions": [
+        {
+          "train": "random",
+          "test": "random",
+          "macro_f1": [
+            0.7837091925410646,
+            0.8207874333041112,
+            0.7759695268944856,
+            0.7946331799633517,
+            0.8211574409930994,
+            0.8629863425145419
+          ],
+          "tier_pct": [
+            0.0,
+            29.354566039598463,
+            26.26529365671872,
+            44.38014030368282
+          ],
+          "tier1_errors": 2485
+        },
+        {
+          "train": "random",
+          "test": "hard",
+          "macro_f1": [
+            0.23854424328698648,
+            0.6687267362022238,
+            0.5964347687351602,
+            0.6926191307879915,
+            0.6715958335799515,
+            0.5349528478756864
+          ],
+          "tier_pct": [
+            0.0,
+            59.52325129413797,
+            11.483739210375315,
+            28.993009495486717
+          ],
+          "tier1_errors": 100278
+        },
+        {
+          "train": "mixed",
+          "test": "random",
+          "macro_f1": [
+            0.7272918294737241,
+            0.8158064811904631,
+            0.7609571411061798,
+            0.7952283378096617,
+            0.8161305519642983,
+            0.8324792133931955
+          ],
+          "tier_pct": [
+            0.0,
+            14.790192315997952,
+            21.74398588325302,
+            63.465821800749026
+          ],
+          "tier1_errors": 1087
+        },
+        {
+          "train": "mixed",
+          "test": "hard",
+          "macro_f1": [
+            0.5806626597396443,
+            0.6932992748574535,
+            0.6655851018976517,
+            0.704123029579223,
+            0.6928731608040215,
+            0.7374625432012545
+          ],
+          "tier_pct": [
+            0.0,
+            24.721582951313266,
+            14.994416234259026,
+            60.284000814427706
+          ],
+          "tier1_errors": 10403
+        }
+      ],
+      "dense_tier_pct": [
+        0.0,
+        86.36458988881897,
+        7.100285047939881,
+        6.535125063241155
+      ]
     }
   }
 }

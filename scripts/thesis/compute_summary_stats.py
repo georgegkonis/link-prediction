@@ -331,6 +331,59 @@ def _load() -> dict:
 # Compute macros (Greek-formatted tex values)
 # ---------------------------------------------------------------------------
 
+_SPARSE_MODEL_MACROS = {'structural': 'Structural', 'tfidf': 'Tfidf', 'pos': 'Pos',
+                        'embedding': 'Embedding', 'svm': 'Svm'}
+
+
+def _sparse_macros(sparse_random: dict, sparse_mixed: dict) -> dict[str, str]:
+    """Macros for the sparse Wiki stress test (fixed graph/test sets, changed training negatives)."""
+    sparse_counts = sparse_random['benchmark']['counts']
+    m: dict[str, str] = {}
+    m['WsRetentionPct'] = gpct(100 * sparse_random['benchmark']['edge_retention'], 1)
+    m['WsObservedEdges'] = gint(sparse_counts['observed_positive_edges'])
+    m['WsHeldOutEdges'] = gint(sparse_counts['held_out_positive_edges'])
+    m['WsTrainPairs'] = gint(sparse_counts['train_pairs'])
+    m['WsTestPairs'] = gint(sparse_counts['test_hard_pairs'])
+    m['WsObservedMeanDegree'] = gfloat(sparse_random['benchmark']['observed_graph']['mean_degree'], 1)
+    m['WsMixedRandomTrainNegatives'] = gint(
+        sparse_mixed['benchmark']['counts']['train_random_negatives'])
+    m['WsMixedHardTrainNegatives'] = gint(
+        sparse_mixed['benchmark']['counts']['train_hard_negatives'])
+    for run, prefix in ((sparse_random, 'WsRandom'), (sparse_mixed, 'WsMixed')):
+        for suite, suffix in (('test_random', 'Random'), ('test_hard', 'Hard')):
+            results = run['suites'][suite]
+            m[f'{prefix}{suffix}CascadeFone'] = gfloat(results['cascade']['macro_f1'], 4)
+            m[f'{prefix}{suffix}CascadeAuc'] = gfloat(results['cascade']['auc_roc'], 4)
+            for model in _MODEL_NAMES[:-1]:
+                m[f'{prefix}{suffix}{_SPARSE_MODEL_MACROS[model]}Fone'] = gfloat(
+                    results[model]['macro_f1'], 4)
+            best = max(results[model]['macro_f1'] for model in _MODEL_NAMES[:-1])
+            m[f'{prefix}{suffix}BestBaselineFone'] = gfloat(best, 4)
+            m[f'{prefix}{suffix}CascadeDeltaBest'] = gfloat(results['cascade']['macro_f1'] - best, 4)
+            m[f'{prefix}{suffix}TierOnePct'] = gpct(
+                results['cascade']['tier_stats']['tier1']['pct'], 1)
+            m[f'{prefix}{suffix}TierTwoPct'] = gpct(
+                results['cascade']['tier_stats']['tier2']['pct'], 1)
+            m[f'{prefix}{suffix}TierThreePct'] = gpct(
+                results['cascade']['tier_stats']['tier3']['pct'], 1)
+            m[f'{prefix}{suffix}TierOneErrors'] = gint(
+                results['cascade']['tier_performance']['tier1']['errors'])
+            m[f'{prefix}{suffix}TierOneFone'] = gfloat(
+                results['cascade']['tier_performance']['tier1']['macro_f1'], 4)
+    random_hard = sparse_random['suites']['test_hard']['cascade']['macro_f1']
+    mixed_hard = sparse_mixed['suites']['test_hard']['cascade']['macro_f1']
+    random_random = sparse_random['suites']['test_random']['cascade']['macro_f1']
+    mixed_random = sparse_mixed['suites']['test_random']['cascade']['macro_f1']
+    m['WsHardGain'] = gfloat(mixed_hard - random_hard, 4)
+    m['WsRandomCost'] = gfloat(random_random - mixed_random, 4)
+    delta, lo, hi = _paired_sparse_hard_delta(sparse_mixed)
+    m['WsMixedHardDeltaEmbedding'] = gfloat(delta, 4)
+    m['WsMixedHardDeltaEmbeddingCiLow'] = gfloat(lo, 4)
+    m['WsMixedHardDeltaEmbeddingCiHigh'] = gfloat(hi, 4)
+    m['WsBootstrapResamples'] = gint(SPARSE_BOOTSTRAP_RESAMPLES)
+    return m
+
+
 def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
     """Returns (macros, shared) — shared holds raw intermediates figures also need."""
     m: dict[str, str] = {}
@@ -976,41 +1029,7 @@ def _compute_macros(d: dict) -> tuple[dict[str, str], dict]:
             m[k] = _MISSING
 
     # ---- Sparse Wiki stress test: fixed graph/test sets, changed training negatives ----
-    sparse_random = d['wiki_sparse_random']
-    sparse_mixed = d['wiki_sparse_mixed']
-    sparse_counts = sparse_random['benchmark']['counts']
-    m['WsRetentionPct'] = gpct(100 * sparse_random['benchmark']['edge_retention'], 1)
-    m['WsObservedEdges'] = gint(sparse_counts['observed_positive_edges'])
-    m['WsHeldOutEdges'] = gint(sparse_counts['held_out_positive_edges'])
-    m['WsTrainPairs'] = gint(sparse_counts['train_pairs'])
-    m['WsTestPairs'] = gint(sparse_counts['test_hard_pairs'])
-    m['WsMixedRandomTrainNegatives'] = gint(
-        sparse_mixed['benchmark']['counts']['train_random_negatives'])
-    m['WsMixedHardTrainNegatives'] = gint(
-        sparse_mixed['benchmark']['counts']['train_hard_negatives'])
-    for run, prefix in ((sparse_random, 'WsRandom'), (sparse_mixed, 'WsMixed')):
-        for suite, suffix in (('test_random', 'Random'), ('test_hard', 'Hard')):
-            results = run['suites'][suite]
-            m[f'{prefix}{suffix}CascadeFone'] = gfloat(results['cascade']['macro_f1'], 4)
-            m[f'{prefix}{suffix}CascadeAuc'] = gfloat(results['cascade']['auc_roc'], 4)
-            m[f'{prefix}{suffix}EmbeddingFone'] = gfloat(results['embedding']['macro_f1'], 4)
-            m[f'{prefix}{suffix}TierOnePct'] = gpct(
-                results['cascade']['tier_stats']['tier1']['pct'], 1)
-            m[f'{prefix}{suffix}TierThreePct'] = gpct(
-                results['cascade']['tier_stats']['tier3']['pct'], 1)
-            m[f'{prefix}{suffix}TierOneErrors'] = gint(
-                results['cascade']['tier_performance']['tier1']['errors'])
-    random_hard = sparse_random['suites']['test_hard']['cascade']['macro_f1']
-    mixed_hard = sparse_mixed['suites']['test_hard']['cascade']['macro_f1']
-    random_random = sparse_random['suites']['test_random']['cascade']['macro_f1']
-    mixed_random = sparse_mixed['suites']['test_random']['cascade']['macro_f1']
-    m['WsHardGain'] = gfloat(mixed_hard - random_hard, 4)
-    m['WsRandomCost'] = gfloat(random_random - mixed_random, 4)
-    delta, lo, hi = _paired_sparse_hard_delta(sparse_mixed)
-    m['WsMixedHardDeltaEmbedding'] = gfloat(delta, 4)
-    m['WsMixedHardDeltaEmbeddingCiLow'] = gfloat(lo, 4)
-    m['WsMixedHardDeltaEmbeddingCiHigh'] = gfloat(hi, 4)
-    m['WsBootstrapResamples'] = gint(SPARSE_BOOTSTRAP_RESAMPLES)
+    m.update(_sparse_macros(d['wiki_sparse_random'], d['wiki_sparse_mixed']))
 
     # ---- Fresh dataset: crawl + text-fetch provenance (dataset construction methodology) ----
     wc = d['wikipedia_crawl']

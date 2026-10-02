@@ -397,6 +397,80 @@ def fig_wiki_diagnostic_subsets(figs: dict) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+_SPARSE_CONDITION_LABELS = {
+    ('random', 'random'): 'Εκπ. τυχαία\nΈλεγχος τυχαία',
+    ('random', 'hard'):   'Εκπ. τυχαία\nΈλεγχος δύσκολα',
+    ('mixed', 'random'):  'Εκπ. μικτά\nΈλεγχος τυχαία',
+    ('mixed', 'hard'):    'Εκπ. μικτά\nΈλεγχος δύσκολα',
+}
+
+
+def fig_sparse_model_comparison(figs: dict) -> None:
+    """Every model's Macro F1 in the four sparse train/test negative-sampling conditions."""
+    data = figs.get('sparse_stress')
+    if not data:
+        log.warning('SKIP: no sparse_stress stats')
+        return
+
+    labels = ['Δομικό', 'TF-IDF', 'POS', 'Embedding', 'SVM', 'CascadeLP']
+    colors = [PALETTE['colors'][1], PALETTE['colors'][4], PALETTE['colors'][2],
+              PALETTE['colors'][5], PALETTE['colors'][3], PALETTE['colors'][0]]
+    conditions = data['conditions']
+    fig, ax = plt.subplots(figsize=(11.5, 4.2))
+    x = np.arange(len(conditions))
+    width = 0.13
+    for i, (label, color) in enumerate(zip(labels, colors)):
+        values = [c['macro_f1'][i] for c in conditions]
+        offset = (i - (len(labels) - 1) / 2) * width
+        bars = ax.bar(x + offset, values, width, color=color, label=label,
+                      edgecolor='black' if label == 'CascadeLP' else 'none', linewidth=0.8)
+        if label == 'CascadeLP':
+            for bar, value in zip(bars, values):
+                ax.text(bar.get_x() + bar.get_width() / 2, value + 0.012, f'{value:.3f}',
+                        ha='center', fontsize=8, fontweight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels([_SPARSE_CONDITION_LABELS[(c['train'], c['test'])] for c in conditions])
+    ax.set_ylim(0.2, 0.95)
+    ax.set_ylabel('Macro F1')
+    ax.set_title('Αραιό γράφημα: όλα τα μοντέλα ανά συνθήκη αρνητικών')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=6)
+    fig.tight_layout()
+    _save(fig, 'sparse_model_comparison')
+
+
+def fig_sparse_routing(figs: dict) -> None:
+    """CascadeLP final-decision routing: dense Wiki graph vs. the four sparse conditions."""
+    data = figs.get('sparse_stress')
+    if not data:
+        log.warning('SKIP: no sparse_stress stats')
+        return
+
+    rows = [(_SPARSE_CONDITION_LABELS[(c['train'], c['test'])].replace('\n', ' · '),
+             c['tier_pct']) for c in data['conditions']]
+    if data.get('dense_tier_pct'):
+        rows.insert(0, ('Πυκνό γράφημα', data['dense_tier_pct']))
+    rows.reverse()
+    labels = [r[0] for r in rows]
+    tier_labels = ['Επίπεδο 0', 'Επίπεδο 1 — Δομή', 'Επίπεδο 2 — POS',
+                   'Επίπεδο 3 — Embedding']
+    fig, ax = plt.subplots(figsize=(9.0, 3.9))
+    left = np.zeros(len(rows))
+    for tier, tier_label in enumerate(tier_labels):
+        values = np.array([r[1][tier] for r in rows])
+        ax.barh(labels, values, left=left, color=PALETTE['colors'][tier], label=tier_label)
+        for row, (start, value) in enumerate(zip(left, values)):
+            if value >= 5:
+                ax.text(start + value / 2, row, f'{value:.1f}%', ha='center', va='center',
+                        color='white', fontweight='bold', fontsize=9)
+        left += values
+    ax.set_xlim(0, 100)
+    ax.set_xlabel('Ζεύγη ανά επίπεδο τελικής απόφασης (%)')
+    ax.set_title('Δρομολόγηση του CascadeLP: πυκνό έναντι αραιού γραφήματος')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.22), ncol=4)
+    fig.tight_layout()
+    _save(fig, 'sparse_routing')
+
+
 def main() -> None:
     stats_path = RESULTS / 'summary_stats.json'
     if not stats_path.exists():
@@ -417,6 +491,8 @@ def main() -> None:
     fig_cross_dataset_performance(figs)
     fig_routing_comparison(figs)
     fig_wiki_diagnostic_subsets(figs)
+    fig_sparse_model_comparison(figs)
+    fig_sparse_routing(figs)
     log.info('Done.')
 
 

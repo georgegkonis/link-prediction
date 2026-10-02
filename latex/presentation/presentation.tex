@@ -1,42 +1,528 @@
 \documentclass[11pt,aspectratio=169]{beamer}
 \usetheme{default}
-\usefonttheme{serif}
+\usefonttheme{professionalfonts}
 
 \usepackage{fontspec}
 \setmainfont{CMU Serif}
-\usepackage{graphicx}
-\graphicspath{{../shared/figures/}}
+\setsansfont{CMU Sans Serif}
 \usepackage{polyglossia}
 \setmainlanguage{greek}
 \setotherlanguage{english}
 \newcommand{\en}[1]{\foreignlanguage{english}{#1}}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\graphicspath{{../shared/figures/}}
 
-% Auto-generated experiment macros (regenerate with: make thesis-macros)
+% All reported results come from the committed experiment snapshot.
 \input{../shared/generated_macros}
 
+\definecolor{Ink}{HTML}{183153}
+\definecolor{Teal}{HTML}{006F73}
+\definecolor{Light}{HTML}{EDF4F5}
+\definecolor{Warm}{HTML}{B34B35}
+\setbeamercolor{normal text}{fg=Ink,bg=white}
+\setbeamercolor{frametitle}{fg=Ink,bg=white}
+\setbeamercolor{structure}{fg=Teal}
+\setbeamercolor{block title}{fg=white,bg=Ink}
+\setbeamercolor{block body}{fg=Ink,bg=Light}
+\setbeamercolor{alerted text}{fg=Warm}
+\setbeamercolor{highlight}{fg=Ink,bg=Light}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+% One-sentence takeaway box at the bottom of a slide.
+\newcommand{\takeaway}[1]{%
+  \begin{beamercolorbox}[wd=\linewidth,sep=0.65em,rounded=true]{highlight}
+    \centering #1
+  \end{beamercolorbox}}
+
+% Large headline number with a caption underneath.
+\newcommand{\bignum}[2]{%
+  {\centering{\Huge\bfseries\color{Teal} #1}\\[0.2cm]{\small #2}\par}}
+
 \title{Πρόβλεψη Συνδέσμων σε Γραφήματα με Χαρακτηριστικά Κειμένου}
+\subtitle{Διπλωματική εργασία}
 \author{Γεώργιος Γκόνης}
-\institute{Τμήμα Μηχανικών Η/Υ \& Πληροφορικής, Πανεπιστήμιο Πατρών}
-\date{Ιούλιος 2026}
+\institute{Τμήμα Μηχανικών Η/Υ \& Πληροφορικής, Πανεπιστήμιο Πατρών\\[0.4em]
+  Επιβλέπων: Χρήστος Μακρής}
+\date{}
 
 \begin{document}
 
-\frame{\titlepage}
-
-\begin{frame}{Εισαγωγή}
-  % Πρόβλημα, σύνολο δεδομένων, στόχος
+\begin{frame}
+  \titlepage
 \end{frame}
 
-\begin{frame}{CascadeLP}
-  % Τετρα-επίπεδη αρχιτεκτονική δρομολόγησης
+% ---------------------------------------------------------------------------
+% Act 1 — problem, contributions, model
+% ---------------------------------------------------------------------------
+
+\begin{frame}{Το πρόβλημα}
+  \vspace{0.2cm}
+  \begin{center}
+    \begin{tikzpicture}[
+      article/.style={draw=Teal,very thick,rounded corners=4pt,fill=Light,
+        minimum width=3.6cm,minimum height=1.4cm,align=center,font=\Large}]
+      \node[article] (u) {Άρθρο $u$};
+      \node[article,right=2.4cm of u] (v) {Άρθρο $v$};
+      \draw[line width=1.4pt,Ink,dashed] (u) -- node[above,font=\Large] {?} (v);
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.5cm}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.48\textwidth}
+      \begin{block}{Δομή γραφήματος}
+        Κοινοί γείτονες, \en{Jaccard}, \en{Adamic--Adar}.
+      \end{block}
+    \column{0.48\textwidth}
+      \begin{block}{Κείμενο άρθρων}
+        Μέρη του λόγου (\en{POS}), \en{TF-IDF}, ενσωματώσεις.
+      \end{block}
+  \end{columns}
+  \vspace{0.4cm}
+  \takeaway{Υπάρχει σύνδεσμος μεταξύ δύο άρθρων της \en{Wikipedia};
+    Δυαδική ταξινόμηση ζευγών, μετρική \en{Macro F1}.}
 \end{frame}
 
-\begin{frame}{Πειράματα}
-  % Macro F1, AUC-ROC, cold-start F1, throughput
+\begin{frame}{Συνεισφορές}
+  \vspace{0.3cm}
+  \begin{enumerate}
+    \setlength{\itemsep}{0.55cm}
+    \item \textbf{\en{CascadeLP}:} κλιμακωτός ταξινομητής που συνδυάζει δομή
+      και κείμενο και στέλνει στα ακριβά επίπεδα μόνο τα αβέβαια ζεύγη:
+      ανταγωνιστική ακρίβεια με κλάσμα του κόστους.
+    \item \textbf{Διάγνωση του \en{DSAA 2023}:} εξήγηση των σχεδόν τέλειων
+      βαθμολογιών του δημόσιου συνόλου μέσω στρέβλωσης αρνητικών και
+      διαρροής γραφήματος.
+    \item \textbf{Νέο σύνολο αξιολόγησης:} \WfCrawlNodes{} άρθρα και
+      \WfCrawlEdges{} πραγματικοί υπερσύνδεσμοι από τα επίσημα
+      \en{dumps} της \en{Wikipedia}, με αυστηρό πρωτόκολλο.
+    \item \textbf{Έλεγχος σε αραιό γράφημα:} με λίγη δομή και δύσκολα
+      αρνητικά, η δρομολόγηση ανά ζεύγος αποδίδει το μεγαλύτερο κέρδος.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{\en{CascadeLP}: από το φθηνό στο ακριβό}
+  \vspace{0.6cm}
+  \begin{center}
+    \begin{tikzpicture}[
+      stage/.style={draw=Teal,very thick,rounded corners=4pt,fill=Light,
+        text width=2.65cm,minimum height=2.05cm,align=center,font=\small},
+      node distance=0.48cm]
+      \node[stage] (s0) {\textbf{Επίπεδο 0}\\[0.3em]Αυτοβρόχος\\$u=v$};
+      \node[stage,right=of s0] (s1) {\textbf{Επίπεδο 1}\\[0.3em]Δομικά\\χαρακτηριστικά};
+      \node[stage,right=of s1] (s2) {\textbf{Επίπεδο 2}\\[0.3em]\en{POS}\\+ \en{Random Forest}};
+      \node[stage,right=of s2] (s3) {\textbf{Επίπεδο 3}\\[0.3em]Ενσωματώσεις\\κειμένου};
+      \draw[-{Latex[length=2.5mm]},line width=1pt,Ink] (s0) -- (s1);
+      \draw[-{Latex[length=2.5mm]},line width=1pt,Ink] (s1) -- (s2);
+      \draw[-{Latex[length=2.5mm]},line width=1pt,Ink] (s2) -- (s3);
+      \node[below=0.25cm of s1,font=\footnotesize,Teal] {$c_1\geq\tau_1$ → έξοδος};
+      \node[below=0.25cm of s2,font=\footnotesize,Teal] {$c_2\geq\tau_2$ → έξοδος};
+      \node[below=0.25cm of s3,font=\footnotesize,Teal] {τελική απόφαση};
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.6cm}
+  \takeaway{Βεβαιότητα $c_k=\max(p_0,p_1)$, όρια
+    $\tau_1=\TauOneDefault{}$, $\tau_2=\TauTwoDefault{}$.
+    Τα εύκολα ζεύγη λύνονται νωρίς, τα δύσκολα κλιμακώνονται.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+% Act 2 — DSAA: too good to be true
+% ---------------------------------------------------------------------------
+
+\begin{frame}{Το σύνολο \en{DSAA 2023}}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.32\textwidth}
+      \bignum{\TrainPairs{}}{ζεύγη εκπαίδευσης}
+    \column{0.32\textwidth}
+      \bignum{\TestPairs{}}{ζεύγη ελέγχου (κρυφές ετικέτες)}
+    \column{0.32\textwidth}
+      \bignum{\GraphNodesTotal{}}{άρθρα \en{Wikipedia}}
+  \end{columns}
+  \vspace{0.2cm}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.48\textwidth}
+      \begin{block}{Αρχεία}
+        \small
+        \begin{itemize}
+          \item \en{\texttt{train.csv}}: \en{\texttt{id1, id2, label}}
+          \item \en{\texttt{test.csv}}: \en{\texttt{id1, id2}}, βαθμολόγηση
+            μόνο μέσω \en{Kaggle}
+          \item \en{\texttt{nodes.tsv}}: ακατέργαστο κείμενο άρθρου με
+            σήμανση \en{MediaWiki}
+        \end{itemize}
+      \end{block}
+    \column{0.48\textwidth}
+      \begin{block}{Χαρακτηριστικά}
+        \small
+        \begin{itemize}
+          \item \TrainPosPct\% θετικά, \TrainNegPct\% αρνητικά.
+          \item Το γράφημα προκύπτει από τα θετικά ζεύγη: μέσος βαθμός
+            μόλις \GraphMeanDegree{}.
+          \item Τα αρνητικά δίνονται έτοιμα από τον διαγωνισμό.
+        \end{itemize}
+      \end{block}
+  \end{columns}
+  \takeaway{Μεγάλο και πλούσιο σε κείμενο, αλλά με ελάχιστη δομή: λίγοι
+    γείτονες ανά άρθρο.}
+\end{frame}
+
+\begin{frame}{\en{DSAA 2023}: ανταγωνιστική βαθμολογία, ελάχιστο κόστος}
+  \begin{columns}[c,onlytextwidth]
+    \column{0.50\textwidth}
+      \renewcommand{\arraystretch}{1.3}
+      \small
+      \begin{tabular}{@{}lr@{}}
+        \toprule
+        \textbf{Λύση} & \textbf{\en{Macro F1}} \\
+        \midrule
+        \en{XLM-RoBERTa} (1η--3η) & 1{,}0 \\
+        \en{POS + Random Forest} (7η) & 0{,}99999 \\
+        \textbf{\en{CascadeLP}} & \textbf{\KaggleBaselinePrivate{}} \\
+        \bottomrule
+      \end{tabular}
+      \par\vspace{0.1cm}
+      {\scriptsize Ιδιωτικό σκέλος του \en{Kaggle} \en{leaderboard}.}
+      \vspace{0.2cm}
+
+      \bignum{\TierThreePct\%}{των ζευγών φτάνει στο ακριβό επίπεδο ενσωματώσεων}
+    \column{0.44\textwidth}
+      \includegraphics[width=0.9\linewidth]{throughput_comparison}
+      \par\centering{\small \ThroughputRate{} ζεύγη/δευτ. σε \en{CPU}}
+  \end{columns}
+  \vspace{0.15cm}
+  \takeaway{Πρακτικά ίδια βαθμολογία με ελαφριά μοντέλα σε \en{CPU}: σχεδόν
+    κάθε ζεύγος αποφασίζεται πριν από το ακριβό επίπεδο.}
+  \centering{\color{Warm}Όμως όλες οι λύσεις είναι σχεδόν τέλειες. Γιατί;}
+\end{frame}
+
+\begin{frame}{Αιτία 1: στρέβλωση στη δειγματοληψία αρνητικών}
+  \begin{center}
+    \includegraphics[width=0.66\linewidth]{negative_sampling_artifact}
+  \end{center}
+  \vspace{-0.2cm}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.32\textwidth}
+      \bignum{\HubCount{}}{κόμβοι-πηγές}
+    \column{0.32\textwidth}
+      \bignum{\HubRowPct\%}{των γραμμών, σχεδόν όλες αρνητικές}
+    \column{0.32\textwidth}
+      \bignum{\HubValAgreementPct\%}{συμφωνία \en{CascadeLP} με τον κανόνα}
+  \end{columns}
+  \vspace{0.2cm}
+  \takeaway{Ένας πίνακας \HubCount{} τιμών δίνει \en{Macro F1} =
+    \HubLookupFone{} χωρίς καμία σχεσιακή πληροφορία.}
+\end{frame}
+
+\begin{frame}{Αιτία 2: διαρροή μέσω του γραφήματος}
+  \begin{columns}[c,onlytextwidth]
+    \column{0.55\textwidth}
+      \includegraphics[width=\linewidth]{graph_protocol_leakage}
+    \column{0.42\textwidth}
+      \bignum{\AuditValPositivesInGraphPct\%}{των θετικών ακμών επικύρωσης
+        ήταν ήδη μέσα στο δομικό γράφημα}
+      \vspace{0.5cm}
+      Το γράφημα κατασκευάστηκε \textbf{πριν} από τη διαίρεση
+      εκπαίδευσης/επικύρωσης: τα δομικά χαρακτηριστικά «έβλεπαν» την
+      ίδια την ετικέτα.
+  \end{columns}
+  \vspace{0.4cm}
+  \takeaway{Δύο ανεξάρτητα προβλήματα: το πρωτόκολλο του \en{DSAA} δεν
+    απομονώνει την πρόβλεψη συνδέσμων.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+% Act 3 — fair benchmark, results, stress test
+% ---------------------------------------------------------------------------
+
+\begin{frame}{Κατασκευή νέου συνόλου \en{Wikipedia}}
+  \begin{center}
+    \begin{tikzpicture}[
+      stagebox/.style={draw=Teal,thick,rounded corners=3pt,fill=Light,
+        text width=2.9cm,minimum height=1.8cm,align=center,font=\footnotesize,
+        execute at begin node={\hyphenpenalty=10000}},
+      node distance=0.35cm]
+      \node[stagebox] (a) {\textbf{\en{SQL dumps}}\\[0.3em]\WfCrawlResolvedEdges{}
+        σύνδεσμοι μεταξύ \WfCrawlPages{} άρθρων};
+      \node[stagebox,right=of a] (b) {\textbf{\en{BFS}}\\[0.3em]αφετηρία:\\
+        \en{\WfCrawlSeed}\\έως \WfCrawlNodes{} άρθρα};
+      \node[stagebox,right=of b] (c) {\textbf{Κείμενο}\\[0.3em]
+        \en{wikimedia/wikipedia}};
+      \node[stagebox,right=of c] (d) {\textbf{Ζεύγη}\\[0.3em]θετικά:
+        υπερσύνδεσμοι\\αρνητικά: τυχαία};
+      \foreach \x/\y in {a/b,b/c,c/d}
+        \draw[-{Latex[length=2mm]},thick,Ink] (\x) -- (\y);
+    \end{tikzpicture}
+  \end{center}
+  \vspace{0.4cm}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.48\textwidth}
+      \bignum{\GraphMeanDegree{} → \WfCrawlMeanDegree{}}{μέσος βαθμός:
+        \en{DSAA} → νέο σύνολο}
+    \column{0.48\textwidth}
+      \bignum{\WfTextMatched{}}{άρθρα με κείμενο από \WfTextWanted{}}
+  \end{columns}
+  \vspace{0.3cm}
+  \takeaway{Πραγματικοί υπερσύνδεσμοι από τα επίσημα \en{dumps}, πυκνό και
+    συνεκτικό γράφημα, ελεγχόμενη επιλογή αρνητικών.}
+\end{frame}
+
+\begin{frame}{Αυστηρό πρωτόκολλο αξιολόγησης}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.40\textwidth}
+      \begin{block}{Τρία βήματα κατά της διαρροής}
+        \small
+        \begin{enumerate}
+          \item Ομαδοποιημένη διαίρεση ζευγών πρώτα.
+          \item Γράφημα μόνο από ακμές εκπαίδευσης.
+          \item Απόκρυψη της ακμής-στόχου κατά τον υπολογισμό των
+            χαρακτηριστικών της.
+        \end{enumerate}
+      \end{block}
+    \column{0.57\textwidth}
+      \renewcommand{\arraystretch}{1.3}
+      \footnotesize
+      \begin{tabular}{@{}lrr@{}}
+        \toprule
+        & \textbf{\en{DSAA}} & \textbf{Νέο} \\
+        \midrule
+        Άρθρα & \GraphNodesTotal{} & \WfCrawlNodes{} \\
+        Ζεύγη επικύρωσης & \ValSplitSize{} & \WfValSplitSize{} \\
+        Μέσος βαθμός & \GraphMeanDegree{} & \WfCrawlMeanDegree{} \\
+        Αρνητικά & του διαγωνισμού & τυχαία \\
+        Γράφημα & πριν τη διαίρεση & μόνο εκπαίδευση \\
+        \bottomrule
+      \end{tabular}
+  \end{columns}
+  \vspace{0.5cm}
+  \takeaway{Ίδια αρχιτεκτονική και ίδιοι ταξινομητές, εκπαίδευση από την
+    αρχή.}
+\end{frame}
+
+\begin{frame}{Αποτελέσματα: το \en{CascadeLP} ξεπερνά όλα τα μοντέλα}
+  \begin{center}
+    \includegraphics[width=\linewidth]{cross_dataset_performance}
+  \end{center}
+  \vspace{0.1cm}
+  \takeaway{Στο αυστηρό σύνολο: \en{Macro F1} \textbf{\WfCascadeFone{}},
+    \textbf{+\WfCascadeDeltaStructural{}} έναντι του καλύτερου αυτόνομου
+    (\en{bootstrap}: [\WfCascadeDeltaStructuralCiLow{},
+    \WfCascadeDeltaStructuralCiHigh{}]).}
+\end{frame}
+
+\begin{frame}{Η δρομολόγηση προσαρμόζεται στα δεδομένα}
+  \begin{center}
+    \includegraphics[width=0.88\linewidth]{routing_comparison}
+  \end{center}
+  \vspace{0.1cm}
+  \takeaway{Σε πυκνό γράφημα το \WfTierOnePct\% των ζευγών λύνεται στο φθηνό
+    δομικό επίπεδο· στο \en{DSAA} η απόφαση μεταφέρεται στο κείμενο.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+% Act 4 — sparse graph: where the cascade earns its keep
+% ---------------------------------------------------------------------------
+
+\begin{frame}{Πραγματικά γραφήματα είναι ελλιπή}
+  \centering Κρατάμε μόνο το \textbf{\WsRetentionPct\%} των ακμών ως
+  παρατηρούμενο γράφημα· το υπόλοιπο γίνεται θετικά ζεύγη ελέγχου.
+  \vspace{0.4cm}
+
+  \begin{columns}[c,onlytextwidth]
+    \column{0.36\textwidth}
+      \bignum{\WfMeanDegree{}\,→\,\WsObservedMeanDegree{}}{μέσος βαθμός κόμβου}
+      \vspace{0.3cm}
+      \bignum{\WsHeldOutEdges{}}{κρυμμένες πραγματικές ακμές}
+    \column{0.60\textwidth}
+      \begin{block}{Τυχαία αρνητικά}
+        Ομοιόμορφα μη συνδεδεμένα ζεύγη: τα περισσότερα είναι εύκολα.
+      \end{block}
+      \vspace{0.15cm}
+      \begin{block}{Δύσκολα αρνητικά}
+        Μη συνδεδεμένα ζεύγη \textbf{με κοινό γείτονα}: μοιάζουν δομικά με
+        πραγματικές ακμές.
+      \end{block}
+  \end{columns}
+  \vspace{0.3cm}
+  \takeaway{Το πιο ρεαλιστικό σενάριο: λίγη δομή, και αρνητικά που «μοιάζουν»
+    με συνδέσμους.}
+\end{frame}
+
+\begin{frame}{Αραιό γράφημα: η αλυσίδα ανακατανέμει μόνη της}
+  \begin{center}
+    \includegraphics[width=0.8\linewidth]{sparse_routing}
+  \end{center}
+  \vspace{0.1cm}
+  \takeaway{Ίδια όρια, αλλά οι αποφάσεις μετακινούνται από τη δομή στο
+    κείμενο. Κέρδος έναντι του καλύτερου αυτόνομου:
+    \textbf{+\WsRandomRandomCascadeDeltaBest{}} στο αραιό, έναντι
+    +\WfCascadeDeltaStructural{} στο πυκνό.}
+\end{frame}
+
+\begin{frame}{Δύσκολα αρνητικά: η δομή ξεγελά, η αλυσίδα το δείχνει}
+  \vspace{0.2cm}
+  \renewcommand{\arraystretch}{1.4}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Έλεγχος με δύσκολα αρνητικά} & \textbf{Εκπ. τυχαία} &
+      \textbf{Εκπ. μικτά} \\
+    \midrule
+    Ζεύγη που αποφασίζει το Επίπεδο~1 & \WsRandomHardTierOnePct\% &
+      \WsMixedHardTierOnePct\% \\
+    Σφάλματα Επιπέδου~1 & \color{Warm}\WsRandomHardTierOneErrors{} &
+      \textbf{\WsMixedHardTierOneErrors{}} \\
+    \en{Macro F1} Επιπέδου~1 & \color{Warm}\WsRandomHardTierOneFone{} &
+      \textbf{\WsMixedHardTierOneFone{}} \\
+    \midrule
+    \en{Macro F1} \en{CascadeLP} & \color{Warm}\WsRandomHardCascadeFone{} &
+      \textbf{\WsMixedHardCascadeFone{}} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.45cm}
+
+  \takeaway{Η καταγραφή επιπέδου εντοπίζει την αιτία: το δομικό επίπεδο
+    ήταν \textbf{σίγουρο και λάθος}. Με μικτά αρνητικά μαθαίνει πότε να
+    παραχωρεί την απόφαση στο κείμενο: \textbf{+\WsHardGain{}}.}
+\end{frame}
+
+\begin{frame}{Αραιό γράφημα: συνολική εικόνα}
+  \begin{center}
+    \includegraphics[width=\linewidth]{sparse_model_comparison}
+  \end{center}
+  \takeaway{Με μικτή εκπαίδευση το \en{CascadeLP} είναι πρώτο και στους δύο
+    ελέγχους· στα δύσκολα +\WsMixedHardDeltaEmbedding{} έναντι του καλύτερου
+    αυτόνομου (\en{bootstrap}: [\WsMixedHardDeltaEmbeddingCiLow{},
+    \WsMixedHardDeltaEmbeddingCiHigh{}]).}
+\end{frame}
+
+\begin{frame}{Όρια και μελλοντική εργασία}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.48\textwidth}
+      \begin{block}{Όρια}
+        \begin{itemize}
+          \item Ζεύγη χωρίς κοινούς γείτονες παραμένουν δύσκολα.
+          \item Μία διαίρεση, ένας σπόρος, μόνο \en{Wikipedia}.
+        \end{itemize}
+      \end{block}
+    \column{0.48\textwidth}
+      \begin{block}{Επόμενα βήματα}
+        \begin{itemize}
+          \item Συμμετρικά χαρακτηριστικά κειμένου.
+          \item Βαθμονόμηση και αυτόματη επιλογή ορίων $\tau_k$.
+          \item Εξαγωγή χαρακτηριστικών κατά απαίτηση και μέτρηση
+            πραγματικού κόστους.
+          \item Περισσότερα πεδία και σύγκριση με \en{GNN}.
+        \end{itemize}
+      \end{block}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Συμπεράσματα}
-  % Συνεισφορά, περιορισμοί, μελλοντική δουλειά
+  \vspace{0.3cm}
+  \begin{enumerate}
+    \setlength{\itemsep}{0.55cm}
+    \item Το \en{CascadeLP} συνδυάζει δομή και κείμενο, ξεπερνά κάθε
+      αυτόνομο μοντέλο σε δεδομένα χωρίς διαρροή, και φτάνει τις κορυφαίες
+      λύσεις του \en{DSAA} με ελαφριά μοντέλα σε \en{CPU}.
+    \item Οι σχεδόν τέλειες βαθμολογίες του \en{DSAA 2023} οφείλονται στη
+      δειγματοληψία αρνητικών και στην κατασκευή του γραφήματος.
+    \item Σε αραιό γράφημα η αλυσίδα μεταφέρει μόνη της τις αποφάσεις στο
+      κείμενο και το πλεονέκτημά της μεγαλώνει· με μικτά αρνητικά παραμένει
+      πρώτη και στα δύσκολα ζεύγη.
+  \end{enumerate}
+  \vspace{0.6cm}
+  \begin{center}
+    {\Large\color{Teal}\textbf{Ευχαριστώ — Ερωτήσεις;}}
+  \end{center}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+% Backup
+% ---------------------------------------------------------------------------
+
+\appendix
+
+\begin{frame}{Υλοποίηση}
+  \begin{center}
+    \begin{tikzpicture}[
+      stagebox/.style={draw=Teal,thick,rounded corners=3pt,fill=Light,
+        text width=2.3cm,minimum height=1.1cm,align=center,font=\scriptsize},
+      node distance=0.25cm]
+      \node[stagebox] (a) {\textbf{Δεδομένα}\\\en{DSAA} / \en{SQL dumps}};
+      \node[stagebox,right=of a] (b) {\textbf{Διαίρεση}\\ανά ζεύγος};
+      \node[stagebox,right=of b] (c) {\textbf{Χαρακτηρ/κά}\\δομή, κείμενο, \en{POS}};
+      \node[stagebox,right=of c] (d) {\textbf{Εκπαίδευση}\\\en{CascadeLP} + μοντέλα αναφοράς};
+      \node[stagebox,right=of d] (e) {\textbf{Αποτελέσματα}\\αυτόματα σε \LaTeX};
+      \foreach \x/\y in {a/b,b/c,c/d,d/e}
+        \draw[-{Latex[length=2mm]},thick,Ink] (\x) -- (\y);
+    \end{tikzpicture}
+  \end{center}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.48\textwidth}
+      \begin{block}{Τεχνολογίες}
+        \footnotesize
+        \begin{itemize}
+          \item \en{Python}, \en{scikit-learn}, \en{networkx}, \en{NLTK}.
+          \item \en{sentence-transformers} (\en{all-MiniLM-L6-v2}).
+          \item \en{Logistic Regression} για δομή/κείμενο,
+            \en{Random Forest} (\PosNEstimators{} δέντρα) για \en{POS}.
+          \item Εκτέλεση εξ ολοκλήρου σε \en{CPU}.
+        \end{itemize}
+      \end{block}
+    \column{0.48\textwidth}
+      \begin{block}{Αναπαραγωγιμότητα}
+        \footnotesize
+        \begin{itemize}
+          \item Ενιαίες ρυθμίσεις (\en{Hydra}), σταθερός σπόρος \Seed{}.
+          \item Κάθε αριθμός σε διατριβή και διαφάνειες παράγεται αυτόματα
+            από τα αποτελέσματα των πειραμάτων.
+          \item Έλεγχοι μονάδας και αυτόματη μεταγλώττιση (\en{CI}).
+        \end{itemize}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Ευαισθησία στη σειρά άκρων}
+  \begin{center}
+    \includegraphics[width=0.62\linewidth]{endpoint_swap_sensitivity}
+  \end{center}
+  \takeaway{Η αντιστροφή $(u,v)\to(v,u)$ αλλάζει το \SwapLabelChangePct\%
+    των προβλέψεων στο \en{DSAA}, λόγω του διατεταγμένου διανύσματος
+    \en{POS}.}
+\end{frame}
+
+\begin{frame}{Επιπλέον έλεγχοι \en{DSAA}}
+  \begin{itemize}
+    \setlength{\itemsep}{0.5cm}
+    \item \textbf{Επικάλυψη εκπαίδευσης/ελέγχου:}
+      \LeakageExact{} ακριβή και \LeakageReversed{} αντεστραμμένα ζεύγη.
+      Η απλή απομνημόνευση ζευγών δεν εξηγεί τη βαθμολογία.
+    \item \textbf{Αυτοβρόχοι:} \SelfLoopsTrain{} στο αρχείο εκπαίδευσης,
+      από τους οποίους \SelfLoopsTrainNeg{} έχει αρνητική ετικέτα.
+    \item \textbf{\en{SVM}:} εκπαίδευση σε \SvmSampleSize{} ζεύγη λόγω
+      κόστους· όχι σύγκριση ίσου μεγέθους.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Όρια σύγκρισης και εμπιστοσύνης}
+  \begin{itemize}
+    \setlength{\itemsep}{0.5cm}
+    \item \textbf{Όρια δρομολόγησης:} \TauOneDefault{} και
+      \TauTwoDefault{} είναι χειρωνακτικές επιλογές. Οι πιθανότητες
+      χρησιμοποιούνται ως βαθμολογίες, χωρίς ξεχωριστή βαθμονόμηση.
+    \item \textbf{Διαστήματα:} ζευγαρωμένο \en{bootstrap}
+      (\WfBootstrapResamples{} επαναδειγματοληψίες) σε σταθερά ζεύγη και
+      μοντέλα· δεν καλύπτει αλλαγή σπόρου, διαίρεσης ή επανεκπαίδευση.
+    \item \textbf{Κόστος:} οι ενσωματώσεις είχαν προϋπολογιστεί· η
+      δρομολόγηση δείχνει πού αποφασίζεται κάθε ζεύγος, όχι μετρημένη
+      εξοικονόμηση χρόνου.
+    \item \textbf{\en{Cold-start}:} μόνο \WfColdStartCount{} λειτουργικά
+      ζεύγη στο νέο σύνολο· δεν στηρίζουν ξεχωριστό συμπέρασμα.
+  \end{itemize}
 \end{frame}
 
 \end{document}

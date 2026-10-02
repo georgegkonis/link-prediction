@@ -200,4 +200,4 @@ outputs/
 !latex/shared/figures/*.pdf
 *.ilg
 *.ind
-notes/
+.local/

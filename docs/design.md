@@ -45,5 +45,4 @@ lookup.
 ## Framing
 
 CascadeLP is framed primarily as a **cost-aware diagnostic**: measuring which tier resolves which pairs,
-cross-referenced against a data-driven difficulty label, rather than claiming headline accuracy improvements. See
-`plan.md` for full scope and status.
+cross-referenced against a data-driven difficulty label, rather than claiming headline accuracy improvements.

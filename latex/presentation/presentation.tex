@@ -4,7 +4,10 @@
 
 \usepackage{fontspec}
 \setmainfont{CMU Serif}
-\setsansfont{CMU Sans Serif}
+% Load the OpenType files by name: on some TeX Live installs the family name
+% resolves to the Type 1 build, which lacks the Greek script tag polyglossia needs.
+\setsansfont{cmunss.otf}[
+  BoldFont=cmunsx.otf, ItalicFont=cmunsi.otf, BoldItalicFont=cmunso.otf]
 \usepackage{polyglossia}
 \setmainlanguage{greek}
 \setotherlanguage{english}

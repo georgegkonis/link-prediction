@@ -69,13 +69,6 @@ def test_gpct_does_not_add_thousands_separator():
     assert gpct(1234.5, 1) == '1234{,}5'
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason='BUG: gfloat() drops the minus sign for values in (-1, 0]. '
-           "f'{-0.5:.4f}' -> '-0.5000'; splitting on '.' gives i='-0', and "
-           "int('-0') == 0, so the sign is lost. "
-           'See scripts/thesis/compute_summary_stats.py:93-98.',
-)
 def test_gfloat_preserves_sign_of_small_negatives():
     assert gfloat(-0.5, 4) == '-0{,}5000'
 

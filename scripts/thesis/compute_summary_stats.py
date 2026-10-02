@@ -133,9 +133,10 @@ def gint(n: int) -> str:
 def gfloat(x: float, d: int = 4) -> str:
     """0.9986 → '0{,}9986' (Greek decimal comma)."""
     s = f'{float(x):.{d}f}'
-    i, f = s.split('.')
+    sign = '-' if s.startswith('-') else ''
+    i, f = s.lstrip('-').split('.')
     i_fmt = f'{int(i):,}'.replace(',', '.')
-    return f'{i_fmt}{{,}}{f}'
+    return f'{sign}{i_fmt}{{,}}{f}'
 
 
 def gpct(x: float, d: int = 2) -> str:

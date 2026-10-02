@@ -32,15 +32,6 @@ jobs:
           xelatex -interaction=nonstopmode presentation.tex
           mv presentation.pdf "presentation-${GITHUB_REF_NAME#thesis-}.pdf"
 
-      - name: Compile paper
-        run: |
-          cd latex/paper
-          xelatex -interaction=nonstopmode paper.tex
-          biber paper
-          xelatex -interaction=nonstopmode paper.tex
-          xelatex -interaction=nonstopmode paper.tex
-          mv paper.pdf "paper-${GITHUB_REF_NAME#thesis-}.pdf"
-
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
@@ -50,4 +41,3 @@ jobs:
           files: |
             latex/thesis/thesis-*.pdf
             latex/presentation/presentation-*.pdf
-            latex/paper/paper-*.pdf

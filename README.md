@@ -57,8 +57,11 @@ make latex-compile DOC=thesis
 ## Releases
 
 Tag a reviewed `master` commit as `thesis-YYYY-MM-DD` to build a GitHub release. For another release on the same day,
-append `.2`, `.3`, and so on. The release attaches `thesis-YYYY-MM-DD.pdf`, `presentation-YYYY-MM-DD.pdf`, and
-`paper-YYYY-MM-DD.pdf`; the date appears in the filename, not as a page watermark.
+append `.2`, `.3`, and so on. The release attaches `thesis-YYYY-MM-DD.pdf` and `presentation-YYYY-MM-DD.pdf`; the
+date appears in the filename, not as a page watermark.
+
+The short paper is released separately: tag a commit as `paper-<version>` (e.g. `paper-v1`) to attach
+`paper-<version>.pdf` to its own release.
 
 ## Documentation
 

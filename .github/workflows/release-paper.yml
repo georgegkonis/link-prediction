@@ -1,0 +1,34 @@
+name: Release Paper
+
+on:
+  push:
+    tags:
+      - "paper-*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile paper
+        run: |
+          cd latex/paper
+          xelatex -interaction=nonstopmode paper.tex
+          biber paper
+          xelatex -interaction=nonstopmode paper.tex
+          xelatex -interaction=nonstopmode paper.tex
+          mv paper.pdf "paper-${GITHUB_REF_NAME#paper-}.pdf"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
+          files: latex/paper/paper-*.pdf
